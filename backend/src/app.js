@@ -5,11 +5,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { env } from "./config/env.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
-import { customerRoutes } from "./routes/customerRoutes.js";
-import { authRoutes } from "./routes/authRoutes.js";
-import { adminRoutes } from "./routes/adminRoutes.js";
-import { providerRoutes } from "./routes/providerRoutes.js";
-import { publicRoutes } from "./routes/publicRoutes.js";
 
 export const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -22,7 +17,6 @@ app.use(
   })
 );
 app.use(express.json());
-app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));
 app.use(morgan("dev"));
 
 app.get("/api/health", (req, res) => {
@@ -31,6 +25,12 @@ app.get("/api/health", (req, res) => {
     message: "EventMitra API is running.",
   });
 });
+
+const authRoutes = (await import("./routes/authRoutes.js")).authRoutes;
+const adminRoutes = (await import("./routes/adminRoutes.js")).adminRoutes;
+const providerRoutes = (await import("./routes/providerRoutes.js")).providerRoutes;
+const customerRoutes = (await import("./routes/customerRoutes.js")).customerRoutes;
+const publicRoutes = (await import("./routes/publicRoutes.js")).publicRoutes;
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);

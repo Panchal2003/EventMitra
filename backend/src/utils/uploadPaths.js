@@ -10,7 +10,14 @@ export const providerPortfolioDir = path.join(uploadsRoot, "portfolio");
 export const serviceImagesDir = path.join(uploadsRoot, "services");
 
 export const ensureUploadDirectories = () => {
-  fs.mkdirSync(providerPortfolioDir, { recursive: true });
-  fs.mkdirSync(serviceImagesDir, { recursive: true });
+  try {
+    if (!fs.existsSync(providerPortfolioDir)) {
+      fs.mkdirSync(providerPortfolioDir, { recursive: true });
+    }
+    if (!fs.existsSync(serviceImagesDir)) {
+      fs.mkdirSync(serviceImagesDir, { recursive: true });
+    }
+  } catch (error) {
+    console.warn("Could not create upload directories:", error.message);
+  }
 };
-

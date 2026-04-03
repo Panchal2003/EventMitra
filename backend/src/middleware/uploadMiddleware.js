@@ -2,7 +2,11 @@ import multer from "multer";
 import path from "path";
 import { ensureUploadDirectories, providerPortfolioDir, serviceImagesDir } from "../utils/uploadPaths.js";
 
-ensureUploadDirectories();
+try {
+  ensureUploadDirectories();
+} catch (e) {
+  console.warn("Upload directories initialization skipped:", e.message);
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
@@ -36,7 +40,6 @@ const fileFilter = (req, file, callback) => {
   callback(null, true);
 };
 
-// Service image file filter (only images, no PDF)
 const allowedServiceImageMimeTypes = [
   "image/jpeg",
   "image/png",
@@ -67,7 +70,6 @@ export const portfolioUpload = multer({
   },
 });
 
-// Service image upload
 const serviceImageStorage = multer.diskStorage({
   destination: (req, file, callback) => {
     callback(null, serviceImagesDir);
