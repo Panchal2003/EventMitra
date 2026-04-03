@@ -1,5 +1,27 @@
 {
-  "buildCommand": "npm run build --workspace frontend",
-  "outputDirectory": "frontend/dist",
-  "framework": "vite"
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "outputPath": "frontend/dist",
+        "buildCommand": "npm run build --workspace frontend"
+      }
+    },
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/dist/index.html"
+    }
+  ]
 }
