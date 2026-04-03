@@ -26,28 +26,5 @@ const mockServices = [
 ];
 
 export default function handler(req, res) {
-  const url = req.url || "";
-  const questionIdx = url.indexOf("?");
-  const path = questionIdx >= 0 ? url.substring(0, questionIdx) : url;
-  
-  if (path === "" || path === "/" || path === "/api/public-services") {
-    const params = new URL("https://eventmitra.vercel.app" + url).searchParams;
-    const categoryId = params.get("category");
-    let services = mockServices;
-    if (categoryId) {
-      services = mockServices.filter(s => s.category._id === categoryId);
-    }
-    return res.json({ success: true, data: services });
-  }
-  
-  if (path.startsWith("/")) {
-    const id = path.substring(1);
-    const service = mockServices.find(s => s._id === id);
-    if (service) {
-      return res.json({ success: true, data: service });
-    }
-    return res.status(404).json({ success: false, message: "Service not found" });
-  }
-  
   res.json({ success: true, data: mockServices });
 }
