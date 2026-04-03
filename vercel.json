@@ -2,18 +2,19 @@
   "version": 2,
   "builds": [
     {
-      "src": "frontend/package.json",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "backend/src/server.js",
-      "use": "@vercel/node"
+      "src": "frontend",
+      "use": "@vercel/static-build",
+      "config": {
+        "outputPath": "frontend/dist"
+      }
     }
   ],
+  "buildCommand": "npm run build --workspace frontend",
+  "outputDirectory": "frontend/dist",
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/backend/src/server.js"
+      "src": "/assets/(.*)",
+      "dest": "/frontend/dist/assets/$1"
     },
     {
       "src": "/(.*)",
