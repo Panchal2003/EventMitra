@@ -1,11 +1,3 @@
-const mockCategories = [
-  { _id: "1", name: "Catering", slug: "catering", description: "Food catering services", serviceCount: 5, listedServices: 3 },
-  { _id: "2", name: "Photography", slug: "photography", description: "Event photography", serviceCount: 3, listedServices: 2 },
-  { _id: "3", name: "Decoration", slug: "decoration", description: "Event decoration", serviceCount: 4, listedServices: 2 },
-  { _id: "4", name: "DJ & Music", slug: "dj-music", description: "DJ and music services", serviceCount: 2, listedServices: 1 },
-  { _id: "5", name: "Venue", slug: "venue", description: "Venue booking", serviceCount: 2, listedServices: 1 }
-];
-
 const mockServices = [
   {
     _id: "s1",
@@ -34,14 +26,13 @@ const mockServices = [
 ];
 
 export default function handler(req, res) {
-  const path = req.url || "";
+  const url = req.url || "";
+  const questionIdx = url.indexOf("?");
+  const path = questionIdx >= 0 ? url.substring(0, questionIdx) : url;
   
-  if (path.includes("/service-categories")) {
-    return res.json({ success: true, data: mockCategories });
-  }
-  
-  if (path.includes("/services")) {
-    const categoryId = new URL(req.url, "http://localhost").searchParams.get("category");
+  if (path === "" || path === "/") {
+    const params = new URL(url, "https://eventmitra.vercel.app").searchParams;
+    const categoryId = params.get("category");
     let services = mockServices;
     if (categoryId) {
       services = mockServices.filter(s => s.category._id === categoryId);
@@ -49,8 +40,8 @@ export default function handler(req, res) {
     return res.json({ success: true, data: services });
   }
   
-  if (path.includes("/services/")) {
-    const id = path.split("/services/").pop();
+  if (path.startsWith("/")) {
+    const id = path.substring(1);
     const service = mockServices.find(s => s._id === id);
     if (service) {
       return res.json({ success: true, data: service });
@@ -58,5 +49,5 @@ export default function handler(req, res) {
     return res.status(404).json({ success: false, message: "Service not found" });
   }
   
-  res.json({ success: true, message: "Public API is working" });
+  res.json({ success: true, data: mockServices });
 }
