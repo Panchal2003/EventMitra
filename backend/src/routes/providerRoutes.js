@@ -1,0 +1,50 @@
+import { Router } from "express";
+import { authenticate, authorize } from "../middleware/authMiddleware.js";
+import { portfolioUpload, serviceImageUpload, serviceMultipleImageUpload } from "../middleware/uploadMiddleware.js";
+import {
+  completeProviderJob,
+  createProviderService,
+  createProviderServiceCategory,
+  deleteProviderService,
+  getProviderBookings,
+  getProviderDashboard,
+  getProviderEarnings,
+  getProviderProfile,
+  getProviderServiceCategories,
+  getProviderServices,
+  regenerateCompletionOtp,
+  respondToBooking,
+  startProviderJob,
+  updateProviderProfile,
+  updateProviderService,
+  uploadMultipleServiceImages,
+  uploadPortfolio,
+  uploadServiceImage,
+  verifyBookingOtp,
+  verifyCompletionOtp,
+} from "../controllers/providerController.js";
+
+export const providerRoutes = Router();
+
+providerRoutes.use(authenticate, authorize("serviceProvider"));
+providerRoutes.get("/dashboard", getProviderDashboard);
+providerRoutes.get("/service-categories", getProviderServiceCategories);
+providerRoutes.post("/service-categories", createProviderServiceCategory);
+providerRoutes.get("/services", getProviderServices);
+providerRoutes.post("/services", createProviderService);
+providerRoutes.post("/service-categories", createProviderServiceCategory);
+providerRoutes.put("/services/:serviceId", updateProviderService);
+providerRoutes.delete("/services/:serviceId", deleteProviderService);
+providerRoutes.post("/services/upload", serviceImageUpload.single("image"), uploadServiceImage);
+providerRoutes.post("/services/upload-images", serviceMultipleImageUpload.array("images", 5), uploadMultipleServiceImages);
+providerRoutes.get("/profile", getProviderProfile);
+providerRoutes.put("/profile", updateProviderProfile);
+providerRoutes.post("/profile/portfolio", portfolioUpload.array("files", 6), uploadPortfolio);
+providerRoutes.get("/bookings", getProviderBookings);
+providerRoutes.patch("/bookings/:bookingId/respond", respondToBooking);
+providerRoutes.patch("/bookings/:bookingId/start", startProviderJob);
+providerRoutes.patch("/bookings/:bookingId/verify-start-otp", verifyBookingOtp);
+providerRoutes.patch("/bookings/:bookingId/complete", completeProviderJob);
+providerRoutes.patch("/bookings/:bookingId/verify-completion-otp", verifyCompletionOtp);
+providerRoutes.patch("/bookings/:bookingId/regenerate-completion-otp", regenerateCompletionOtp);
+providerRoutes.get("/earnings", getProviderEarnings);
