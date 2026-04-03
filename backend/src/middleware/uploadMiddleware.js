@@ -1,27 +1,61 @@
 import multer from "multer";
 import path from "path";
-import { ensureUploadDirectories, providerPortfolioDir, serviceImagesDir } from "../utils/uploadPaths.js";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
-try {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadsRoot = path.resolve(__dirname, "../../uploads");
+
+const ensureUploadDirectories = () => {
+  try {
+    const portfolioDir = path.join(uploadsRoot, "portfolio");
+    const serviceDir = path.join(uploadsRoot, "services");
+    if (!fs.existsSync(portfolioDir)) {
+      fs.mkdirSync(portfolioDir, { recursive: true });
+    }
+    if (!fs.existsSync(serviceDir)) {
+      fs.mkdirSync(serviceDir, { recursive: true });
+    }
+  } catch (error) {
+    console.warn("Could not create upload directories:", error.message);
+  }
+};
+
+const getPortfolioStorage = () => {
   ensureUploadDirectories();
-} catch (e) {
-  console.warn("Upload directories initialization skipped:", e.message);
-}
+  return multer.diskStorage({
+    destination: (req, file, callback) => {
+      callback(null, path.join(uploadsRoot, "portfolio"));
+    },
+    filename: (req, file, callback) => {
+      const extension = path.extname(file.originalname);
+      const sanitizedBase = path
+        .basename(file.originalname, extension)
+        .replace(/[^a-zA-Z0-9-_]/g, "-")
+        .slice(0, 48);
+      callback(null, `${Date.now()}-${sanitizedBase || "portfolio"}${extension}`);
+    },
+  });
+};
 
-const storage = multer.diskStorage({
-  destination: (req, file, callback) => {
-    callback(null, providerPortfolioDir);
-  },
-  filename: (req, file, callback) => {
-    const extension = path.extname(file.originalname);
-    const sanitizedBase = path
-      .basename(file.originalname, extension)
-      .replace(/[^a-zA-Z0-9-_]/g, "-")
-      .slice(0, 48);
-
-    callback(null, `${Date.now()}-${sanitizedBase || "portfolio"}${extension}`);
-  },
-});
+const getServiceImageStorage = () => {
+  ensureUploadDirectories();
+  return multer.diskStorage({
+    destination: (req, file, callback) => {
+      callback(null, path.join(uploadsRoot, "services"));
+    },
+    filename: (req, file, callback) => {
+      const extension = path.extname(file.originalname);
+      const sanitizedBase = path
+        .basename(file.originalname, extension)
+        .replace(/[^a-zA-Z0-9-_]/g, "-")
+        .slice(0, 48);
+      callback(null, `${Date.now()}-${sanitizedBase || "service"}${extension}`);
+    },
+  });
+};
 
 const allowedMimeTypes = [
   "image/jpeg",
@@ -36,7 +70,6 @@ const fileFilter = (req, file, callback) => {
     callback(new Error("Only JPG, PNG, WEBP, and PDF portfolio files are allowed."));
     return;
   }
-
   callback(null, true);
 };
 
@@ -57,12 +90,11 @@ const serviceImageFileFilter = (req, file, callback) => {
     callback(new Error("Only JPG, PNG, and WEBP image files are allowed for service images."));
     return;
   }
-
   callback(null, true);
 };
 
 export const portfolioUpload = multer({
-  storage,
+  storage: getPortfolioStorage(),
   fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024,
@@ -70,23 +102,8 @@ export const portfolioUpload = multer({
   },
 });
 
-const serviceImageStorage = multer.diskStorage({
-  destination: (req, file, callback) => {
-    callback(null, serviceImagesDir);
-  },
-  filename: (req, file, callback) => {
-    const extension = path.extname(file.originalname);
-    const sanitizedBase = path
-      .basename(file.originalname, extension)
-      .replace(/[^a-zA-Z0-9-_]/g, "-")
-      .slice(0, 48);
-
-    callback(null, `${Date.now()}-${sanitizedBase || "service"}${extension}`);
-  },
-});
-
 export const serviceImageUpload = multer({
-  storage: serviceImageStorage,
+  storage: getServiceImageStorage(),
   fileFilter: serviceImageFileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024,
@@ -95,7 +112,7 @@ export const serviceImageUpload = multer({
 });
 
 export const serviceMultipleImageUpload = multer({
-  storage: serviceImageStorage,
+  storage: getServiceImageStorage(),
   fileFilter: serviceImageFileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024,
