@@ -19,6 +19,12 @@ app.use(
 app.use(express.json());
 app.use(morgan("dev"));
 
+try {
+  app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));
+} catch (e) {
+  console.warn("Static uploads not available:", e.message);
+}
+
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
