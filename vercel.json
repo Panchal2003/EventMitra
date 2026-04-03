@@ -1,11 +1,5 @@
 {
   "buildCommand": "npm run build --workspace frontend",
   "outputDirectory": "frontend/dist",
-  "framework": "vite",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" }
-  ],
-  "env": {
-    "VITE_API_BASE_URL": "https://eventmitra.vercel.app/api"
-  }
+  "framework": "vite"
 }
