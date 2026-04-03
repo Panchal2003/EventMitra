@@ -30,8 +30,8 @@ export default function handler(req, res) {
   const questionIdx = url.indexOf("?");
   const path = questionIdx >= 0 ? url.substring(0, questionIdx) : url;
   
-  if (path === "" || path === "/") {
-    const params = new URL(url, "https://eventmitra.vercel.app").searchParams;
+  if (path === "" || path === "/" || path === "/api/public-services") {
+    const params = new URL("https://eventmitra.vercel.app" + url).searchParams;
     const categoryId = params.get("category");
     let services = mockServices;
     if (categoryId) {
