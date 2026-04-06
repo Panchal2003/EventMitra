@@ -67,7 +67,7 @@ export function ContactPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-10 sm:pt-14 md:pt-16 pb-10 sm:pb-14 md:pb-16 px-4 sm:px-6">
+      <section className="relative overflow-hidden pt-2 pb-0 px-4 sm:px-6">
         <div className="relative mx-auto max-w-5xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

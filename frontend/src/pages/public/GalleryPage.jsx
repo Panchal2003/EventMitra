@@ -80,7 +80,7 @@ export function GalleryPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-10 sm:pt-14 md:pt-16 pb-6 sm:pb-8 md:pb-10 px-4 sm:px-6">
+      <section className="relative overflow-hidden pt-2 pb-0 px-4 sm:px-6">
         <div className="relative mx-auto max-w-5xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -132,7 +132,7 @@ export function GalleryPage() {
       </section>
 
       {/* Gallery Section */}
-      <section id="gallery-grid" className="relative pt-2 pb-8 sm:pt-4 sm:pb-10 md:pt-6 md:pb-12 px-4 sm:px-6">
+      <section id="gallery-grid" className="relative pt-2 pb-0 px-4 sm:px-6">
         {/* Section Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/50 to-transparent" />
         

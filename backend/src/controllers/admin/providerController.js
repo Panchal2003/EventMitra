@@ -6,6 +6,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 export const getProviders = asyncHandler(async (req, res) => {
   const providers = await User.find({ role: "serviceProvider" })
     .select("-password")
+    .populate("serviceCategory", "name")
     .sort({ createdAt: -1 })
     .lean();
 

@@ -7,19 +7,29 @@ import { getProviderRatingSummary, getProviderRatingSummaryMap } from "../utils/
 
 export const publicRoutes = Router();
 
-// Get all active service categories
+// Get all active service categories (only from approved providers)
 publicRoutes.get("/service-categories", asyncHandler(async (req, res) => {
   const categories = await ServiceCategory.find().sort({ name: 1 });
+
+  // Get all approved provider IDs
+  const approvedProviders = await User.find({
+    role: "serviceProvider",
+    providerStatus: "approved"
+  }).select("_id");
+
+  const approvedProviderIds = approvedProviders.map(p => p._id);
 
   const categoriesWithCount = await Promise.all(
     categories.map(async (category) => {
       const providerIds = await Service.distinct("createdBy", {
         category: category._id,
         status: "active",
+        createdBy: { $in: approvedProviderIds }
       });
       const listedServices = await Service.countDocuments({
         category: category._id,
         status: "active",
+        createdBy: { $in: approvedProviderIds }
       });
 
       return {
@@ -36,7 +46,7 @@ publicRoutes.get("/service-categories", asyncHandler(async (req, res) => {
   });
 }));
 
-// Get all active services with provider info
+// Get all active services with provider info (only approved providers)
 publicRoutes.get("/services", asyncHandler(async (req, res) => {
   const { category, search } = req.query;
   
@@ -55,25 +65,35 @@ publicRoutes.get("/services", asyncHandler(async (req, res) => {
 
   const services = await Service.find(query)
     .populate("category", "name slug")
-    .populate("createdBy", "name businessName avatar experience address")
+    .populate({
+      path: "createdBy",
+      match: { providerStatus: "approved" },
+      select: "name businessName avatar experience address providerStatus"
+    })
     .sort({ createdAt: -1 });
+
+  const filteredServices = services.filter(service => service.createdBy);
 
   res.json({
     success: true,
-    data: services
+    data: filteredServices
   });
 }));
 
-// Get single service with provider details
+// Get single service with provider details (only from approved providers)
 publicRoutes.get("/services/:id", asyncHandler(async (req, res) => {
   const service = await Service.findOne({ 
     _id: req.params.id, 
     status: "active" 
   })
     .populate("category", "name slug description")
-    .populate("createdBy", "name businessName avatar phone experience portfolio address");
+    .populate({
+      path: "createdBy",
+      match: { providerStatus: "approved" },
+      select: "name businessName avatar phone experience portfolio address providerStatus"
+    });
 
-  if (!service) {
+  if (!service || !service.createdBy) {
     return res.status(404).json({
       success: false,
       message: "Service not found"
@@ -86,7 +106,7 @@ publicRoutes.get("/services/:id", asyncHandler(async (req, res) => {
   });
 }));
 
-// Get providers by service category (for customers to browse)
+// Get providers by service category (for customers to browse) - only approved providers
 publicRoutes.get("/providers/by-category/:categoryId", asyncHandler(async (req, res) => {
   const { categoryId } = req.params;
   
@@ -105,13 +125,20 @@ publicRoutes.get("/providers/by-category/:categoryId", asyncHandler(async (req, 
     status: "active" 
   })
     .populate("category", "name slug")
-    .populate("createdBy", "name businessName avatar experience address phone")
+    .populate({
+      path: "createdBy",
+      match: { providerStatus: "approved" },
+      select: "name businessName avatar experience address phone providerStatus"
+    })
     .sort({ createdAt: -1 });
+  
+  // Filter only services with approved providers
+  const filteredServices = services.filter(service => service.createdBy);
   
   // Group services by provider
   const providersMap = new Map();
   
-  services.forEach(service => {
+  filteredServices.forEach(service => {
     const providerId = service.createdBy._id.toString();
     
     if (!providersMap.has(providerId)) {
@@ -150,7 +177,7 @@ publicRoutes.get("/providers/by-category/:categoryId", asyncHandler(async (req, 
   });
 }));
 
-// Get provider's services (for customers to view)
+// Get provider's services (for customers to view) - only approved providers
 publicRoutes.get("/provider-services/:providerId", asyncHandler(async (req, res) => {
   const { providerId } = req.params;
   
@@ -170,7 +197,7 @@ publicRoutes.get("/provider-services/:providerId", asyncHandler(async (req, res)
     _id: providerId,
     role: "serviceProvider"
   }).select(
-    "name businessName avatar experience address phone portfolio serviceCategory"
+    "name businessName avatar experience address phone portfolio serviceCategory providerStatus"
   );
   
   console.log("Provider found:", provider ? "Yes" : "No");
@@ -179,6 +206,15 @@ publicRoutes.get("/provider-services/:providerId", asyncHandler(async (req, res)
     return res.status(404).json({
       success: false,
       message: "Provider not found"
+    });
+  }
+  
+  // Check if provider is approved
+  if (provider.providerStatus !== "approved") {
+    return res.status(403).json({
+      success: false,
+      message: "This provider is not yet approved by admin.",
+      providerStatus: provider.providerStatus
     });
   }
   

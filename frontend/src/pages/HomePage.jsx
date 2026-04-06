@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   CalendarCheck2,
@@ -127,6 +128,24 @@ const premiumFeatures = [
   },
 ];
 
+const rotatingTexts = [
+ { text: "Luxury Events", color: "from-yellow-500 via-amber-500 to-orange-500" },
+  { text: "Grand Weddings", color: "from-pink-500 via-rose-500 to-red-500" },
+  { text: "Elite Planning", color: "from-indigo-500 via-purple-500 to-pink-500" },
+  { text: "Memorable Nights", color: "from-sky-500 via-blue-500 to-indigo-500" },
+  { text: "Joyful Celebrations", color: "from-green-500 via-emerald-500 to-teal-500" },
+  { text: "Magical Moments", color: "from-fuchsia-500 via-pink-500 to-rose-500" },
+  { text: "Premium Experience", color: "from-orange-500 via-red-500 to-pink-500" },
+  { text: "Royal Events", color: "from-purple-500 via-violet-500 to-indigo-500" },
+  { text: "Festive Vibes", color: "from-lime-500 via-green-500 to-teal-500" },
+  { text: "Elegant Setup", color: "from-slate-500 via-gray-500 to-zinc-500" },
+  { text: "Perfect Memories", color: "from-cyan-500 via-blue-500 to-indigo-500" },
+  { text: "Big Celebrations", color: "from-red-500 via-orange-500 to-yellow-500" },
+  { text: "Happy Moments", color: "from-emerald-500 via-green-500 to-lime-500" },
+  { text: "Dream Events", color: "from-blue-500 via-indigo-500 to-purple-500" },
+  { text: "Stylish Parties", color: "from-pink-500 via-fuchsia-500 to-purple-500" }
+];
+
 export function HomePage() {
   const { isAuthenticated } = useAuth();
 
@@ -147,7 +166,7 @@ export function HomePage() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-10 sm:pt-14 md:pt-16 pb-10 sm:pb-14 md:pb-16 px-4 sm:px-6">
+      <section className="relative overflow-hidden pt-2 pb-0 px-4 sm:px-6">
         <div className="relative mx-auto max-w-5xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -174,15 +193,29 @@ export function HomePage() {
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-black text-slate-900 mb-5 leading-[0.9] tracking-tight"
             >
               Plan Your Perfect
               <br />
-              <span className="bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent animate-gradient-x relative inline-block">
-                Event Experience
-                <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 via-blue-500 to-indigo-500 rounded-full opacity-90" />
-              </span>
+<span className="relative inline-block min-w-[300px] sm:min-w-[400px] overflow-hidden">
+                  <motion.div
+                    className="flex whitespace-nowrap"
+                    animate={{ x: ["0%", "-50%"] }}
+                    transition={{ 
+                      duration: 20, 
+                      repeat: Infinity, 
+                      ease: "linear"
+                    }}
+                  >
+                    {[...rotatingTexts, ...rotatingTexts].map((item, i) => (
+                      <span key={i} className={`inline-flex items-center mx-6 bg-clip-text text-transparent bg-gradient-to-r ${item.color}`}>
+                        {item.text}
+                      </span>
+                    ))}
+                  </motion.div>
+                  <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 via-blue-500 to-indigo-500 rounded-full opacity-90" />
+                </span>
             </motion.h1>
 
             {/* Subtitle */}
@@ -258,7 +291,7 @@ export function HomePage() {
       </section>
 
       {/* Premium Features Section */}
-      <section className="relative py-8 sm:py-10 md:py-12 px-4 sm:px-6">
+      <section className="relative py-4 sm:py-6 md:py-8 px-4 sm:px-6 pb-0">
         {/* Section Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/50 to-transparent" />
         
@@ -268,7 +301,7 @@ export function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-6 sm:mb-8"
+            className="text-center mb-4 sm:mb-5"
           >
             <div className="inline-flex items-center gap-2 mb-3 sm:mb-3 px-4 py-2 rounded-full bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-100">
               <Zap className="h-3.5 w-3.5 text-primary-600" />
@@ -324,7 +357,7 @@ export function HomePage() {
       </section>
 
       {/* Service Categories Section */}
-      <section className="relative py-8 sm:py-10 md:py-12 px-4 sm:px-6">
+      <section className="relative py-4 sm:py-6 md:py-8 px-4 sm:px-6 pb-0">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.03)_1px,transparent_0)] bg-[size:40px_40px]" />
@@ -336,7 +369,7 @@ export function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-6 sm:mb-8"
+            className="text-center mb-4 sm:mb-5"
           >
             <div className="inline-flex items-center gap-2 mb-3 sm:mb-3 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100">
               <Globe className="h-3.5 w-3.5 text-emerald-600" />
@@ -404,7 +437,7 @@ export function HomePage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="relative py-8 sm:py-10 md:py-12 px-4 sm:px-6">
+      <section className="relative py-4 sm:py-6 md:py-8 px-4 sm:px-6 pb-0">
         {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary-50/30 to-transparent" />
         
@@ -414,7 +447,7 @@ export function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-6 sm:mb-8"
+            className="text-center mb-4 sm:mb-5"
           >
             <div className="inline-flex items-center gap-2 mb-3 sm:mb-3 px-4 py-2 rounded-full bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-100">
               <Heart className="h-3.5 w-3.5 text-rose-600" />
@@ -478,7 +511,7 @@ export function HomePage() {
       </section>
 
       {/* Premium CTA Section */}
-      <section className="relative py-8 sm:py-10 md:py-12 px-4 sm:px-6">
+      <section className="relative py-4 sm:py-6 md:py-8 px-4 sm:px-6 pb-0">
         <div className="mx-auto max-w-5xl">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}

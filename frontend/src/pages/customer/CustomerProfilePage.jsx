@@ -1434,17 +1434,6 @@ export function CustomerProfilePage() {
         </div>
       </div>
 
-      <AvatarCropModal
-        open={cropOpen}
-        source={cropSource}
-        saving={cropSaving}
-        onClose={() => {
-          setCropOpen(false);
-          setCropSource("");
-        }}
-        onApply={handleApplyCrop}
-      />
-
       <Modal
         open={editModalOpen}
         onClose={closeEditModal}
@@ -1539,6 +1528,17 @@ export function CustomerProfilePage() {
           </div>
         </form>
       </Modal>
+
+      <AvatarCropModal
+        open={cropOpen}
+        source={cropSource}
+        saving={cropSaving}
+        onClose={() => {
+          setCropOpen(false);
+          setCropSource("");
+        }}
+        onApply={handleApplyCrop}
+      />
     </>
   );
 }

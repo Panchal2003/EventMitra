@@ -536,6 +536,14 @@ export function AdminProvidersPage() {
                     <span>{selectedProvider.address}</span>
                   </div>
                 )}
+                {(selectedProvider.serviceCategory || selectedProvider.serviceCategory?.name) && (
+                  <div className="flex items-center gap-2 mt-2 text-sm text-violet-600 justify-center sm:justify-start">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50">
+                      <Briefcase className="h-4 w-4 text-violet-500" />
+                    </div>
+                    <span className="font-medium">{selectedProvider.serviceCategory?.name || selectedProvider.serviceCategory}</span>
+                  </div>
+                )}
               </div>
             </div>
 

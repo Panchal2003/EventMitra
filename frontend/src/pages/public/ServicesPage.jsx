@@ -194,7 +194,7 @@ export function ServicesPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-10 sm:pt-14 md:pt-16 pb-10 sm:pb-14 md:pb-16 px-4 sm:px-6">
+      <section className="relative overflow-hidden pt-2 pb-0 px-4 sm:px-6">
         <div className="relative mx-auto max-w-5xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -283,7 +283,7 @@ export function ServicesPage() {
 
 
       {/* Services Section */}
-      <section id="services-section" className="relative py-8 sm:py-10 md:py-12 px-4 sm:px-6">
+      <section id="services-section" className="relative py-4 sm:py-6 md:py-8 px-4 sm:px-6 pb-0">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.03)_1px,transparent_0)] bg-[size:40px_40px]" />

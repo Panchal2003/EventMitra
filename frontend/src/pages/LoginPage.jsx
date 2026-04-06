@@ -1,11 +1,11 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, User, Briefcase, Mail, Lock, Eye, EyeOff, Phone, UserPlus, LogIn, Sparkles, ArrowRight, CheckCircle2, Zap, Star, Calendar, Users, Award } from "lucide-react";
 import logo from "/logo.png";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/common/Button";
 import { useAuth } from "../context/AuthContext";
-import { authApi } from "../services/api";
+import { authApi, publicApi } from "../services/api";
 
 const roleOptions = [
   { id: "customer", label: "Customer", icon: User, desc: "Book services", color: "from-violet-500 to-purple-600", bgColor: "bg-violet-50", textColor: "text-violet-600" },
@@ -39,6 +39,20 @@ export function LoginPage({ adminBackdoor = false }) {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [selectedServiceCategory, setSelectedServiceCategory] = useState("");
+
+  useEffect(() => {
+    if (selectedRole === "provider") {
+      publicApi.getServiceCategories()
+        .then(res => {
+          if (res.data?.data) {
+            setServiceCategories(res.data.data);
+          }
+        })
+        .catch(err => console.error("Failed to load categories:", err));
+    }
+  }, [selectedRole]);
 
   const emailIsValid = (email) => /^\S+@\S+\.\S+$/.test(email);
   const passwordIsValid = (password) =>
@@ -147,13 +161,18 @@ export function LoginPage({ adminBackdoor = false }) {
     setIsSubmitting(true);
 
     try {
-      const response = await authApi.register({
+      const roleMap = { customer: "customer", provider: "serviceProvider", admin: "admin" };
+      const registerData = {
         name: `${registerForm.firstName} ${registerForm.lastName}`.trim(),
         phone: registerForm.phone,
         email: registerForm.email,
         password: registerForm.password,
-        role: selectedRole,
-      });
+        role: roleMap[selectedRole] || selectedRole,
+      };
+      if (selectedRole === "provider" && selectedServiceCategory) {
+        registerData.serviceCategory = selectedServiceCategory;
+      }
+      const response = await authApi.register(registerData);
 
       const { token, user } = response.data.data;
 
@@ -659,6 +678,29 @@ export function LoginPage({ adminBackdoor = false }) {
                             </div>
                           </div>
                         </div>
+                        {selectedRole === "provider" && (
+                          <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">Service Category</label>
+                            <div className="relative group">
+                              <div className="absolute inset-0 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 blur-sm" />
+                              <div className="relative flex items-center">
+                                <Briefcase className="absolute left-4 h-5 w-5 text-slate-400 group-focus-within:text-violet-500 transition-colors" />
+                                <select
+                                  name="serviceCategory"
+                                  value={selectedServiceCategory}
+                                  onChange={(e) => setSelectedServiceCategory(e.target.value)}
+                                  className="w-full rounded-xl border-2 border-slate-200 bg-white pl-12 pr-12 py-3 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+                                  required
+                                >
+                                  <option value="">Select your service type</option>
+                                  {serviceCategories.map((cat) => (
+                                    <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <Button

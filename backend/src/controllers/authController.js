@@ -20,7 +20,7 @@ const sanitizeUser = (user) => ({
 });
 
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, password, role = "customer", phone, businessName } = req.body;
+  const { name, email, password, role = "customer", phone, businessName, serviceCategory } = req.body;
   const allowedRoles = ["customer", "serviceProvider"];
 
   if (!allowedRoles.includes(role)) {
@@ -32,7 +32,7 @@ export const register = asyncHandler(async (req, res) => {
     throw new AppError("An account with this email already exists.", 409);
   }
 
-  const user = await User.create({
+  const userData = {
     name,
     email,
     password,
@@ -40,7 +40,12 @@ export const register = asyncHandler(async (req, res) => {
     phone,
     businessName,
     providerStatus: role === "serviceProvider" ? "pending" : "approved",
-  });
+  };
+  if (serviceCategory) {
+    userData.serviceCategory = serviceCategory;
+  }
+
+  const user = await User.create(userData);
 
   const token = createToken({ userId: user._id, role: user.role });
 

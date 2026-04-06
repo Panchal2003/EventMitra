@@ -25,12 +25,15 @@ import {
   Shield,
   Clock,
   CreditCard,
+  XCircle,
+  X,
 } from "lucide-react";
 import { publicApi, customerApi } from "../../services/api";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/common/Button";
 import { Footer } from "../../components/common/Footer";
+import { Modal } from "../../components/common/Modal";
 import { formatCurrency } from "../../utils/currency";
 
 function getServiceInitials(name) {
@@ -82,6 +85,7 @@ export function CustomerProviderServicesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+  const [isPendingProvider, setIsPendingProvider] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
   const [selectedServiceId, setSelectedServiceId] = useState(searchParams.get("service") || "");
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -96,6 +100,32 @@ export function CustomerProviderServicesPage() {
     notes: "",
   });
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let timer;
+    if (showSuccessModal) {
+      timer = setTimeout(() => {
+        setShowSuccessModal(false);
+        setSuccessMessage("");
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [showSuccessModal]);
+
+  useEffect(() => {
+    let timer;
+    if (showErrorModal) {
+      timer = setTimeout(() => {
+        setShowErrorModal(false);
+        setErrorMessage("");
+      }, 4000);
+    }
+    return () => clearTimeout(timer);
+  }, [showErrorModal]);
 
   useEffect(() => {
     const fetchProviderServices = async () => {
@@ -124,9 +154,15 @@ export function CustomerProviderServicesPage() {
         setData(response.data.data);
       } catch (requestError) {
         console.error("Error fetching provider services:", requestError);
-        setError(
-          requestError.response?.data?.message || "Failed to load provider services"
-        );
+        const errorData = requestError.response?.data;
+        if (errorData?.providerStatus === "pending") {
+          setIsPendingProvider(true);
+          setError("This provider is pending admin approval and not yet available for bookings.");
+        } else {
+          setError(
+            errorData?.message || "Failed to load provider services"
+          );
+        }
       } finally {
         setLoading(false);
       }
@@ -307,7 +343,8 @@ export function CustomerProviderServicesPage() {
         clearCart();
       }
 
-      alert(response.data?.message || "Booking created successfully!");
+      setSuccessMessage(response.data?.message || "Booking created successfully!");
+      setShowSuccessModal(true);
       setShowBookingModal(false);
       setBookingSelection([]);
       setBookingData({
@@ -317,9 +354,20 @@ export function CustomerProviderServicesPage() {
         guestCount: "1",
         notes: "",
       });
-      navigate("/customer/profile?tab=bookings");
+      setBookingSelection([]);
+      setBookingData({
+        eventDate: "",
+        eventTime: "",
+        eventLocation: "",
+        guestCount: "1",
+        notes: "",
+      });
+      setTimeout(() => {
+        navigate("/customer/profile?tab=bookings");
+      }, 2500);
     } catch (requestError) {
-      alert(requestError.response?.data?.message || "Failed to create booking");
+      setErrorMessage(requestError.response?.data?.message || "Failed to create booking");
+      setShowErrorModal(true);
     } finally {
       setBookingLoading(false);
     }
@@ -341,7 +389,19 @@ export function CustomerProviderServicesPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 p-6">
         <div className="mx-auto max-w-4xl">
           <div className="bg-white rounded-2xl p-12 text-center shadow-lg border border-slate-200">
-            <p className="mb-4 text-red-500">{error}</p>
+            {isPendingProvider ? (
+              <>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+                  <Clock className="h-8 w-8 text-amber-600" />
+                </div>
+                <p className="mb-2 text-lg font-semibold text-amber-700">Provider Pending Approval</p>
+              </>
+            ) : (
+              <>
+                <p className="mb-4 text-red-500">{error}</p>
+              </>
+            )}
+            <p className="mb-6 text-sm text-slate-600">{error}</p>
             <Button onClick={() => navigate(-1)}>Go Back</Button>
           </div>
         </div>
@@ -378,7 +438,7 @@ export function CustomerProviderServicesPage() {
         </div>
 
         {/* Hero Section */}
-        <section className="relative overflow-hidden pt-10 sm:pt-14 md:pt-16 pb-10 sm:pb-14 md:pb-16 px-4 sm:px-6">
+        <section className="relative overflow-hidden pt-2 pb-0 px-4 sm:px-6">
           <div className="relative mx-auto max-w-5xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -406,109 +466,76 @@ export function CustomerProviderServicesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
-                className="flex flex-col items-center gap-5 mb-6"
+                className="flex flex-col md:flex-row items-center gap-6 mb-6"
               >
-                {provider?.avatar ? (
-                  <img
-                    src={provider.avatar}
-                    alt={providerName}
-                    className="h-24 w-24 rounded-2xl border-4 border-white/20 object-cover shadow-xl sm:h-28 sm:w-28"
-                  />
-                ) : (
-                  <div
-                    className={`flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-white/20 bg-gradient-to-br ${getProviderColor(providerName)} text-4xl font-bold text-white shadow-xl sm:h-28 sm:w-28 sm:text-5xl`}
-                  >
-                    {getFirstInitial(providerName)}
+                <div className="relative">
+                  {provider?.avatar ? (
+                    <img
+                      src={provider.avatar}
+                      alt={providerName}
+                      className="h-32 w-32 rounded-2xl border-4 border-white/20 object-cover shadow-xl"
+                    />
+                  ) : (
+                    <div
+                      className={`flex h-32 w-32 items-center justify-center rounded-2xl border-4 border-white/20 bg-gradient-to-br ${getProviderColor(providerName)} text-5xl font-bold text-white shadow-xl`}
+                    >
+                      {getFirstInitial(providerName)}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full bg-blue-400 shadow-lg">
+                    <CheckCircle2 className="h-5 w-5 text-white" />
                   </div>
-                )}
-                <div className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full bg-blue-400 shadow-lg">
-                  <CheckCircle2 className="h-5 w-5 text-white" />
+                </div>
+                <div className="text-center md:text-left">
+                  <h2 className="text-2xl sm:text-3xl font-display font-black text-slate-900">{providerName}</h2>
+                  <p className="text-slate-600 mt-1">{providerCategoryLabel}</p>
+                  <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/20 px-3 py-1 text-xs font-semibold text-amber-900">
+                      <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                      {providerRatingCount > 0 ? `${providerRatingLabel} rating` : "New Provider"}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300/30 bg-slate-200/50 px-3 py-1 text-xs font-medium text-slate-800">
+                      <TrendingUp className="h-3.5 w-3.5 text-slate-600" />
+                      {provider?.experience || 0}+ years
+                    </span>
+                  </div>
                 </div>
               </motion.div>
-
-              {/* Main Heading */}
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-black text-slate-900 mb-5 leading-[0.9] tracking-tight"
-              >
-                {providerName}
-                <br />
-                <span className="bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent animate-gradient-x relative inline-block">
-                  Service Catalog
-                  <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 via-blue-500 to-indigo-500 rounded-full opacity-90" />
-                </span>
-              </motion.h1>
-
-              {/* Subtitle - Hidden on mobile */}
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-                className="hidden sm:block text-base sm:text-lg md:text-xl text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed font-medium"
-              >
-                Review this provider's service catalog, compare package options, and book the right fit for your event without leaving the page.
-              </motion.p>
-
-              {/* Provider Badges */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45, duration: 0.6 }}
-                className="flex flex-wrap justify-center gap-2 mb-8"
-              >
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/20 px-3 py-1.5 text-xs font-semibold text-amber-900">
-                  <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                  {providerRatingCount > 0 ? `${providerRatingLabel} rating` : "New Provider"}
-                </span>
-                {providerRatingCount > 0 ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-yellow-300/30 bg-yellow-100/70 px-3 py-1.5 text-xs font-medium text-yellow-900">
-                    <Award className="h-3.5 w-3.5 text-yellow-700" />
-                    {providerRatingCount} review{providerRatingCount === 1 ? "" : "s"}
-                  </span>
-                ) : null}
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300/30 bg-slate-200/50 px-3 py-1.5 text-xs font-medium text-slate-800">
-                  <TrendingUp className="h-3.5 w-3.5 text-slate-600" />
-                  {provider?.experience || 0}+ years experience
-                </span>
-                {provider?.address ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300/30 bg-slate-200/50 px-3 py-1.5 text-xs font-medium text-slate-800">
-                    <MapPin className="h-3.5 w-3.5 text-slate-600" />
-                    {provider.address}
-                  </span>
-                ) : null}
-                {activeFocusLabel ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300/30 bg-slate-200/50 px-3 py-1.5 text-xs font-medium text-slate-800">
-                    <Tag className="h-3.5 w-3.5 text-slate-600" />
-                    Focus: {activeFocusLabel}
-                  </span>
-                ) : null}
-              </motion.div>
-
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.6 }}
-                className="mx-auto mb-8 grid w-full max-w-2xl grid-cols-2 gap-3 sm:max-w-3xl sm:grid-cols-4"
+                className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
               >
-                <div className="rounded-2xl border border-white/60 bg-white/80 px-4 py-4 text-center shadow-lg shadow-slate-200/20 backdrop-blur-xl">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Services</p>
-                  <p className="mt-2 font-display text-2xl font-bold text-slate-900">{services.length}</p>
+                <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg">
+                    <Package className="h-6 w-6 text-white" />
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 text-center">{services.length}</p>
+                  <p className="text-xs font-medium text-slate-500 text-center mt-1">Services</p>
                 </div>
-                <div className="rounded-2xl border border-white/60 bg-white/80 px-4 py-4 text-center shadow-lg shadow-slate-200/20 backdrop-blur-xl">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Categories</p>
-                  <p className="mt-2 font-display text-2xl font-bold text-slate-900">{categoryOptions.length}</p>
+                <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg">
+                    <Sparkles className="h-6 w-6 text-white" />
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 text-center">{categoryOptions.length}</p>
+                  <p className="text-xs font-medium text-slate-500 text-center mt-1">Categories</p>
                 </div>
-                <div className="rounded-2xl border border-white/60 bg-white/80 px-4 py-4 text-center shadow-lg shadow-slate-200/20 backdrop-blur-xl">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Rating</p>
-                  <p className="mt-2 font-display text-2xl font-bold text-slate-900">
+                <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg">
+                    <Star className="h-6 w-6 text-white" />
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 text-center">
                     {providerRatingCount > 0 ? providerRatingLabel : "New"}
                   </p>
+                  <p className="text-xs font-medium text-slate-500 text-center mt-1">Rating</p>
                 </div>
-                <div className="rounded-2xl border border-white/60 bg-white/80 px-4 py-4 text-center shadow-lg shadow-slate-200/20 backdrop-blur-xl">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Reviews</p>
-                  <p className="mt-2 font-display text-2xl font-bold text-slate-900">{providerRatingCount}</p>
+                <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
+                    <Award className="h-6 w-6 text-white" />
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 text-center">{providerRatingCount}</p>
+                  <p className="text-xs font-medium text-slate-500 text-center mt-1">Reviews</p>
                 </div>
               </motion.div>
 
@@ -535,46 +562,6 @@ export function CustomerProviderServicesPage() {
                   </>
                 )}
               </motion.div>
-            </motion.div>
-
-            {/* Premium Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.7 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:mt-8"
-            >
-              {[
-                { value: services.length, label: "Services", icon: Package },
-                { value: categoryOptions.length, label: "Categories", icon: Sparkles },
-                {
-                  value: canShowPrices && lowestPrice !== null
-                    ? formatCurrency(lowestPrice)
-                    : canShowPrices
-                      ? "Custom"
-                      : "Login",
-                  label: canShowPrices ? "Starts From" : "Pricing",
-                  icon: TrendingUp,
-                },
-                { value: "4.9★", label: "Avg Rating", icon: Star },
-              ].map((stat, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
-                  className="group relative"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-blue-500/5 to-indigo-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                  <div className="relative bg-white/80 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 text-center">
-                    <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
-                      <stat.icon className="h-5 w-5 text-white" />
-                    </div>
-                    <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{stat.value}</p>
-                    <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
-                  </div>
-                </motion.div>
-              ))}
             </motion.div>
           </div>
         </section>
@@ -1076,6 +1063,46 @@ export function CustomerProviderServicesPage() {
           </motion.div>
         </div>
       ) : null}
+
+      {/* Success Modal - Inline notification */}
+      {showSuccessModal && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed left-0 right-0 top-0 z-[100] flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-4 shadow-xl"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20">
+            <CheckCircle2 className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-semibold text-white">Booking Confirmed!</p>
+            <p className="text-sm text-white/80">{successMessage}</p>
+          </div>
+          <button onClick={() => { setShowSuccessModal(false); setSuccessMessage(""); }} className="shrink-0 rounded-full bg-white/20 p-2 text-white hover:bg-white/30">
+            <X className="h-4 w-4" />
+          </button>
+        </motion.div>
+      )}
+
+      {/* Error Modal - Inline notification */}
+      {showErrorModal && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed left-0 right-0 top-0 z-[100] flex items-center justify-center gap-3 bg-gradient-to-r from-red-500 to-rose-600 px-4 py-4 shadow-xl"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20">
+            <XCircle className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-semibold text-white">Booking Failed</p>
+            <p className="text-sm text-white/80">{errorMessage}</p>
+          </div>
+          <button onClick={() => { setShowErrorModal(false); setErrorMessage(""); }} className="shrink-0 rounded-full bg-white/20 p-2 text-white hover:bg-white/30">
+            <X className="h-4 w-4" />
+          </button>
+        </motion.div>
+      )}
 
       <Footer />
     </div>
