@@ -1,21 +1,17 @@
 import { app } from "./app.js";
 import { connectDatabase } from "./config/db.js";
+import { env } from "./config/env.js";
 
-let dbConnected = false;
-
-export default async function handler(req, res) {
+async function startServer() {
   try {
-    if (!dbConnected) {
-      await connectDatabase();
-      dbConnected = true;
-    }
-    return app(req, res);
-  } catch (error) {
-    console.error("Server error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-      error: error.message
+    await connectDatabase();
+    app.listen(env.port, () => {
+      console.log(`Server running on port ${env.port} ✅`);
     });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
   }
 }
+
+startServer();
