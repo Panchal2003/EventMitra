@@ -25,7 +25,81 @@
     
     <title>EventMitra - Event Planning Made Easy</title>
     
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" media="(device-width: 768px) and (device-height: 1024px)" />
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" media="(device-width: 1024px) and (device-height: 768px)" />
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" media="(device-width: 820px) and (device-height: 1180px)" />
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" media="(device-width: 1180px) and (device-height: 820px)" />
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" media="(device-width: 834px) and (device-height: 1194px)" />
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" media="(device-width: 1194px) and (device-height: 834px)" />
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" media="(device-width: 1024px) and (device-height: 1366px)" />
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" media="(device-width: 1366px) and (device-height: 1024px)" />
+    
     <style>
+      /* Splash Screen - Mobile & Tablet Only */
+      @media only screen and (max-width: 1024px) {
+        #root:empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          position: fixed;
+          inset: 0;
+          background: linear-gradient(135deg, #111827 0%, #1e293b 50%, #0f172a 100%);
+          z-index: 9999;
+          opacity: 1;
+          transition: opacity 0.3s ease-out;
+        }
+        
+        #root:empty::after {
+          content: '';
+          position: absolute;
+          width: 120px;
+          height: 120px;
+          background: url('/icons/icon-192x192.png') center/contain no-repeat;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 0.9; }
+          50% { transform: scale(1.05); opacity: 1; }
+        }
+        
+        #root:empty + #splash-loader {
+          display: flex;
+        }
+      }
+      
+      #splash-loader {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(135deg, #111827 0%, #1e293b 50%, #0f172a 100%);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 24px;
+      }
+      
+      #splash-loader img {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+      }
+      
+      #splash-loader .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #334155;
+        border-top-color: #5667f5;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
       /* Safe Area Support */
       :root {
         --sat: env(safe-area-inset-top);
@@ -49,6 +123,34 @@
   </head>
   <body>
     <div id="root"></div>
+    
+    <!-- Splash Screen Loader -->
+    <div id="splash-loader">
+      <img src="/icons/icon-192x192.png" alt="EventMitra" />
+      <div class="spinner"></div>
+    </div>
+    
+    <script>
+      // Hide splash screen when app loads
+      (function() {
+        var splash = document.getElementById('splash-loader');
+        if (splash) {
+          // Check for mobile/tablet only
+          if (window.innerWidth <= 1024) {
+            window.addEventListener('load', function() {
+              setTimeout(function() {
+                splash.style.opacity = '0';
+                setTimeout(function() {
+                  splash.style.display = 'none';
+                }, 300);
+              }, 500);
+            });
+          } else {
+            splash.style.display = 'none';
+          }
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
