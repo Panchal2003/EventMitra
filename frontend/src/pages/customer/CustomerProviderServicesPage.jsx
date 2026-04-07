@@ -104,6 +104,28 @@ export function CustomerProviderServicesPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [imageErrors, setImageErrors] = useState({});
+
+  const handleImageError = (serviceId, imageIndex) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [`${serviceId}-${imageIndex}`]: true
+    }));
+  };
+
+  const isImageFailed = (serviceId, imageIndex) => {
+    return imageErrors[`${serviceId}-${imageIndex}`];
+  };
+
+  const handleImageLoadWithRetry = (e, retryCount = 0) => {
+    const maxRetries = 2;
+    if (e.target.naturalWidth === 0 && retryCount < maxRetries) {
+      setTimeout(() => {
+        const img = e.target;
+        img.src = img.src;
+      }, 1000 * (retryCount + 1));
+    }
+  };
 
   useEffect(() => {
     let timer;
@@ -473,6 +495,12 @@ export function CustomerProviderServicesPage() {
                     <img
                       src={provider.avatar}
                       alt={providerName}
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        const next = e.target.nextSibling;
+                        if (next) next.style.display = 'flex';
+                      }}
                       className="h-32 w-32 rounded-2xl border-4 border-white/20 object-cover shadow-xl"
                     />
                   ) : (
@@ -711,16 +739,34 @@ export function CustomerProviderServicesPage() {
                         <img
                           src={displayServiceImages[activeImageIndex] || displayServiceImages[0]}
                           alt={displayService.name}
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            const next = e.target.nextSibling;
+                            if (next) next.style.display = 'flex';
+                          }}
                           className="h-[280px] w-full object-cover sm:h-[360px] lg:h-[420px]"
                         />
+                        <div className="hidden h-[280px] items-center justify-center bg-gradient-to-br from-primary-100 to-primary-50 font-display text-6xl font-semibold text-primary-700 sm:h-[360px] lg:h-[420px]">
+                          {getServiceInitials(displayService.name)}
+                        </div>
                       </div>
                     ) : displayService.image ? (
                       <div className="overflow-hidden">
                         <img
                           src={displayService.image}
                           alt={displayService.name}
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            const next = e.target.nextSibling;
+                            if (next) next.style.display = 'flex';
+                          }}
                           className="h-[280px] w-full object-cover sm:h-[360px] lg:h-[420px]"
                         />
+                        <div className="hidden h-[280px] items-center justify-center bg-gradient-to-br from-primary-100 to-primary-50 font-display text-6xl font-semibold text-primary-700 sm:h-[360px] lg:h-[420px]">
+                          {getServiceInitials(displayService.name)}
+                        </div>
                       </div>
                     ) : (
                       <div className="flex h-[280px] items-center justify-center bg-gradient-to-br from-primary-100 to-primary-50 font-display text-6xl font-semibold text-primary-700 sm:h-[360px] lg:h-[420px]">
@@ -745,8 +791,17 @@ export function CustomerProviderServicesPage() {
                             <img
                               src={image}
                               alt={`${displayService.name} thumbnail ${imageIndex + 1}`}
+                              loading="lazy"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                const fallback = e.target.parentElement.querySelector('.initials');
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
                               className="h-full w-full object-cover"
                             />
+                            <div className="initials hidden h-full w-full items-center justify-center bg-primary-100 text-xs font-bold text-primary-700">
+                              {imageIndex + 1}
+                            </div>
                           </button>
                         ))}
                       </div>
