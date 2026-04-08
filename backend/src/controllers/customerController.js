@@ -3,6 +3,7 @@ import { Service } from "../models/Service.js";
 import { AppError } from "../utils/appError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { BOOKING_STATUS, assertBookingStatus } from "../utils/bookingLifecycle.js";
+import { checkTimeOverlap, getAvailableTimeSlots } from "../utils/bookingValidation.js";
 
 const customerBookingPopulate = [
   {
@@ -132,6 +133,17 @@ export const createCustomerBooking = asyncHandler(async (req, res) => {
     throw new AppError("Please select services from the same provider.", 400);
   }
 
+  if (eventTime) {
+    const overlapCheck = await checkTimeOverlap(providerId, eventDate, eventTime, null, serviceIdArray, null);
+    if (overlapCheck.hasOverlap) {
+      const availableSlots = await getAvailableTimeSlots(providerId, eventDate, 2, serviceIdArray);
+      throw new AppError(
+        `Time slot already booked for these services at ${eventTime}. Available slots: ${availableSlots.slice(0, 5).join(", ")}${availableSlots.length > 5 ? "..." : ""}`,
+        400
+      );
+    }
+  }
+
   const totalAmount = services.reduce((sum, service) => {
     if (service.allowsMembers && service.pricePerMember && guestCount) {
       const members = Number(guestCount);
@@ -233,5 +245,25 @@ export const verifyCustomerBookingOtp = asyncHandler(async (req, res) => {
     success: true,
     message: "Booking completed successfully and your feedback has been saved.",
     data: serializeBookingForCustomer(booking),
+  });
+});
+
+export const getAvailableSlots = asyncHandler(async (req, res) => {
+  const { providerId, eventDate, duration, serviceIds } = req.query;
+
+  if (!providerId || !eventDate) {
+    throw new AppError("Provider ID and event date are required.", 400);
+  }
+
+  let serviceIdArray = [];
+  if (serviceIds) {
+    serviceIdArray = serviceIds.split(',');
+  }
+
+  const slots = await getAvailableTimeSlots(providerId, new Date(eventDate), Number(duration) || 2, serviceIdArray);
+
+  res.json({
+    success: true,
+    data: slots
   });
 });

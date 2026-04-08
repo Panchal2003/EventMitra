@@ -106,6 +106,7 @@ export function CustomerProviderServicesPage() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [imageErrors, setImageErrors] = useState({});
+  const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
 
   const handleImageError = (serviceId, imageIndex) => {
     setImageErrors(prev => ({
@@ -149,6 +150,23 @@ export function CustomerProviderServicesPage() {
     }
     return () => clearTimeout(timer);
   }, [showErrorModal]);
+
+  useEffect(() => {
+    const fetchTimeSlots = async () => {
+      if (bookingData.eventDate && providerId && bookingSelection.length > 0) {
+        try {
+          const serviceIds = bookingSelection.map(s => s._id);
+          const response = await customerApi.getAvailableSlots(providerId, bookingData.eventDate, 2, serviceIds);
+          setAvailableTimeSlots(response.data?.data || []);
+        } catch (error) {
+          console.error("Error fetching time slots:", error);
+        }
+      } else {
+        setAvailableTimeSlots([]);
+      }
+    };
+    fetchTimeSlots();
+  }, [bookingData.eventDate, providerId, bookingSelection]);
 
   useEffect(() => {
     const fetchProviderServices = async () => {
@@ -974,8 +992,9 @@ export function CustomerProviderServicesPage() {
                   <input
                     type="date"
                     value={bookingData.eventDate}
+                    min={new Date().toISOString().split('T')[0]}
                     onChange={(event) =>
-                      setBookingData({ ...bookingData, eventDate: event.target.value })
+                      setBookingData({ ...bookingData, eventDate: event.target.value, eventTime: "" })
                     }
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
                   />
@@ -985,14 +1004,29 @@ export function CustomerProviderServicesPage() {
                   <label className="mb-1 block text-sm font-semibold text-slate-700">
                     Event Time
                   </label>
-                  <input
-                    type="time"
-                    value={bookingData.eventTime}
-                    onChange={(event) =>
-                      setBookingData({ ...bookingData, eventTime: event.target.value })
-                    }
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
-                  />
+                  {availableTimeSlots.length > 0 ? (
+                    <select
+                      value={bookingData.eventTime}
+                      onChange={(event) =>
+                        setBookingData({ ...bookingData, eventTime: event.target.value })
+                      }
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
+                    >
+                      <option value="">Select a time slot</option>
+                      {availableTimeSlots.map((slot) => (
+                        <option key={slot} value={slot}>{slot}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="time"
+                      value={bookingData.eventTime}
+                      onChange={(event) =>
+                        setBookingData({ ...bookingData, eventTime: event.target.value })
+                      }
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
+                    />
+                  )}
                 </div>
               </div>
 

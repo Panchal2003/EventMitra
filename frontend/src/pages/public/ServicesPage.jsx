@@ -283,7 +283,7 @@ export function ServicesPage() {
 
 
       {/* Services Section */}
-      <section id="services-section" className="relative py-4 sm:py-6 md:py-8 px-4 sm:px-6 pb-0">
+      <section id="services-section" className="relative py-4 sm:py-6 md:py-8 px-4 sm:px-6 pb-4">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.03)_1px,transparent_0)] bg-[size:40px_40px]" />

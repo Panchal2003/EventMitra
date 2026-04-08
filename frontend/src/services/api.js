@@ -93,6 +93,7 @@ export const customerApi = {
   createCartBooking: (payload) => api.post("/customer/bookings", payload),
   getBookings: () => api.get("/customer/bookings"),
   verifyOtp: (bookingId, payload) => api.patch(`/customer/bookings/${bookingId}/verify-otp`, payload),
+  getAvailableSlots: (providerId, eventDate, duration, serviceIds) => api.get("/customer/available-slots", { params: { providerId, eventDate, duration, serviceIds: serviceIds?.join(',') } }),
 };
 
 export const publicApi = {

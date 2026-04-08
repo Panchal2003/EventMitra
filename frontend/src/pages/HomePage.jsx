@@ -470,7 +470,7 @@ export function HomePage() {
       </section>
 
       {/* Premium CTA Section */}
-      <section className="relative py-4 sm:py-6 md:py-8 px-4 sm:px-6 pb-0">
+      <section className="relative py-4 sm:py-6 md:py-8 px-4 sm:px-6 pb-4">
         <div className="mx-auto max-w-5xl">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}

@@ -6,6 +6,7 @@ import {
   getCustomerDashboard,
   getCustomerServices,
   verifyCustomerBookingOtp,
+  getAvailableSlots,
 } from "../controllers/customerController.js";
 
 export const customerRoutes = Router();
@@ -13,6 +14,7 @@ export const customerRoutes = Router();
 customerRoutes.use(authenticate, authorize("customer"));
 customerRoutes.get("/dashboard", getCustomerDashboard);
 customerRoutes.get("/services", getCustomerServices);
+customerRoutes.get("/available-slots", getAvailableSlots);
 customerRoutes.post("/bookings", createCustomerBooking);
 customerRoutes.get("/bookings", getCustomerBookings);
 customerRoutes.patch("/bookings/:bookingId/verify-otp", verifyCustomerBookingOtp);

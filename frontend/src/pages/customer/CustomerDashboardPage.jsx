@@ -26,11 +26,12 @@ import {
   Activity,
   Target,
   Rocket,
+  LogOut,
 } from "lucide-react";
 import { GlassCard } from "../../components/admin/GlassCard";
 
 export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -139,6 +140,11 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
     if (action.link) {
       navigate(action.link);
     }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
   };
 
   return (
@@ -386,6 +392,14 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
                   >
                     Open My Bookings
                     <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:scale-105"
+                  >
+                    Logout
+                    <LogOut className="h-4 w-4" />
                   </button>
                 </div>
               </div>
