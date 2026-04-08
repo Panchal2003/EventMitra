@@ -43,6 +43,9 @@ export const adminApi = {
   getPayments: () => api.get("/admin/payments"),
   releasePayout: (id, transactionId) =>
     api.patch(`/admin/payments/${id}/release`, { transactionId }),
+  getGallery: () => api.get("/admin/gallery"),
+  addGalleryImage: (payload) => api.post("/admin/gallery", payload),
+  deleteGalleryImage: (id) => api.delete(`/admin/gallery/${id}`),
 };
 
 export const providerApi = {
@@ -98,4 +101,6 @@ export const publicApi = {
   getService: (id) => api.get(`/public/services/${id}`),
   getProvidersByCategory: (categoryId) => api.get(`/public/providers/by-category/${categoryId}`),
   getProviderServices: (providerId) => api.get(`/public/provider-services/${providerId}`),
+  getGallery: (params) => api.get("/public/gallery", { params }),
+  getTestimonials: () => api.get("/public/testimonials"),
 };

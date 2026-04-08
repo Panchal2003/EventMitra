@@ -1,53 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowRight,
-  CalendarCheck2,
-  ShieldCheck,
-  Sparkles,
-  Star,
-  TrendingUp,
-  Users,
-  Search,
-  Shield,
-  Clock,
-  CreditCard,
-  Award,
-  CheckCircle2,
-  Quote,
-  ChevronRight,
-  Zap,
-  Heart,
-  Globe,
-} from "lucide-react";
+import { publicApi } from "../services/api";
+import { ArrowRight, CalendarCheck2, ChevronRight, ShieldCheck, Sparkles, Star, TrendingUp, Users, Globe, Heart, Quote, Zap, Award, CheckCircle2, Shield, Clock, CreditCard, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/common/Button";
 import { Footer } from "../components/common/Footer";
 import logo from "/logo.png";
-
-const features = [
-  {
-    icon: Sparkles,
-    title: "Curated Categories",
-    description: "Explore diverse event service categories tailored to your needs",
-  },
-  {
-    icon: CalendarCheck2,
-    title: "Smooth Booking",
-    description: "From discovery to booking with transparent pricing and updates",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Verified Providers",
-    description: "Work with trusted, professional service providers",
-  },
-  {
-    icon: Users,
-    title: "Expert Support",
-    description: "24/7 customer support for all your event planning needs",
-  },
-];
 
 const stats = [
   { value: "500+", label: "Bookings Completed", icon: CheckCircle2 },
@@ -65,89 +24,73 @@ const serviceCategories = [
   { icon: "✨", title: "Decorations", count: "110+ providers", color: "from-cyan-500 to-blue-500" },
 ];
 
-const testimonials = [
-  {
-    name: "Priya Sharma",
-    role: "Wedding Planner",
-    content: "EventMitra made my wedding planning effortless. The verified providers and seamless booking process saved me weeks of work!",
-    rating: 5,
-    avatar: "PS",
-  },
-  {
-    name: "Rahul Verma",
-    role: "Corporate Manager",
-    content: "Outstanding platform for corporate events. The quality of service providers and the support team exceeded our expectations.",
-    rating: 5,
-    avatar: "RV",
-  },
-  {
-    name: "Anita Patel",
-    role: "Event Organizer",
-    content: "The best event planning platform I've used. Premium quality, transparent pricing, and excellent customer service.",
-    rating: 5,
-    avatar: "AP",
-  },
-];
-
-const premiumFeatures = [
-  {
-    icon: Shield,
-    title: "Verified Professionals",
-    description: "All service providers are thoroughly vetted and verified for quality assurance",
-    gradient: "from-blue-500 to-indigo-500",
-  },
-  {
-    icon: Clock,
-    title: "24/7 Support",
-    description: "Round-the-clock customer support to ensure your event runs smoothly",
-    gradient: "from-emerald-500 to-teal-500",
-  },
-  {
-    icon: Star,
-    title: "Premium Quality",
-    description: "Access to top-tier event services with guaranteed satisfaction",
-    gradient: "from-amber-500 to-orange-500",
-  },
-  {
-    icon: CreditCard,
-    title: "Secure Payments",
-    description: "Safe and secure payment processing with multiple payment options",
-    gradient: "from-violet-500 to-purple-500",
-  },
-  {
-    icon: Users,
-    title: "Expert Network",
-    description: "Connect with experienced event professionals across all categories",
-    gradient: "from-rose-500 to-pink-500",
-  },
-  {
-    icon: Award,
-    title: "Award-Winning Platform",
-    description: "Recognized for excellence in event planning and customer satisfaction",
-    gradient: "from-cyan-500 to-blue-500",
-  },
-];
-
-const rotatingTexts = [
- { text: "Luxury Events", color: "from-yellow-500 via-amber-500 to-orange-500" },
-  { text: "Grand Weddings", color: "from-pink-500 via-rose-500 to-red-500" },
-  { text: "Elite Planning", color: "from-indigo-500 via-purple-500 to-pink-500" },
-  { text: "Memorable Nights", color: "from-sky-500 via-blue-500 to-indigo-500" },
-  { text: "Joyful Celebrations", color: "from-green-500 via-emerald-500 to-teal-500" },
-  { text: "Magical Moments", color: "from-fuchsia-500 via-pink-500 to-rose-500" },
-  { text: "Premium Experience", color: "from-orange-500 via-red-500 to-pink-500" },
-  { text: "Royal Events", color: "from-purple-500 via-violet-500 to-indigo-500" },
-  { text: "Festive Vibes", color: "from-lime-500 via-green-500 to-teal-500" },
-  { text: "Elegant Setup", color: "from-slate-500 via-gray-500 to-zinc-500" },
-  { text: "Perfect Memories", color: "from-cyan-500 via-blue-500 to-indigo-500" },
-  { text: "Big Celebrations", color: "from-red-500 via-orange-500 to-yellow-500" },
-  { text: "Happy Moments", color: "from-emerald-500 via-green-500 to-lime-500" },
-  { text: "Dream Events", color: "from-blue-500 via-indigo-500 to-purple-500" },
-  { text: "Stylish Parties", color: "from-pink-500 via-fuchsia-500 to-purple-500" }
-];
-
 export function HomePage() {
   const { isAuthenticated } = useAuth();
+  const [testimonials, setTestimonials] = useState([
+    { _id: "1", name: "Priya Sharma", role: "Wedding Planner", content: "EventMitra made my wedding planning effortless. The verified providers and seamless booking process saved me weeks of work!", rating: 5 },
+    { _id: "2", name: "Rahul Verma", role: "Corporate Manager", content: "Outstanding platform for corporate events. The quality of service providers and the support team exceeded our expectations.", rating: 5 },
+    { _id: "3", name: "Anita Patel", role: "Event Organizer", content: "The best event planning platform I've used. Premium quality, transparent pricing, and excellent customer service.", rating: 5 },
+  ]);
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        const response = await publicApi.getTestimonials();
+        if (response.data?.data?.length > 0) {
+          setTestimonials(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching testimonials:", error);
+      }
+    };
+    fetchTestimonials();
+  }, []);
+
+  const rotatingTexts = [
+    { text: "Wedding", color: "from-pink-500 to-rose-500" },
+    { text: "Birthday", color: "from-violet-500 to-purple-500" },
+    { text: "Corporate", color: "from-blue-500 to-cyan-500" },
+    { text: "Anniversary", color: "from-emerald-500 to-teal-500" },
+  ];
+
+  const premiumFeatures = [
+    {
+      icon: Shield,
+      title: "Verified Professionals",
+      description: "All service providers are thoroughly vetted and verified for quality assurance",
+      gradient: "from-blue-500 to-indigo-500",
+    },
+    {
+      icon: Clock,
+      title: "24/7 Support",
+      description: "Round-the-clock customer support to ensure your event runs smoothly",
+      gradient: "from-emerald-500 to-teal-500",
+    },
+    {
+      icon: Star,
+      title: "Premium Quality",
+      description: "Access to top-tier event services with guaranteed satisfaction",
+      gradient: "from-amber-500 to-orange-500",
+    },
+    {
+      icon: CreditCard,
+      title: "Secure Payments",
+      description: "Safe and secure payment processing with multiple payment options",
+      gradient: "from-violet-500 to-purple-500",
+    },
+    {
+      icon: Users,
+      title: "Expert Network",
+      description: "Connect with experienced event professionals across all categories",
+      gradient: "from-rose-500 to-pink-500",
+    },
+    {
+      icon: Award,
+      title: "Best Value",
+      description: "Competitive pricing with no hidden fees or surprise costs",
+      gradient: "from-cyan-500 to-blue-500",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 relative overflow-hidden">
@@ -319,7 +262,7 @@ export function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
             {premiumFeatures.map((feature, index) => (
               <motion.div
                 key={index}
@@ -330,22 +273,22 @@ export function HomePage() {
                 className="group relative"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                <div className="relative bg-white/90 backdrop-blur-2xl rounded-2xl p-5 sm:p-6 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 border border-white/60 hover:border-primary-200/50 transition-all duration-500 h-full">
+                <div className="relative bg-white/90 backdrop-blur-2xl rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 border border-white/60 hover:border-primary-200/50 transition-all duration-500 h-full">
                   {/* Icon */}
-                  <div className={`flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} shadow-lg shadow-primary-500/20 mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
-                    <feature.icon className="h-6 w-6 text-white" />
+                  <div className={`flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br ${feature.gradient} shadow-lg shadow-primary-500/20 mb-2 sm:mb-3 lg:mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+                    <feature.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                   </div>
                   
                   {/* Content */}
-                  <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-primary-700 transition-colors duration-300">
+                  <h3 className="text-xs sm:text-sm lg:text-lg font-bold text-slate-900 mb-1 sm:mb-2 group-hover:text-primary-700 transition-colors duration-300">
                     {feature.title}
                   </h3>
-                  <p className="hidden sm:block text-sm text-slate-600 leading-relaxed">
+                  <p className="hidden sm:block text-xs lg:text-sm text-slate-600 leading-relaxed">
                     {feature.description}
                   </p>
                   
-                  {/* Hover Arrow */}
-                  <div className="mt-4 flex items-center gap-1.5 text-primary-600 font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-[-10px] group-hover:translate-x-0">
+                  {/* Hover Arrow - Desktop only */}
+                  <div className="hidden lg:flex mt-3 lg:mt-4 items-center gap-1.5 text-primary-600 font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-[-10px] group-hover:translate-x-0">
                     <span className="text-xs">Learn more</span>
                     <ArrowRight className="h-3.5 w-3.5" />
                   </div>
@@ -447,7 +390,7 @@ export function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-4 sm:mb-5"
+            className="text-center mb-4 sm:mb-5 px-10"
           >
             <div className="inline-flex items-center gap-2 mb-3 sm:mb-3 px-4 py-2 rounded-full bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-100">
               <Heart className="h-3.5 w-3.5 text-rose-600" />
@@ -464,48 +407,64 @@ export function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.15, duration: 0.5 }}
-                className="group relative"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 via-transparent to-pink-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                <div className="relative bg-white/90 backdrop-blur-2xl rounded-2xl p-5 sm:p-6 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-rose-200/30 border border-white/60 hover:border-rose-200/50 transition-all duration-500 h-full">
-                  {/* Quote Icon */}
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg shadow-rose-500/20 mb-4">
-                    <Quote className="h-5 w-5 text-white" />
-                  </div>
-                  
-                  {/* Rating */}
-                  <div className="flex gap-0.5 mb-3">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 text-amber-400 fill-amber-400" />
-                    ))}
-                  </div>
-                  
-                  {/* Content */}
-                  <p className="text-sm text-slate-600 leading-relaxed mb-4 italic">
-                    "{testimonial.content}"
-                  </p>
-                  
-                  {/* Author */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg">
-                      <span className="text-white font-bold text-xs">{testimonial.avatar}</span>
+          <div className="relative px-10">
+            <button 
+              onClick={() => document.getElementById('testimonials-scroll').scrollBy({ left: -320, behavior: 'smooth' })}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors hidden sm:flex"
+            >
+              <ChevronRight className="h-5 w-5 rotate-180" />
+            </button>
+            <div id="testimonials-scroll" className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 scrollbar-hide px-4 sm:px-8">
+              {testimonials.map((testimonial, index) => (
+                <motion.div
+                  key={testimonial._id || index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  className="group relative w-[280px] sm:w-[300px] flex-shrink-0"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 via-transparent to-pink-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
+                  <div className="relative bg-white/90 backdrop-blur-2xl rounded-2xl p-4 sm:p-5 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-rose-200/30 border border-white/60 hover:border-rose-200/50 transition-all duration-500 h-full">
+                    {/* Quote Icon */}
+                    <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg shadow-rose-500/20 mb-3 sm:mb-4">
+                      <Quote className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                     </div>
-                    <div>
-                      <p className="font-bold text-sm text-slate-900">{testimonial.name}</p>
-                      <p className="text-xs text-slate-500">{testimonial.role}</p>
+                    
+                    {/* Rating */}
+                    <div className="flex gap-0.5 mb-2 sm:mb-3">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <Star key={i} className="h-3 w-3 sm:h-4 sm:w-4 text-amber-400 fill-amber-400" />
+                      ))}
+                    </div>
+                    
+                    {/* Content */}
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-3 sm:mb-4 line-clamp-3 sm:line-clamp-none italic">
+                      "{testimonial.content}"
+                    </p>
+                    
+                    {/* Author */}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shrink-0">
+                        <span className="text-white font-bold text-[10px] sm:text-xs">
+                          {(testimonial.name || "C").charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-xs sm:text-sm text-slate-900 truncate">{testimonial.name}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500 truncate">{testimonial.role}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+</motion.div>
+              ))}
+            </div>
+            <button 
+              onClick={() => document.getElementById('testimonials-scroll').scrollBy({ left: 320, behavior: 'smooth' })}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors hidden sm:flex"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </section>

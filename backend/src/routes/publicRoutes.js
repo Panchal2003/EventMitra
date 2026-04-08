@@ -2,6 +2,8 @@ import { Router } from "express";
 import { Service } from "../models/Service.js";
 import { ServiceCategory } from "../models/ServiceCategory.js";
 import { User } from "../models/User.js";
+import { Gallery } from "../models/Gallery.js";
+import { Booking } from "../models/Booking.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { getProviderRatingSummary, getProviderRatingSummaryMap } from "../utils/providerRatings.js";
 
@@ -240,5 +242,54 @@ publicRoutes.get("/provider-services/:providerId", asyncHandler(async (req, res)
       },
       services
     }
+  });
+}));
+
+// Get gallery images (shuffled for randomness)
+publicRoutes.get("/gallery", asyncHandler(async (req, res) => {
+  const { category } = req.query;
+  
+  const query = { isActive: true };
+  if (category && category !== "All") {
+    query.category = category;
+  }
+  
+  const images = await Gallery.find(query).sort({ createdAt: -1 });
+  
+  // Shuffle array for random display
+  const shuffled = images.sort(() => Math.random() - 0.5);
+  
+  res.json({
+    success: true,
+    data: shuffled
+  });
+}));
+
+// Get testimonials from completed bookings with feedback
+publicRoutes.get("/testimonials", asyncHandler(async (req, res) => {
+  const testimonials = await Booking.find({
+    status: "completed",
+    "feedback.rating": { $gte: 4 }
+  })
+  .populate("customer", "name")
+  .populate("provider", "name businessName")
+  .sort({ "feedback.submittedAt": -1 })
+  .limit(20)
+  .select("feedback customer provider");
+
+  const formatted = testimonials
+    .filter(t => t.feedback?.comment)
+    .map(t => ({
+      _id: t._id,
+      name: t.customer?.name || "Customer",
+      role: "Customer",
+      content: t.feedback.comment,
+      rating: t.feedback.rating,
+      providerName: t.provider?.businessName || t.provider?.name
+    }));
+
+  res.json({
+    success: true,
+    data: formatted
   });
 }));

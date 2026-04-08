@@ -14,7 +14,18 @@ function ScrollToTop() {
   const { pathname } = useLocation();
   
   useEffect(() => {
+    document.documentElement.scrollTop = 0;
     window.scrollTo(0, 0);
+    
+    const main = document.querySelector('main');
+    if (main) {
+      main.scrollTop = 0;
+    }
+    
+    const scrollable = document.querySelector('.overflow-y-auto');
+    if (scrollable) {
+      scrollable.scrollTop = 0;
+    }
   }, [pathname]);
   
   return null;
@@ -35,6 +46,7 @@ import { AdminProvidersPage } from "./pages/admin/AdminProvidersPage";
 import { AdminCustomersPage } from "./pages/admin/AdminCustomersPage";
 import { AdminBookingsPage } from "./pages/admin/AdminBookingsPage";
 import { AdminPaymentsPage } from "./pages/admin/AdminPaymentsPage";
+import { AdminGalleryPage } from "./pages/admin/AdminGalleryPage";
 
 // Customer Pages
 import { CustomerProfilePage } from "./pages/customer/CustomerProfilePage";
@@ -154,6 +166,7 @@ export default function App() {
           <Route path="customers" element={<AdminCustomersPage />} />
           <Route path="bookings" element={<AdminBookingsPage />} />
           <Route path="payments" element={<AdminPaymentsPage />} />
+          <Route path="gallery" element={<AdminGalleryPage />} />
         </Route>
 
         {/* Provider Routes */}

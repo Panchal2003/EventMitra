@@ -6,6 +6,7 @@ import { dashboardRoutes } from "./admin/dashboardRoutes.js";
 import { paymentRoutes } from "./admin/paymentRoutes.js";
 import { providerRoutes } from "./admin/providerRoutes.js";
 import { serviceRoutes } from "./admin/serviceRoutes.js";
+import { galleryRoutes } from "./admin/galleryRoutes.js";
 
 export const adminRoutes = Router();
 
@@ -16,4 +17,5 @@ adminRoutes.use("/providers", providerRoutes);
 adminRoutes.use("/customers", customerRoutes);
 adminRoutes.use("/bookings", bookingRoutes);
 adminRoutes.use("/payments", paymentRoutes);
+adminRoutes.use("/gallery", galleryRoutes);
 

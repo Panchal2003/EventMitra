@@ -5,6 +5,7 @@ import {
   Sparkles,
   UserCircle,
   Users,
+  Image,
 } from "lucide-react";
 
 export const adminNavigation = [
@@ -50,5 +51,12 @@ export const adminNavigation = [
     icon: IndianRupee,
     path: "/admin/payments",
     color: "text-rose-500",
+  },
+  {
+    id: "gallery",
+    label: "Gallery",
+    icon: Image,
+    path: "/admin/gallery",
+    color: "text-blue-500",
   },
 ];

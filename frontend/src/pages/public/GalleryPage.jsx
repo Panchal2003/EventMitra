@@ -1,56 +1,73 @@
-import { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Sparkles, X, ZoomIn, Globe, Zap, Image } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, X, ZoomIn, Globe, Zap, Image, Loader2 } from "lucide-react";
 import { Footer } from "../../components/common/Footer";
-
-const galleryImages = [
-  { id: 1, src: "https://images.unsplash.com/photo-1519741497674-611481863552?w=900", alt: "Wedding ceremony", category: "Wedding" },
-  { id: 2, src: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=900", alt: "Event decoration", category: "Decoration" },
-  { id: 3, src: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=900", alt: "Birthday celebration", category: "Birthday" },
-  { id: 4, src: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=900", alt: "Corporate event", category: "Corporate" },
-  { id: 5, src: "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=900", alt: "Mehndi ceremony", category: "Wedding" },
-  { id: 6, src: "https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=900", alt: "Wedding setup", category: "Wedding" },
-  { id: 7, src: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=900", alt: "DJ setup", category: "Entertainment" },
-  { id: 8, src: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=900", alt: "Bridal makeup", category: "Makeup" },
-  { id: 9, src: "https://images.unsplash.com/photo-1555244162-803834f70033?w=900", alt: "Catering setup", category: "Catering" },
-  { id: 10, src: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=900", alt: "Venue setup", category: "Venue" },
-  { id: 11, src: "https://images.unsplash.com/photo-1609873814058-a8928924184a?w=900", alt: "Wedding invitation", category: "Stationery" },
-  { id: 12, src: "https://images.unsplash.com/photo-1595407660626-db35dcd16609?w=900", alt: "Mehndi design", category: "Mehndi" },
-  { id: 13, src: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=900", alt: "Elegant reception decor", category: "Decoration" },
-  { id: 14, src: "https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=900", alt: "Luxury banquet dining", category: "Catering" },
-  { id: 15, src: "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=900", alt: "Stage lighting and performance setup", category: "Entertainment" },
-  { id: 16, src: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=900", alt: "Outdoor wedding venue styling", category: "Venue" },
-  { id: 17, src: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=900", alt: "Premium bridal portrait", category: "Makeup" },
-  { id: 18, src: "https://images.unsplash.com/photo-1505232070786-2b5f8c43f6d7?w=900", alt: "Corporate networking event", category: "Corporate" },
-  { id: 19, src: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=900", alt: "Birthday celebration backdrop", category: "Birthday" },
-  { id: 20, src: "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?w=900", alt: "Handcrafted mehndi close-up", category: "Mehndi" },
-];
-
-const categories = [
-  "All",
-  "Wedding",
-  "Decoration",
-  "Birthday",
-  "Corporate",
-  "Entertainment",
-  "Makeup",
-  "Catering",
-  "Venue",
-  "Stationery",
-  "Mehndi",
-];
+import { publicApi } from "../../services/api";
 
 export function GalleryPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedImage, setSelectedImage] = useState(null);
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredImages =
-    selectedCategory === "All"
-      ? galleryImages
-      : galleryImages.filter((image) => image.category === selectedCategory);
+  const categories = useMemo(() => {
+    const cats = new Set(["All"]);
+    galleryImages.forEach(img => {
+      if (img.category) cats.add(img.category);
+      if (img.serviceName) {
+        const firstWord = img.serviceName.trim().split(" ")[0];
+        if (firstWord) cats.add(firstWord);
+      }
+    });
+    return Array.from(cats);
+  }, [galleryImages]);
+
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        setLoading(true);
+        const response = await publicApi.getGallery();
+        if (response.data?.data) {
+          setGalleryImages(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching gallery:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGallery();
+  }, []);
+
+  const filteredImages = useMemo(() => {
+    if (selectedCategory === "All") return galleryImages;
+    const search = selectedCategory.toLowerCase();
+    return galleryImages.filter((image) => 
+      (image.category || "").toLowerCase().includes(search) ||
+      (image.serviceName || "").toLowerCase().includes(search) ||
+      (image.alt || "").toLowerCase().includes(search)
+    );
+  }, [galleryImages, selectedCategory]);
+
+  const categoryCounts = useMemo(() => {
+    const counts = { All: galleryImages.length };
+    galleryImages.forEach(img => {
+      if (img.category) {
+        const cat = img.category.trim();
+        counts[cat] = (counts[cat] || 0) + 1;
+      }
+      if (img.serviceName) {
+        const firstWord = img.serviceName.trim().split(" ")[0];
+        if (firstWord && firstWord.length > 1) {
+          counts[firstWord] = (counts[firstWord] || 0) + 1;
+        }
+      }
+    });
+    return counts;
+  }, [galleryImages]);
 
   const currentIndex = selectedImage
-    ? filteredImages.findIndex((image) => image.id === selectedImage.id)
+    ? filteredImages.findIndex((image) => image._id === selectedImage._id)
     : -1;
 
   const showPrevious = () => {
@@ -132,7 +149,7 @@ export function GalleryPage() {
       </section>
 
       {/* Gallery Section */}
-      <section id="gallery-grid" className="relative pt-2 pb-0 px-4 sm:px-6">
+      <section id="gallery-grid" className="relative pt-2 pb-12 px-4 sm:px-6">
         {/* Section Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/50 to-transparent" />
         
@@ -192,10 +209,21 @@ export function GalleryPage() {
           </motion.div>
 
           {/* Gallery Grid */}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-10 w-10 animate-spin text-primary-600" />
+            </div>
+          ) : filteredImages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Image className="h-16 w-16 text-slate-300 mb-4" />
+              <p className="text-lg font-semibold text-slate-700">No images in gallery yet</p>
+              <p className="text-sm text-slate-500 mt-1">Check back later for provider work samples</p>
+            </div>
+          ) : (
           <motion.div layout className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredImages.map((image, index) => (
               <motion.button
-                key={image.id}
+                key={image._id}
                 layout
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -205,7 +233,7 @@ export function GalleryPage() {
               >
                 <div className="aspect-square overflow-hidden">
                   <img
-                    src={image.src}
+                    src={image.imageUrl}
                     alt={image.alt}
                     className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                   />
@@ -221,6 +249,7 @@ export function GalleryPage() {
               </motion.button>
             ))}
           </motion.div>
+          )}
         </div>
       </section>
 
@@ -264,7 +293,7 @@ export function GalleryPage() {
             onClick={(event) => event.stopPropagation()}
           >
             <img
-              src={selectedImage.src.replace("w=900", "w=1400")}
+              src={selectedImage.imageUrl}
               alt={selectedImage.alt}
               className="max-h-[72vh] w-full bg-slate-50 object-contain"
             />

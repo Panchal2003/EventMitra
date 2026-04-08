@@ -1,5 +1,5 @@
-import { NavLink } from "react-router-dom";
-import { motion } from "framer-motion";
+import { NavLink, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Home, 
   Sparkles,
@@ -14,10 +14,14 @@ import {
   BriefcaseBusiness,
   Wallet,
   Package,
- IndianRupee // Added Indian Rupee icon
+  IndianRupee,
+  MoreHorizontal,
+  Menu,
+  X
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useUI } from "../../context/UIContext";
+import { useState } from "react";
 
 // Helper function to get colorful icon class based on icon type
 const getIconColor = (icon, isActive) => {
@@ -103,14 +107,19 @@ const customerNavItems = [
   { to: "/customer/profile", icon: User, label: "Profile" },
 ];
 
-// Admin navigation items
+// Admin navigation items - special order for mobile
 const adminNavItems = [
-  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
-  { to: "/admin/services", icon: Sparkles, label: "Services" },
-  { to: "/admin/providers", icon: Users, label: "Providers" },
+  { to: "/admin/services", icon: Sparkles, label: "Services", order: 1 },
+  { to: "/admin/providers", icon: Users, label: "Providers", order: 2 },
+  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", order: 3, isCenter: true },
+  { to: "/admin/bookings", icon: CalendarCheck2, label: "Bookings", order: 4 },
+];
+
+// More menu items for admin
+const adminMoreItems = [
   { to: "/admin/customers", icon: UserCircle, label: "Customers" },
-  { to: "/admin/bookings", icon: CalendarCheck2, label: "Bookings" },
-  { to: "/admin/payments", icon:IndianRupee, label: "Payments" }, // Changed CircleIndianRupee toIndianRupee
+  { to: "/admin/payments", icon: IndianRupee, label: "Payments" },
+  { to: "/admin/gallery", icon: Image, label: "Gallery" },
 ];
 
 // Provider navigation items
@@ -125,6 +134,16 @@ const providerNavItems = [
 export function BottomNav() {
   const { isAuthenticated, user } = useAuth();
   const { isBottomNavHidden } = useUI();
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const navigate = useNavigate();
+  
+  // Sort admin items by order
+  const sortedAdminItems = [
+  { to: "/admin/services", icon: Sparkles, label: "Services", order: 1 },
+  { to: "/admin/providers", icon: Users, label: "Providers", order: 2 },
+  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", order: 3, isCenter: true, end: true },
+  { to: "/admin/bookings", icon: CalendarCheck2, label: "Bookings", order: 4 },
+];
   
   // Determine which navigation items to show based on user role
   const getNavItems = () => {
@@ -135,14 +154,13 @@ export function BottomNav() {
     const userRole = user?.role;
     
     if (userRole === "admin") {
-      return adminNavItems;
+      return sortedAdminItems;
     }
     
     if (userRole === "serviceProvider" || userRole === "provider") {
       return providerNavItems;
     }
     
-    // Default to customer navigation
     return customerNavItems;
   };
 
@@ -152,6 +170,127 @@ export function BottomNav() {
 
   if (isBottomNavHidden) {
     return null;
+  }
+
+  // Special admin layout with center dashboard and more menu
+  if (isAuthenticated && user?.role === "admin") {
+    return (
+      <motion.nav
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-area-bottom"
+        style={{
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+        }}
+      >
+        <div className="mx-2 mb-2 rounded-[1.65rem] border border-white/70 bg-white/88 shadow-2xl shadow-slate-900/10 backdrop-blur-xl">
+          <div className="flex items-center justify-between px-1 py-1.5">
+            {sortedAdminItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `relative flex flex-col items-center gap-0.5 rounded-2xl py-1.5 transition-all duration-300 ${
+                    item.isCenter ? "mx-1" : ""
+                  } ${
+                    isActive
+                      ? "text-primary-600"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <motion.div
+                      className={`relative flex items-center justify-center rounded-2xl transition-all ${
+                        item.isCenter 
+                          ? "h-12 w-12 bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/30" 
+                          : "h-10 w-10"
+                      }`}
+                      whileTap={{ scale: 0.86 }}
+                      animate={
+                        isActive || item.isCenter
+                          ? { backgroundColor: item.isCenter ? "transparent" : "rgba(86, 103, 245, 0.15)", scale: 1.05 }
+                          : { backgroundColor: "transparent", scale: 1 }
+                      }
+                    >
+                      {isActive && !item.isCenter && (
+                        <motion.div
+                          layoutId="bottomNavBg"
+                          className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${getActiveGradient(item.icon)}`}
+                          initial={false}
+                          transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                        />
+                      )}
+                      <item.icon className={`h-4 w-4 ${
+                        item.isCenter 
+                          ? "text-white" 
+                          : isActive 
+                            ? "text-primary-600" 
+                            : "text-slate-500"
+                      }`} />
+                    </motion.div>
+                    <span className={`text-[9px] font-medium ${
+                      item.isCenter 
+                        ? "text-purple-600 font-semibold" 
+                        : isActive 
+                          ? "text-primary-600 font-semibold" 
+                          : "text-slate-500"
+                    }`}>
+                      {item.label}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+            
+            {/* More Menu Button */}
+            <div className="relative flex flex-col items-center gap-0.5">
+              <button
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                className="flex flex-col items-center gap-0.5 rounded-2xl py-1.5 px-2 text-slate-500 hover:text-slate-700 transition-all"
+              >
+                <div className="h-10 w-10 flex items-center justify-center rounded-2xl">
+                  <MoreHorizontal className="h-5 w-5" />
+                </div>
+                <span className="text-[9px] font-medium text-slate-500">More</span>
+              </button>
+              
+              {/* More Menu Dropdown */}
+              <AnimatePresence>
+                {showMoreMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute bottom-full right-0 mb-2 w-40 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10 overflow-hidden"
+                  >
+                    {adminMoreItems.map((item) => (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setShowMoreMenu(false)}
+                        className={({ isActive }) =>
+                          `flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
+                            isActive
+                              ? "bg-purple-50 text-purple-600"
+                              : "text-slate-700 hover:bg-slate-50"
+                          }`
+                        }
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </NavLink>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      </motion.nav>
+    );
   }
 
   return (
