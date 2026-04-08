@@ -155,7 +155,6 @@ publicRoutes.get("/providers/by-category/:categoryId", asyncHandler(async (req, 
       name: service.name,
       description: service.description,
       startingPrice: service.startingPrice,
-      image: service.image,
       images: service.images || [],
       category: service.category
     });

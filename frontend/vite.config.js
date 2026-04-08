@@ -8,6 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["logo.png", "icons/*.png"],
+      filename: "sw.js",
       manifest: {
         name: "EventMitra - Event Planning Made Easy",
         short_name: "EventMitra",
