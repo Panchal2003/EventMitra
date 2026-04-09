@@ -74,7 +74,11 @@ export function ProviderBookingsPage() {
     [bookings]
   );
   const completedBookings = useMemo(
-    () => bookings.filter((booking) => ["completed", "rejected", "cancelled"].includes(booking.status)),
+    () => bookings.filter((booking) => ["completed", "rejected"].includes(booking.status)),
+    [bookings]
+  );
+  const cancelledBookings = useMemo(
+    () => bookings.filter((booking) => booking.status === "cancelled"),
     [bookings]
   );
 
@@ -160,6 +164,7 @@ export function ProviderBookingsPage() {
     { id: "requests", label: "Requests", count: requestBookings.length, icon: CalendarCheck2, gradient: "from-amber-500 to-orange-500" },
     { id: "active", label: "Active", count: activeBookings.length, icon: Clock, gradient: "from-blue-500 to-indigo-500" },
     { id: "completed", label: "Completed", count: completedBookings.length, icon: CheckCircle, gradient: "from-primary-500 to-blue-500" },
+    { id: "cancelled", label: "Cancelled", count: cancelledBookings.length, icon: XCircle, gradient: "from-rose-500 to-red-500" },
   ];
 
   // Render booking card for mobile
@@ -294,11 +299,32 @@ export function ProviderBookingsPage() {
             ) : null}
           </div>
         ) : null}
+        {booking.status === "cancelled" && booking.cancellation ? (
+          <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50/80 p-3">
+            <p className="text-xs font-semibold text-rose-700 mb-2">Cancellation Details</p>
+            <div className="flex items-center gap-4 text-xs text-rose-600">
+              <div>
+                <span className="font-medium">Booked:</span> {formatDate(booking.eventDate)}
+              </div>
+              <div>
+                <span className="font-medium">Cancelled:</span> {booking.cancellation.cancelledAt ? formatDate(booking.cancellation.cancelledAt, true) : "-"}
+              </div>
+            </div>
+            {booking.cancellation.cancelReason && (
+              <p className="mt-2 text-xs text-rose-600">Reason: {booking.cancellation.cancelReason}</p>
+            )}
+            {booking.cancellation.refundAmount > 0 && (
+              <p className="mt-2 text-xs font-semibold text-emerald-600">
+                Refund: {formatCurrency(booking.cancellation.refundAmount)} ({booking.cancellation.cancellationPolicy?.replace('_', ' ')})
+              </p>
+            )}
+          </div>
+        ) : null}
       </div>
     </motion.div>
   );
 
-  const currentBookings = activeTab === "requests" ? requestBookings : activeTab === "active" ? activeBookings : completedBookings;
+  const currentBookings = activeTab === "requests" ? requestBookings : activeTab === "active" ? activeBookings : activeTab === "cancelled" ? cancelledBookings : completedBookings;
 
   return (
     <div className="bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -356,7 +382,7 @@ export function ProviderBookingsPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 }}
-                className="hidden lg:grid lg:grid-cols-3 lg:gap-3"
+                className="hidden lg:grid lg:grid-cols-4 lg:gap-3"
               >
                 <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
                   <div className="flex items-center gap-3">
@@ -388,6 +414,17 @@ export function ProviderBookingsPage() {
                     <div>
                       <p className="text-xs text-purple-200">Completed</p>
                       <p className="text-lg font-bold">{completedBookings.length}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-400/20">
+                      <XCircle className="h-5 w-5 text-rose-300" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-purple-200">Cancelled</p>
+                      <p className="text-lg font-bold">{cancelledBookings.length}</p>
                     </div>
                   </div>
                 </div>
@@ -428,7 +465,7 @@ export function ProviderBookingsPage() {
                   key={tab.id}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all sm:flex-none sm:px-4 sm:py-2.5 sm:text-sm ${
+                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all sm:flex-none sm:px-4 sm:py-2.5 sm:text-sm ${
                     activeTab === tab.id
                       ? `bg-gradient-to-r ${tab.gradient} text-white shadow-lg`
                       : "text-slate-600 hover:bg-slate-100"
@@ -472,11 +509,13 @@ export function ProviderBookingsPage() {
                 {activeTab === "requests" && "No booking requests"}
                 {activeTab === "active" && "No active bookings"}
                 {activeTab === "completed" && "No completed bookings"}
+                {activeTab === "cancelled" && "No cancelled bookings"}
               </p>
               <p className="mt-1 text-sm text-slate-400">
                 {activeTab === "requests" && "New requests will appear here"}
                 {activeTab === "active" && "Accepted bookings will appear here"}
                 {activeTab === "completed" && "Completed jobs will appear here"}
+                {activeTab === "cancelled" && "Cancelled bookings will appear here"}
               </p>
             </div>
           )}

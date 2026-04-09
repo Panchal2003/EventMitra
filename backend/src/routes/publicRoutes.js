@@ -292,3 +292,32 @@ publicRoutes.get("/testimonials", asyncHandler(async (req, res) => {
     data: formatted
   });
 }));
+
+// Get home page stats
+publicRoutes.get("/stats", asyncHandler(async (req, res) => {
+  const totalBookings = await Booking.countDocuments({ status: "completed" });
+  
+  const totalProviders = await User.countDocuments({
+    role: "serviceProvider",
+    providerStatus: "approved"
+  });
+
+  const ratings = await Booking.find({
+    status: "completed",
+    "feedback.rating": { $exists: true }
+  }).select("feedback.rating");
+
+  const avgRating = ratings.length > 0 
+    ? (ratings.reduce((sum, b) => sum + (b.feedback?.rating || 0), 0) / ratings.length).toFixed(1)
+    : "4.9";
+
+  res.json({
+    success: true,
+    data: {
+      totalBookings,
+      totalProviders,
+      avgRating,
+      supportHours: "24/7"
+    }
+  });
+}));

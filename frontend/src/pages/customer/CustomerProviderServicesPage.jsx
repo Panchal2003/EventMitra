@@ -65,7 +65,6 @@ function getProviderColor(name) {
 }
 
 function getServicePreviewImages(service) {
-  console.log("getServicePreviewImages called with service:", service?.name, "images:", service?.images);
   if (service?.images?.length) {
     return service.images.slice(0, 5);
   }
@@ -159,7 +158,7 @@ export function CustomerProviderServicesPage() {
           const response = await customerApi.getAvailableSlots(providerId, bookingData.eventDate, 2, serviceIds);
           setAvailableTimeSlots(response.data?.data || []);
         } catch (error) {
-          console.error("Error fetching time slots:", error);
+          // Silent fail for time slots
         }
       } else {
         setAvailableTimeSlots([]);
@@ -174,8 +173,6 @@ export function CustomerProviderServicesPage() {
         setLoading(true);
         setError(null);
         
-        console.log("providerId from useParams:", providerId);
-        
         if (!providerId || providerId === 'undefined' || providerId === 'null') {
           setError("Provider ID is missing or invalid");
           setLoading(false);
@@ -184,9 +181,6 @@ export function CustomerProviderServicesPage() {
         
         const response = await publicApi.getProviderServices(providerId);
         
-        console.log("API response:", response);
-        console.log("Services with images:", response.data?.data?.services?.map(s => ({ _id: s._id, name: s.name, images: s.images })));
-        
         if (!response.data?.data) {
           setError("No provider data received");
           setLoading(false);
@@ -194,9 +188,7 @@ export function CustomerProviderServicesPage() {
         }
         
         setData(response.data.data);
-        console.log("Data set, services:", response.data.data?.services?.map(s => ({ _id: s._id, images: s.images })));
       } catch (requestError) {
-        console.error("Error fetching provider services:", requestError);
         const errorData = requestError.response?.data;
         if (errorData?.providerStatus === "pending") {
           setIsPendingProvider(true);

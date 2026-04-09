@@ -103,7 +103,7 @@ export function AdminBookingsPage() {
   const totalBookings = bookings.length;
   const completedBookings = bookings.filter(b => b.status === "completed").length;
   const pendingBookings = bookings.filter(b => b.status === "pending").length;
-  const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+  const totalRevenue = bookings.filter(b => b.status === "completed").reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
   const handleAssignProvider = async (providerId) => {
     try {
@@ -391,7 +391,7 @@ export function AdminBookingsPage() {
                   <Users className="h-3.5 w-3.5 text-violet-500" />
                   <p className="text-[10px] font-semibold uppercase text-violet-600">Provider</p>
                 </div>
-                <p className="text-sm font-medium text-slate-900">{selectedBooking.provider?.businessName || selectedProvider?.name || "Not assigned"}</p>
+                <p className="text-sm font-medium text-slate-900">{selectedBooking.provider?.businessName || selectedBooking.provider?.name || "Not assigned"}</p>
               </div>
               <div className="rounded-xl bg-amber-50/80 p-3 sm:p-4">
                 <div className="flex items-center gap-2 mb-1">
@@ -427,6 +427,47 @@ export function AdminBookingsPage() {
               <div className="rounded-xl bg-blue-50/50 p-3 sm:p-4">
                 <p className="text-[10px] font-semibold uppercase text-blue-600 mb-1">Notes</p>
                 <p className="text-sm text-slate-700">{selectedBooking.notes}</p>
+              </div>
+            )}
+
+            {selectedBooking.status === "cancelled" && selectedBooking.cancellation && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <XCircle className="h-4 w-4 text-rose-600" />
+                  <p className="text-xs font-semibold uppercase text-rose-700">Cancellation Details</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase text-rose-600">Event Date</p>
+                    <p className="text-sm text-slate-800">{formatDate(selectedBooking.eventDate)}{selectedBooking.eventTime ? ` | ${selectedBooking.eventTime}` : ""}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase text-rose-600">Cancelled At</p>
+                    <p className="text-sm text-slate-800">{selectedBooking.cancellation.cancelledAt ? formatDate(selectedBooking.cancellation.cancelledAt, true) : "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase text-rose-600">Cancelled By</p>
+                    <p className="text-sm text-slate-800">{selectedBooking.cancellation.cancelledBy?.name || "Unknown"}</p>
+                  </div>
+                  {selectedBooking.cancellation.cancelReason && (
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase text-rose-600">Reason</p>
+                      <p className="text-sm text-slate-800">{selectedBooking.cancellation.cancelReason}</p>
+                    </div>
+                  )}
+                  {selectedBooking.cancellation.refundAmount > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase text-rose-600">Refund</p>
+                      <p className="text-sm font-semibold text-emerald-600">{formatCurrency(selectedBooking.cancellation.refundAmount)} ({selectedBooking.cancellation.cancellationPolicy?.replace('_', ' ')})</p>
+                    </div>
+                  )}
+                  {selectedBooking.cancellation.cancellationPolicy === "no_refund" && (
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase text-rose-600">Refund</p>
+                      <p className="text-sm text-slate-500">No refund (cancelled within 24 hours)</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

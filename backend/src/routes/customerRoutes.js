@@ -7,6 +7,7 @@ import {
   getCustomerServices,
   verifyCustomerBookingOtp,
   getAvailableSlots,
+  cancelCustomerBooking,
 } from "../controllers/customerController.js";
 
 export const customerRoutes = Router();
@@ -18,3 +19,4 @@ customerRoutes.get("/available-slots", getAvailableSlots);
 customerRoutes.post("/bookings", createCustomerBooking);
 customerRoutes.get("/bookings", getCustomerBookings);
 customerRoutes.patch("/bookings/:bookingId/verify-otp", verifyCustomerBookingOtp);
+customerRoutes.patch("/bookings/:bookingId/cancel", cancelCustomerBooking);

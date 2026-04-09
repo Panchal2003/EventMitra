@@ -16,7 +16,7 @@ export const getDashboardMetrics = asyncHandler(async (req, res) => {
     Booking.aggregate([
       {
         $match: {
-          status: { $ne: "cancelled" },
+          status: "completed",
         },
       },
       {
@@ -38,6 +38,11 @@ export const getDashboardMetrics = asyncHandler(async (req, res) => {
       status: "pending",
     }),
     Payment.aggregate([
+      {
+        $match: {
+          status: "released",
+        },
+      },
       {
         $group: {
           _id: null,

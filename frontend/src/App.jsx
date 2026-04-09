@@ -85,7 +85,7 @@ export default function App() {
     <UIProvider>
       <CartProvider>
         <ScrollToTop />
-      <Routes>
+          <Routes>
         {/* Login Page - No Layout */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin-login" element={<LoginPage adminBackdoor />} />

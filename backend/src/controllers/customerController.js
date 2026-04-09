@@ -24,31 +24,37 @@ const customerBookingPopulate = [
   },
   { path: "customer", select: "name email phone" },
   { path: "provider", select: "name email businessName phone address" },
+  { path: "cancellation.cancelledBy", select: "name email role" },
 ];
 
 const serializeBookingForCustomer = (booking) => {
-  const serialized = booking.toObject ? booking.toObject() : booking;
+  try {
+    const serialized = booking.toObject ? booking.toObject() : booking;
 
-  if (
-    serialized.status === BOOKING_STATUS.CONFIRMED &&
-    serialized.bookingOtp?.code &&
-    !serialized.bookingOtp?.isVerified
-  ) {
-    serialized.bookingOtp = serialized.bookingOtp.code;
-  } else {
-    delete serialized.bookingOtp;
+    if (
+      serialized.status === BOOKING_STATUS.CONFIRMED &&
+      serialized.bookingOtp?.code &&
+      !serialized.bookingOtp?.isVerified
+    ) {
+      serialized.bookingOtp = serialized.bookingOtp.code;
+    } else {
+      delete serialized.bookingOtp;
+    }
+
+    // Show completion OTP when provider completes job (provider gives this to customer)
+    if (
+      serialized.status === BOOKING_STATUS.OTP_PENDING &&
+      serialized.completionOtp?.code &&
+      !serialized.completionOtp?.isVerified
+    ) {
+      serialized.completionOtpCode = serialized.completionOtp?.code || "";
+    }
+
+    return serialized;
+  } catch (error) {
+    console.error("serializeBookingForCustomer error:", error);
+    return booking.toObject ? booking.toObject() : booking;
   }
-
-  // Show completion OTP when provider completes job (provider gives this to customer)
-  if (
-    serialized.status === BOOKING_STATUS.OTP_PENDING &&
-    serialized.completionOtp?.code &&
-    !serialized.completionOtp?.isVerified
-  ) {
-    serialized.completionOtpCode = serialized.completionOtp?.code || "";
-  }
-
-  return serialized;
 };
 
 export const getCustomerDashboard = asyncHandler(async (req, res) => {
@@ -105,79 +111,83 @@ export const getCustomerServices = asyncHandler(async (req, res) => {
 });
 
 export const createCustomerBooking = asyncHandler(async (req, res) => {
-  const { serviceIds, eventDate, eventTime, location, guestCount, notes } = req.body;
+  try {
+    const { serviceIds, eventDate, eventTime, location, guestCount, notes } = req.body;
 
-  const serviceIdArray = Array.isArray(serviceIds)
-    ? [...new Set(serviceIds.filter(Boolean))]
-    : [serviceIds].filter(Boolean);
+    const serviceIdArray = Array.isArray(serviceIds)
+      ? [...new Set(serviceIds.filter(Boolean))]
+      : [serviceIds].filter(Boolean);
 
-  if (!serviceIdArray.length) {
-    throw new AppError("Please select at least one service to book.", 400);
-  }
-
-  const services = await Service.find({
-    _id: { $in: serviceIdArray },
-    status: "active",
-  }).populate("category", "name slug");
-
-  if (services.length !== serviceIdArray.length) {
-    throw new AppError("One or more selected services are not available for booking.", 404);
-  }
-
-  const providerId = services[0].createdBy;
-  const allSameProvider = services.every(
-    (service) => String(service.createdBy) === String(providerId)
-  );
-
-  if (!allSameProvider) {
-    throw new AppError("Please select services from the same provider.", 400);
-  }
-
-  if (eventTime) {
-    const overlapCheck = await checkTimeOverlap(providerId, eventDate, eventTime, null, serviceIdArray, null);
-    if (overlapCheck.hasOverlap) {
-      const availableSlots = await getAvailableTimeSlots(providerId, eventDate, 2, serviceIdArray);
-      throw new AppError(
-        `Time slot already booked for these services at ${eventTime}. Available slots: ${availableSlots.slice(0, 5).join(", ")}${availableSlots.length > 5 ? "..." : ""}`,
-        400
-      );
+    if (!serviceIdArray.length) {
+      throw new AppError("Please select at least one service to book.", 400);
     }
-  }
 
-  const totalAmount = services.reduce((sum, service) => {
-    if (service.allowsMembers && service.pricePerMember && guestCount) {
-      const members = Number(guestCount);
-      if (members <= 1) {
-        return sum + (service.startingPrice || 0);
+    const services = await Service.find({
+      _id: { $in: serviceIdArray },
+      status: "active",
+    }).populate("category", "name slug");
+
+    if (services.length !== serviceIdArray.length) {
+      throw new AppError("One or more selected services are not available for booking.", 404);
+    }
+
+    const providerId = services[0].createdBy;
+    const allSameProvider = services.every(
+      (service) => String(service.createdBy) === String(providerId)
+    );
+
+    if (!allSameProvider) {
+      throw new AppError("Please select services from the same provider.", 400);
+    }
+
+    if (eventTime) {
+      const overlapCheck = await checkTimeOverlap(providerId, eventDate, eventTime, null, serviceIdArray, null);
+      if (overlapCheck.hasOverlap) {
+        const availableSlots = await getAvailableTimeSlots(providerId, eventDate, 2, serviceIdArray);
+        throw new AppError(
+          `Time slot already booked for these services at ${eventTime}. Available slots: ${availableSlots.slice(0, 5).join(", ")}${availableSlots.length > 5 ? "..." : ""}`,
+          400
+        );
       }
-      // For 2+ members: base price + (pricePerMember × (members - 1))
-      return sum + (service.startingPrice || 0) + (service.pricePerMember * (members - 1));
     }
-    return sum + (service.startingPrice || 0);
-  }, 0);
 
-  const booking = await Booking.create({
-    service: services[0]._id,
-    services: services.map((service) => service._id),
-    customer: req.user._id,
-    provider: providerId,
-    eventDate,
-    eventTime: eventTime || "",
-    location,
-    guestCount: Number(guestCount) || 1,
-    totalAmount,
-    notes,
-    status: BOOKING_STATUS.PROVIDER_ASSIGNED,
-    providerAssignedAt: new Date(),
-  });
+    const totalAmount = services.reduce((sum, service) => {
+      if (service.allowsMembers && service.pricePerMember && guestCount) {
+        const members = Number(guestCount);
+        if (members <= 1) {
+          return sum + (service.startingPrice || 0);
+        }
+        return sum + (service.startingPrice || 0) + (service.pricePerMember * (members - 1));
+      }
+      return sum + (service.startingPrice || 0);
+    }, 0);
 
-  const populatedBooking = await booking.populate(customerBookingPopulate);
+    const booking = await Booking.create({
+      service: services[0]._id,
+      services: services.map((service) => service._id),
+      customer: req.user._id,
+      provider: providerId,
+      eventDate,
+      eventTime: eventTime || "",
+      location,
+      guestCount: Number(guestCount) || 1,
+      totalAmount,
+      notes,
+      status: BOOKING_STATUS.PROVIDER_ASSIGNED,
+      providerAssignedAt: new Date(),
+    });
 
-  res.status(201).json({
-    success: true,
-    message: `Booking request sent to the provider for ${services.length} service(s).`,
-    data: serializeBookingForCustomer(populatedBooking),
-  });
+    const populatedBooking = await booking.populate(customerBookingPopulate);
+
+    res.status(201).json({
+      success: true,
+      message: `Booking request sent to the provider for ${services.length} service(s).`,
+      data: serializeBookingForCustomer(populatedBooking),
+    });
+  } catch (error) {
+    console.error("createCustomerBooking error:", error);
+    throw error;
+  }
 });
 
 export const getCustomerBookings = asyncHandler(async (req, res) => {
@@ -265,5 +275,71 @@ export const getAvailableSlots = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data: slots
+  });
+});
+
+export const cancelCustomerBooking = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+  const { cancelReason } = req.body;
+
+  const booking = await Booking.findOne({
+    _id: bookingId,
+    customer: req.user._id,
+  }).populate(customerBookingPopulate);
+
+  if (!booking) {
+    throw new AppError("Booking not found.", 404);
+  }
+
+  const nonCancellableStatuses = [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED];
+  if (nonCancellableStatuses.includes(booking.status)) {
+    throw new AppError("This booking cannot be cancelled as it is already completed or cancelled.", 400);
+  }
+
+  const eventDateTime = new Date(booking.eventDate);
+  const currentTime = new Date();
+  const hoursUntilEvent = (eventDateTime - currentTime) / (1000 * 60 * 60);
+
+  let refundPercentage = 0;
+  let cancellationPolicy = "no_refund";
+
+  if (hoursUntilEvent >= 48) {
+    refundPercentage = 100;
+    cancellationPolicy = "full_refund";
+  } else if (hoursUntilEvent >= 24) {
+    refundPercentage = 50;
+    cancellationPolicy = "partial_refund";
+  }
+
+  const refundAmount = Math.round((booking.totalAmount * refundPercentage) / 100);
+
+  booking.status = BOOKING_STATUS.CANCELLED;
+  booking.cancellation = {
+    cancelledAt: new Date(),
+    cancelledBy: req.user._id,
+    cancelReason: cancelReason?.trim() || "",
+    refundAmount,
+    refundStatus: refundAmount > 0 ? "pending" : "none",
+    cancellationPolicy,
+  };
+
+  await booking.save();
+  await booking.populate(customerBookingPopulate);
+
+  let message = "Booking cancelled successfully.";
+  if (refundAmount > 0) {
+    message += ` A refund of ₹${refundAmount} has been initiated (${cancellationPolicy.replace('_', ' ')}).`;
+  } else if (hoursUntilEvent < 24) {
+    message += " No refund is applicable as the booking was cancelled less than 24 hours before the event.";
+  }
+
+  res.json({
+    success: true,
+    message,
+    data: {
+      ...serializeBookingForCustomer(booking),
+      refundAmount,
+      cancellationPolicy,
+    },
   });
 });

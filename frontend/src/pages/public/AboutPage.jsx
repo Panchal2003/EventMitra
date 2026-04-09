@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { publicApi } from "../../services/api";
 import { Award, Globe, Heart, ShieldCheck, Sparkles, Users, Zap, Star, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Footer } from "../../components/common/Footer";
@@ -29,6 +31,21 @@ const values = [
 ];
 
 export function AboutPage() {
+  const [statsData, setStatsData] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await publicApi.getStats();
+        if (response.data?.data) {
+          setStatsData(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+    fetchStats();
+  }, []);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 relative overflow-hidden">
       {/* Premium Background Elements */}
@@ -122,6 +139,13 @@ export function AboutPage() {
           >
             {stats.map((stat, index) => {
               const Icon = stat.icon;
+              let displayValue = stat.value;
+              if (statsData) {
+                if (index === 0) displayValue = statsData.totalBookings > 0 ? `${statsData.totalBookings}+` : stat.value;
+                if (index === 1) displayValue = statsData.totalProviders > 0 ? `${statsData.totalProviders}+` : stat.value;
+                if (index === 2) displayValue = statsData.totalBookings > 0 ? `${statsData.totalBookings * 2}+` : stat.value;
+                if (index === 3) displayValue = statsData.avgRating ? `${statsData.avgRating}★` : stat.value;
+              }
               return (
                 <motion.div
                   key={stat.label}
@@ -135,7 +159,7 @@ export function AboutPage() {
                     <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
                       <Icon className="h-5 w-5 text-white" />
                     </div>
-                    <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{stat.value}</p>
+                    <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{displayValue}</p>
                     <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
                   </div>
                 </motion.div>

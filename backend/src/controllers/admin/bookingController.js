@@ -9,31 +9,103 @@ import {
   assertBookingStatus,
 } from "../../utils/bookingLifecycle.js";
 
+const adminBookingPopulate = [
+  {
+    path: "service",
+    select: "name category startingPrice image",
+    populate: {
+      path: "category",
+      select: "name slug",
+    },
+  },
+  {
+    path: "services",
+    select: "name category startingPrice image",
+    populate: {
+      path: "category",
+      select: "name slug",
+    },
+  },
+  { path: "customer", select: "name email" },
+  { path: "provider", select: "name email businessName providerStatus" },
+  { path: "cancellation.cancelledBy", select: "name email role" },
+];
+
 export const getBookings = asyncHandler(async (req, res) => {
-  const bookings = await Booking.find()
-    .populate({
-      path: "service",
-      select: "name category startingPrice image",
-      populate: {
-        path: "category",
-        select: "name slug",
-      },
-    })
-    .populate({
-      path: "services",
-      select: "name category startingPrice image",
-      populate: {
-        path: "category",
-        select: "name slug",
-      },
-    })
-    .populate("customer", "name email")
-    .populate("provider", "name email businessName providerStatus")
+  const { status, startDate, endDate, providerId, customerId } = req.query;
+
+  const query = {};
+
+  if (status) {
+    query.status = status;
+  }
+
+  if (providerId) {
+    query.provider = providerId;
+  }
+
+  if (customerId) {
+    query.customer = customerId;
+  }
+
+  if (startDate || endDate) {
+    query.createdAt = {};
+    if (startDate) {
+      query.createdAt.$gte = new Date(startDate);
+    }
+    if (endDate) {
+      query.createdAt.$lte = new Date(endDate);
+    }
+  }
+
+  const bookings = await Booking.find(query)
+    .populate(adminBookingPopulate)
     .sort({ createdAt: -1 });
 
   res.json({
     success: true,
     data: bookings,
+  });
+});
+
+export const getCancelledBookings = asyncHandler(async (req, res) => {
+  const { startDate, endDate, providerId, customerId } = req.query;
+
+  const query = { status: BOOKING_STATUS.CANCELLED };
+
+  if (providerId) {
+    query.provider = providerId;
+  }
+
+  if (customerId) {
+    query.customer = customerId;
+  }
+
+  if (startDate || endDate) {
+    query["cancellation.cancelledAt"] = {};
+    if (startDate) {
+      query["cancellation.cancelledAt"].$gte = new Date(startDate);
+    }
+    if (endDate) {
+      query["cancellation.cancelledAt"].$lte = new Date(endDate);
+    }
+  }
+
+  const bookings = await Booking.find(query)
+    .populate(adminBookingPopulate)
+    .sort({ "cancellation.cancelledAt": -1 });
+
+  const totalRefunds = bookings.reduce((sum, b) => sum + (b.cancellation?.refundAmount || 0), 0);
+
+  res.json({
+    success: true,
+    data: {
+      bookings,
+      summary: {
+        totalCancelled: bookings.length,
+        totalRefunds,
+      },
+    },
   });
 });
 
@@ -103,6 +175,8 @@ export const assignProvider = asyncHandler(async (req, res) => {
 });
 
 export const cancelBooking = asyncHandler(async (req, res) => {
+  const { cancelReason } = req.body;
+
   const booking = await Booking.findById(req.params.bookingId);
 
   if (!booking) {
@@ -117,12 +191,43 @@ export const cancelBooking = asyncHandler(async (req, res) => {
     throw new AppError("This booking is already cancelled.", 400);
   }
 
+  const eventDateTime = new Date(booking.eventDate);
+  const currentTime = new Date();
+  const hoursUntilEvent = (eventDateTime - currentTime) / (1000 * 60 * 60);
+
+  let refundPercentage = 0;
+  let cancellationPolicy = "no_refund";
+
+  if (hoursUntilEvent >= 48) {
+    refundPercentage = 100;
+    cancellationPolicy = "full_refund";
+  } else if (hoursUntilEvent >= 24) {
+    refundPercentage = 50;
+    cancellationPolicy = "partial_refund";
+  }
+
+  const refundAmount = Math.round((booking.totalAmount * refundPercentage) / 100);
+
   booking.status = BOOKING_STATUS.CANCELLED;
+  booking.cancellation = {
+    cancelledAt: new Date(),
+    cancelledBy: req.user._id,
+    cancelReason: cancelReason?.trim() || "Cancelled by admin",
+    refundAmount,
+    refundStatus: refundAmount > 0 ? "pending" : "none",
+    cancellationPolicy,
+  };
+
   await booking.save();
+
+  let message = "Booking cancelled successfully.";
+  if (refundAmount > 0) {
+    message += ` A refund of ₹${refundAmount} has been initiated (${cancellationPolicy.replace('_', ' ')}).`;
+  }
 
   res.json({
     success: true,
-    message: "Booking cancelled successfully.",
+    message,
     data: booking,
   });
 });

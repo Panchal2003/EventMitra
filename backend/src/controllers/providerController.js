@@ -34,6 +34,7 @@ const bookingPopulate = [
   },
   { path: "customer", select: "name email phone" },
   { path: "provider", select: "name businessName serviceCategory experience basePrice address phone" },
+  { path: "cancellation.cancelledBy", select: "name email role" },
 ];
 
 const serializeBookingForProvider = (booking) => {

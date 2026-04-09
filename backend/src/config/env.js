@@ -17,4 +17,7 @@ export const env = {
   adminName: process.env.ADMIN_NAME || "EventMitra Admin",
   adminEmail: process.env.ADMIN_EMAIL || "admin@eventmitra.com",
   adminPassword: process.env.ADMIN_PASSWORD || "Admin@123",
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || "",
+  razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || "",
 };

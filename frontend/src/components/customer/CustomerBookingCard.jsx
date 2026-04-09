@@ -1,15 +1,18 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
   ArrowRight,
+  Calendar,
+  CalendarClock,
   Clock3,
   MapPin,
   ShieldCheck,
   Sparkles,
   Star,
   User,
-  Zap,
+  XCircle,
 } from "lucide-react";
 import { Button } from "../common/Button";
 import { formatCurrency } from "../../utils/currency";
@@ -190,14 +193,80 @@ function BookingStatusPanel({ booking, onVerifyOtp }) {
     );
   }
 
+  if (booking.status === "cancelled" && booking.cancellation) {
+    return (
+      <div className="rounded-2xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-slate-100 p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 text-white shadow-lg shadow-slate-500/20">
+            <XCircle className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-slate-800">Booking Cancelled</p>
+            <div className="mt-1 text-sm text-slate-600">
+              <span className="font-medium">Booked:</span> {formatDate(booking.eventDate)}
+              <span className="mx-2">|</span>
+              <span className="font-medium">Cancelled:</span> {booking.cancellation.cancelledAt ? formatDate(booking.cancellation.cancelledAt, true) : "-"}
+            </div>
+            {booking.cancellation.cancelReason && (
+              <p className="mt-1 text-sm text-slate-600">Reason: {booking.cancellation.cancelReason}</p>
+            )}
+            {booking.cancellation.refundAmount > 0 && (
+              <div className="mt-3 rounded-lg bg-emerald-50 px-4 py-2">
+                <p className="text-sm font-semibold text-emerald-700">
+                  Refund: {formatCurrency(booking.cancellation.refundAmount)} ({booking.cancellation.cancellationPolicy?.replace('_', ' ')})
+                </p>
+              </div>
+            )}
+            {booking.cancellation.cancellationPolicy === "no_refund" && (
+              <p className="mt-2 text-xs text-slate-500">No refund applicable (cancelled within 24 hours)</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return null;
 }
 
-export function CustomerBookingCard({ booking, index = 0, onVerifyOtp }) {
+export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel }) {
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+
   const services = getBookingServices(booking);
   const primaryService = services[0];
   const providerDisplayName = getProviderDisplayName(booking);
   const totalMembers = Math.max(Number(booking?.guestCount) || 1, 1);
+
+  const canCancel = ["pending", "provider_assigned", "confirmed", "in_progress"].includes(booking.status);
+
+  const getHoursUntilEvent = () => {
+    const eventTime = new Date(booking.eventDate);
+    const now = new Date();
+    return (eventTime - now) / (1000 * 60 * 60);
+  };
+
+  const getRefundPolicy = () => {
+    const hours = getHoursUntilEvent();
+    if (hours >= 48) return { policy: "Full Refund (100%)", refund: 100, className: "bg-emerald-50 border-emerald-200" };
+    if (hours >= 24) return { policy: "Partial Refund (50%)", refund: 50, className: "bg-amber-50 border-amber-200" };
+    return { policy: "No Refund (0%)", refund: 0, className: "bg-rose-50 border-rose-200" };
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!onCancel) return;
+    setCancelling(true);
+    try {
+      await onCancel(booking._id, cancelReason);
+      setShowCancelModal(false);
+      setCancelReason("");
+    } catch (error) {
+      console.error("Cancel failed:", error);
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const metaItems = [
     {
@@ -303,8 +372,92 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp }) {
           <div className="mt-5">
             <BookingStatusPanel booking={booking} onVerifyOtp={onVerifyOtp} />
           </div>
+
+          {canCancel && (
+            <div className="mt-5 flex justify-end">
+              <Button
+                variant="danger"
+                onClick={() => setShowCancelModal(true)}
+                className="rounded-xl"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Cancel Booking
+              </Button>
+            </div>
+          )}
         </div>
       </article>
+
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100">
+                <XCircle className="h-6 w-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Cancel Booking?</h3>
+                <p className="text-sm text-slate-500">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-600 mb-4">
+              Are you sure you want to cancel this booking?
+            </p>
+
+            <div className={`p-4 rounded-xl border mb-4 ${getRefundPolicy().className}`}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">Refund Policy</p>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-800">{getRefundPolicy().policy}</span>
+                {getHoursUntilEvent() > 0 && (
+                  <span className="text-xs text-slate-500">
+                    {Math.floor(getHoursUntilEvent())} hours until event
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Reason for cancellation (optional)
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Enter reason..."
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-rose-400 focus:ring-4 focus:ring-rose-100 outline-none"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelReason("");
+                }}
+                className="flex-1 rounded-xl"
+                disabled={cancelling}
+              >
+                Go Back
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleCancelConfirm}
+                className="flex-1 rounded-xl"
+                disabled={cancelling}
+              >
+                {cancelling ? "Cancelling..." : "Confirm Cancel"}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   );
 }

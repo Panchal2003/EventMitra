@@ -118,6 +118,36 @@ const bookingSchema = new mongoose.Schema(
         type: Date,
       },
     },
+    cancellation: {
+      cancelledAt: {
+        type: Date,
+      },
+      cancelledBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      cancelReason: {
+        type: String,
+        trim: true,
+      },
+      refundAmount: {
+        type: Number,
+        default: 0,
+      },
+      refundStatus: {
+        type: String,
+        enum: ["none", "pending", "processed", "completed"],
+        default: "none",
+      },
+      refundProcessedAt: {
+        type: Date,
+      },
+      cancellationPolicy: {
+        type: String,
+        enum: ["none", "full_refund", "partial_refund", "no_refund"],
+        default: "none",
+      },
+    },
   },
   {
     timestamps: true,

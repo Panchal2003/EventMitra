@@ -273,7 +273,7 @@ export function CustomerProfilePage() {
                     type="button"
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`flex flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-3 text-sm font-bold transition-all ${
+                    className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-3 text-sm font-bold transition-all ${
                       isActive
                         ? "bg-gradient-to-br from-primary-600 to-blue-600 text-white shadow-lg shadow-primary-500/20"
                         : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
@@ -298,7 +298,7 @@ export function CustomerProfilePage() {
                     type="button"
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all flex-1 justify-center ${
+                    className={`relative flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all flex-1 justify-center ${
                       isActive
                         ? "bg-gradient-to-br from-primary-600 to-blue-600 text-white shadow-lg shadow-primary-500/20"
                         : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"

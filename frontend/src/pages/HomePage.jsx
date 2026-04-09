@@ -26,6 +26,7 @@ const serviceCategories = [
 
 export function HomePage() {
   const { isAuthenticated } = useAuth();
+  const [statsData, setStatsData] = useState(null);
   const [testimonials, setTestimonials] = useState([
     { _id: "1", name: "Priya Sharma", role: "Wedding Planner", content: "EventMitra made my wedding planning effortless. The verified providers and seamless booking process saved me weeks of work!", rating: 5 },
     { _id: "2", name: "Rahul Verma", role: "Corporate Manager", content: "Outstanding platform for corporate events. The quality of service providers and the support team exceeded our expectations.", rating: 5 },
@@ -43,7 +44,20 @@ export function HomePage() {
         console.error("Error fetching testimonials:", error);
       }
     };
+
+    const fetchStats = async () => {
+      try {
+        const response = await publicApi.getStats();
+        if (response.data?.data) {
+          setStatsData(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+
     fetchTestimonials();
+    fetchStats();
   }, []);
 
   const rotatingTexts = [
@@ -211,24 +225,33 @@ export function HomePage() {
             transition={{ delay: 0.6, duration: 0.7 }}
             className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:mt-8"
           >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
-                className="group relative"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-blue-500/5 to-indigo-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                <div className="relative bg-white/80 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 text-center">
-                  <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
-                    <stat.icon className="h-5 w-5 text-white" />
+            {stats.map((stat, index) => {
+              let displayValue = stat.value;
+              if (statsData) {
+                if (index === 0) displayValue = statsData.totalBookings > 0 ? `${statsData.totalBookings}+` : stat.value;
+                if (index === 1) displayValue = statsData.totalProviders > 0 ? `${statsData.totalProviders}+` : stat.value;
+                if (index === 2) displayValue = statsData.supportHours || stat.value;
+                if (index === 3) displayValue = statsData.avgRating ? `${statsData.avgRating}★` : stat.value;
+              }
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
+                  className="group relative"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-blue-500/5 to-indigo-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
+                  <div className="relative bg-white/80 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 text-center">
+                    <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
+                      <stat.icon className="h-5 w-5 text-white" />
+                    </div>
+                    <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{displayValue}</p>
+                    <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
                   </div>
-                  <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{stat.value}</p>
-                  <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </motion.div>
         </div>
       </section>

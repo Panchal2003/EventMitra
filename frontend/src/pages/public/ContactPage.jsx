@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { publicApi } from "../../services/api";
 import { Clock, Mail, MapPin, MessageCircle, Phone, Send, Sparkles, Zap, Globe, CheckCircle2 } from "lucide-react";
 import { Footer } from "../../components/common/Footer";
 
@@ -40,6 +41,21 @@ export function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [statsData, setStatsData] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await publicApi.getStats();
+        if (response.data?.data) {
+          setStatsData(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+    fetchStats();
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -144,27 +160,36 @@ export function ContactPage() {
           >
             {[
               { value: "24h", label: "Response Time", icon: Clock },
-              { value: "500+", label: "Happy Customers", icon: CheckCircle2 },
-              { value: "100+", label: "Verified Providers", icon: Globe },
-              { value: "4.9★", label: "Average Rating", icon: Sparkles },
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
-                className="group relative"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-blue-500/5 to-indigo-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                <div className="relative bg-white/80 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 text-center">
-                  <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
-                    <stat.icon className="h-5 w-5 text-white" />
+              { value: "500+", label: "Happy Customers", icon: CheckCircle2, dataKey: "totalBookings", suffix: "+" },
+              { value: "100+", label: "Verified Providers", icon: Globe, dataKey: "totalProviders", suffix: "+" },
+              { value: "4.9★", label: "Average Rating", icon: Sparkles, dataKey: "avgRating", suffix: "★" },
+            ].map((stat, index) => {
+              let displayValue = stat.value;
+              if (statsData && stat.dataKey) {
+                const dataValue = statsData[stat.dataKey];
+                if (dataValue > 0) {
+                  displayValue = stat.suffix === "★" ? `${dataValue}★` : `${dataValue}${stat.suffix}`;
+                }
+              }
+              return (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
+                  className="group relative"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-blue-500/5 to-indigo-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
+                  <div className="relative bg-white/80 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 text-center">
+                    <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
+                      <stat.icon className="h-5 w-5 text-white" />
+                    </div>
+                    <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{displayValue}</p>
+                    <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
                   </div>
-                  <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{stat.value}</p>
-                  <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </motion.div>
         </div>
       </section>

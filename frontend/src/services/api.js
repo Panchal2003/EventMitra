@@ -36,10 +36,11 @@ export const adminApi = {
     api.patch(`/admin/providers/${id}/status`, { status }),
   getCustomers: () => api.get("/admin/customers"),
   getCustomer: (id) => api.get(`/admin/customers/${id}`),
-  getBookings: () => api.get("/admin/bookings"),
+  getBookings: (params) => api.get("/admin/bookings", { params }),
+  getCancelledBookings: (params) => api.get("/admin/bookings/cancelled", { params }),
   assignProvider: (id, providerId) =>
     api.patch(`/admin/bookings/${id}/provider`, { providerId }),
-  cancelBooking: (id) => api.patch(`/admin/bookings/${id}/cancel`),
+  cancelBooking: (id, payload) => api.patch(`/admin/bookings/${id}/cancel`, payload),
   getPayments: () => api.get("/admin/payments"),
   releasePayout: (id, transactionId) =>
     api.patch(`/admin/payments/${id}/release`, { transactionId }),
@@ -94,6 +95,7 @@ export const customerApi = {
   getBookings: () => api.get("/customer/bookings"),
   verifyOtp: (bookingId, payload) => api.patch(`/customer/bookings/${bookingId}/verify-otp`, payload),
   getAvailableSlots: (providerId, eventDate, duration, serviceIds) => api.get("/customer/available-slots", { params: { providerId, eventDate, duration, serviceIds: serviceIds?.join(',') } }),
+  cancelBooking: (bookingId, payload) => api.patch(`/customer/bookings/${bookingId}/cancel`, payload),
 };
 
 export const publicApi = {
@@ -104,4 +106,5 @@ export const publicApi = {
   getProviderServices: (providerId) => api.get(`/public/provider-services/${providerId}`),
   getGallery: (params) => api.get("/public/gallery", { params }),
   getTestimonials: () => api.get("/public/testimonials"),
+  getStats: () => api.get("/public/stats"),
 };

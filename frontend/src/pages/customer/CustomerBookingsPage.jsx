@@ -9,6 +9,7 @@ import {
   Sparkles,
   Zap,
   Shield,
+  XCircle,
 } from "lucide-react";
 import { GlassCard } from "../../components/admin/GlassCard";
 import { CustomerOtpModal } from "../../components/customer/CustomerOtpModal";
@@ -23,6 +24,7 @@ export function CustomerBookingsPage({ embedded = false }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [verifyOtpBooking, setVerifyOtpBooking] = useState(null);
   const [verifyOtpBusy, setVerifyOtpBusy] = useState(false);
+  const [cancelSuccess, setCancelSuccess] = useState(null);
 
   const fetchBookings = async () => {
     try {
@@ -59,6 +61,20 @@ export function CustomerBookingsPage({ embedded = false }) {
       setError(requestError.response?.data?.message || "Failed to verify OTP");
     } finally {
       setVerifyOtpBusy(false);
+    }
+  };
+
+  const handleCancelBooking = async (bookingId, cancelReason) => {
+    try {
+      const response = await customerApi.cancelBooking(bookingId, { cancelReason });
+      if (response.data?.success) {
+        setCancelSuccess(response.data.message);
+        await fetchBookings();
+        setTimeout(() => setCancelSuccess(null), 5000);
+      }
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Failed to cancel booking");
+      throw requestError;
     }
   };
 
@@ -208,6 +224,15 @@ export function CustomerBookingsPage({ embedded = false }) {
           </GlassCard>
         ) : null}
 
+        {cancelSuccess ? (
+          <GlassCard className="mb-6 border-emerald-200 bg-emerald-50 p-4" hover={false}>
+            <div className="flex items-center gap-3 text-emerald-700">
+              <XCircle className="h-5 w-5" />
+              <p className="text-sm font-medium">{cancelSuccess}</p>
+            </div>
+          </GlassCard>
+        ) : null}
+
         {bookings.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -247,6 +272,7 @@ export function CustomerBookingsPage({ embedded = false }) {
                 booking={booking}
                 index={index}
                 onVerifyOtp={setVerifyOtpBooking}
+                onCancel={handleCancelBooking}
               />
             ))}
           </motion.div>
