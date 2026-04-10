@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { publicApi } from "../../services/api";
-import { Award, Globe, Heart, ShieldCheck, Sparkles, Users, Zap, Star, CheckCircle2 } from "lucide-react";
+import { Award, Globe, Heart, ShieldCheck, Sparkles, Users, Zap, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Footer } from "../../components/common/Footer";
 
@@ -154,13 +154,25 @@ export function AboutPage() {
                   transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
                   className="group relative"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-blue-500/5 to-indigo-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                  <div className="relative bg-white/80 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 text-center">
-                    <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
+                  <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${[
+                    "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
+                    "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
+                    "bg-gradient-to-br from-rose-500/20 via-pink-500/10 to-orange-500/20",
+                    "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
+                  ][index]}`} />
+                  <div className={`relative rounded-2xl border bg-white/85 p-4 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${
+                    ["border-cyan-100/80", "border-violet-100/80", "border-rose-100/80", "border-emerald-100/80"][index]
+                  }`}>
+                    <div className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${[
+                      "bg-gradient-to-br from-cyan-500 to-blue-600",
+                      "bg-gradient-to-br from-violet-500 to-fuchsia-600",
+                      "bg-gradient-to-br from-rose-500 to-pink-600",
+                      "bg-gradient-to-br from-emerald-500 to-teal-600",
+                    ][index]}`}>
                       <Icon className="h-5 w-5 text-white" />
                     </div>
                     <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{displayValue}</p>
-                    <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
+                    <p className="text-xs font-semibold text-slate-600">{stat.label}</p>
                   </div>
                 </motion.div>
               );
@@ -245,6 +257,38 @@ export function AboutPage() {
                 <p className="text-sm text-slate-300">shaping better event experiences</p>
               </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative px-4 py-2 sm:px-6 sm:py-4">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              {
+                title: "Discover with confidence",
+                description: "Customers can browse categories, compare providers, and review real service details before booking.",
+                gradient: "from-cyan-500 to-blue-600",
+              },
+              {
+                title: "Book with more clarity",
+                description: "Pricing, OTP milestones, provider responses, and booking updates are designed to stay visible at every step.",
+                gradient: "from-violet-500 to-fuchsia-600",
+              },
+              {
+                title: "Grow provider trust",
+                description: "EventMitra helps providers present their services professionally and manage bookings through a cleaner workflow.",
+                gradient: "from-emerald-500 to-teal-600",
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-200/20 backdrop-blur-xl">
+                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${item.gradient} shadow-lg`}>
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

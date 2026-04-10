@@ -21,11 +21,11 @@ export function AdminSidebar() {
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-0 z-50 hidden h-screen w-72 flex-col bg-white shadow-2xl md:relative md:flex"
+        className="fixed left-0 top-0 z-50 hidden h-screen w-72 flex-col border-r border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,245,255,0.98))] shadow-2xl md:relative md:flex"
       >
         <div className="flex h-full flex-col">
           {/* Logo Header */}
-          <div className="relative flex h-16 shrink-0 items-center border-b border-slate-100 px-5">
+          <div className="relative flex shrink-0 items-center border-b border-slate-100 px-5 py-5">
             <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 opacity-50 blur-2xl"></div>
             <div className="relative flex w-full items-center gap-3">
               <motion.div
@@ -61,10 +61,10 @@ export function AdminSidebar() {
                       to={item.path}
                       end={item.end}
                       className={({ isActive }) =>
-                        `group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
+                        `group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all ${
                           isActive
                             ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                            : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-md"
                         }`
                       }
                     >
@@ -87,13 +87,17 @@ export function AdminSidebar() {
             </ul>
           </nav>
 
-          {/* Logout Button */}
           <div className="border-t border-slate-100 p-4">
+            <div className="mb-4 rounded-3xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-4 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-700">Admin Workspace</p>
+              <p className="mt-2 truncate text-sm font-semibold text-slate-900">{user?.name || "Administrator"}</p>
+              <p className="truncate text-xs text-slate-500">{user?.email || "System control access"}</p>
+            </div>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleLogout}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-50 to-red-100 px-4 py-3 text-sm font-medium text-red-600 transition-all hover:from-red-100 hover:to-red-50"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-50 to-red-100 px-4 py-3 text-sm font-medium text-red-600 transition-all hover:from-red-100 hover:to-red-50"
             >
               <LogOut className="h-4 w-4" />
               Logout

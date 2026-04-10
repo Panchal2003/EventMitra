@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { publicApi } from "../services/api";
-import { ArrowRight, CalendarCheck2, ChevronRight, ShieldCheck, Sparkles, Star, TrendingUp, Users, Globe, Heart, Quote, Zap, Award, CheckCircle2, Shield, Clock, CreditCard, Search } from "lucide-react";
+import { ArrowRight, ChevronRight, Sparkles, Star, TrendingUp, Users, Globe, Heart, Quote, Zap, Award, CheckCircle2, Shield, Clock, CreditCard, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/common/Button";
 import { Footer } from "../components/common/Footer";
-import logo from "/logo.png";
 
 const stats = [
   { value: "500+", label: "Bookings Completed", icon: CheckCircle2 },
@@ -155,7 +154,7 @@ export function HomePage() {
             >
               Plan Your Perfect
               <br />
-<span className="relative inline-block min-w-[300px] sm:min-w-[400px] overflow-hidden">
+<span className="relative inline-block min-w-[220px] overflow-hidden sm:min-w-[360px]">
                   <motion.div
                     className="flex whitespace-nowrap"
                     animate={{ x: ["0%", "-50%"] }}
@@ -191,7 +190,7 @@ export function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.6 }}
-              className="flex flex-row gap-3 justify-center items-center"
+              className="flex flex-col items-center justify-center gap-3 sm:flex-row"
             >
               <Link to="/services">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -241,13 +240,25 @@ export function HomePage() {
                   transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
                   className="group relative"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-blue-500/5 to-indigo-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                  <div className="relative bg-white/80 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 text-center">
-                    <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
+                  <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${[
+                    "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
+                    "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
+                    "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
+                    "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20",
+                  ][index]}`} />
+                  <div className={`relative rounded-2xl border bg-white/85 p-4 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${
+                    ["border-cyan-100/80", "border-emerald-100/80", "border-violet-100/80", "border-amber-100/80"][index]
+                  }`}>
+                    <div className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${[
+                      "bg-gradient-to-br from-cyan-500 to-blue-600",
+                      "bg-gradient-to-br from-emerald-500 to-teal-600",
+                      "bg-gradient-to-br from-violet-500 to-fuchsia-600",
+                      "bg-gradient-to-br from-amber-500 to-orange-600",
+                    ][index]}`}>
                       <stat.icon className="h-5 w-5 text-white" />
                     </div>
                     <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{displayValue}</p>
-                    <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
+                    <p className="text-xs font-semibold text-slate-600">{stat.label}</p>
                   </div>
                 </motion.div>
               );
@@ -296,21 +307,16 @@ export function HomePage() {
                 className="group relative"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                <div className="relative bg-white/90 backdrop-blur-2xl rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 border border-white/60 hover:border-primary-200/50 transition-all duration-500 h-full">
-                  {/* Icon */}
-                  <div className={`flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br ${feature.gradient} shadow-lg shadow-primary-500/20 mb-2 sm:mb-3 lg:mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+                <div className="relative h-full rounded-xl border border-white/60 bg-white/90 p-3 shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary-200/30 sm:rounded-2xl sm:p-4 lg:p-5">
+                  <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${feature.gradient} shadow-lg shadow-primary-500/20 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 sm:mb-3 sm:h-10 sm:w-10 sm:rounded-xl lg:mb-4 lg:h-12 lg:w-12`}>
                     <feature.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                   </div>
-                  
-                  {/* Content */}
                   <h3 className="text-xs sm:text-sm lg:text-lg font-bold text-slate-900 mb-1 sm:mb-2 group-hover:text-primary-700 transition-colors duration-300">
                     {feature.title}
                   </h3>
                   <p className="hidden sm:block text-xs lg:text-sm text-slate-600 leading-relaxed">
                     {feature.description}
                   </p>
-                  
-                  {/* Hover Arrow - Desktop only */}
                   <div className="hidden lg:flex mt-3 lg:mt-4 items-center gap-1.5 text-primary-600 font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-[-10px] group-hover:translate-x-0">
                     <span className="text-xs">Learn more</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -363,19 +369,15 @@ export function HomePage() {
                 className="group relative"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${category.color} rounded-xl blur-xl opacity-0 group-hover:opacity-20 transition-all duration-500`} />
-                <div className="relative bg-white/90 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-md shadow-slate-200/20 hover:shadow-lg hover:shadow-primary-200/30 transition-all duration-500 cursor-pointer text-center h-full">
-                  {/* Icon */}
-                  <div className="text-3xl sm:text-4xl mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 filter drop-shadow-lg">
+                <div className="relative flex h-full flex-col rounded-2xl border border-white/60 bg-white/90 p-4 text-center shadow-md shadow-slate-200/20 transition-all duration-500 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary-200/30 sm:p-5">
+                  <div className="mb-3 text-3xl drop-shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 sm:text-4xl">
                     {category.icon}
                   </div>
-                  
-                  {/* Content */}
                   <h3 className="font-bold text-xs sm:text-sm text-slate-900 mb-1 group-hover:text-primary-700 transition-colors duration-300">
                     {category.title}
                   </h3>
                   <p className="text-[10px] sm:text-xs text-slate-500 font-semibold">{category.count}</p>
-                  
-                  {/* Hover Indicator */}
+                  <p className="mt-2 text-[11px] text-slate-500">Book trusted specialists faster</p>
                   <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${category.color} rounded-b-xl transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`} />
                 </div>
               </motion.div>
@@ -408,12 +410,12 @@ export function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary-50/30 to-transparent" />
         
         <div className="relative mx-auto max-w-6xl">
-          <motion.div
+           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-4 sm:mb-5 px-10"
+            className="text-center mb-4 sm:mb-5 px-4"
           >
             <div className="inline-flex items-center gap-2 mb-3 sm:mb-3 px-4 py-2 rounded-full bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-100">
               <Heart className="h-3.5 w-3.5 text-rose-600" />
@@ -430,14 +432,14 @@ export function HomePage() {
             </p>
           </motion.div>
 
-          <div className="relative px-10">
+          <div className="relative px-0 sm:px-10">
             <button 
               onClick={() => document.getElementById('testimonials-scroll').scrollBy({ left: -320, behavior: 'smooth' })}
               className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors hidden sm:flex"
             >
               <ChevronRight className="h-5 w-5 rotate-180" />
             </button>
-            <div id="testimonials-scroll" className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 scrollbar-hide px-4 sm:px-8">
+            <div id="testimonials-scroll" className="flex gap-0 sm:gap-5 overflow-x-auto pb-4 scrollbar-hide pl-4 pr-4 sm:px-8 snap-x snap-mandatory">
               {testimonials.map((testimonial, index) => (
                 <motion.div
                   key={testimonial._id || index}
@@ -445,10 +447,10 @@ export function HomePage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1, duration: 0.5 }}
-                  className="group relative w-[280px] sm:w-[300px] flex-shrink-0"
+                  className="group relative w-full min-w-full sm:min-w-0 sm:w-[300px] flex-shrink-0 snap-center px-0 sm:px-0"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 via-transparent to-pink-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                  <div className="relative bg-white/90 backdrop-blur-2xl rounded-2xl p-4 sm:p-5 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-rose-200/30 border border-white/60 hover:border-rose-200/50 transition-all duration-500 h-full">
+                  <div className="relative bg-white/90 backdrop-blur-2xl rounded-2xl p-5 sm:p-5 mx-4 sm:mx-0 shadow-lg-mobile sm:shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-rose-200/30 border border-white/60 hover:border-rose-200/50 transition-all duration-500 h-full">
                     {/* Quote Icon */}
                     <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg shadow-rose-500/20 mb-3 sm:mb-4">
                       <Quote className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
@@ -463,7 +465,7 @@ export function HomePage() {
                     
                     {/* Content */}
                     <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-3 sm:mb-4 line-clamp-3 sm:line-clamp-none italic">
-                      "{testimonial.content}"
+                      &ldquo;{testimonial.content}&rdquo;
                     </p>
                     
                     {/* Author */}

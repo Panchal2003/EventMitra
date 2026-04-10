@@ -4,8 +4,6 @@ import { Link } from "react-router-dom";
 import {
   AlertCircle,
   ArrowRight,
-  Calendar,
-  CalendarClock,
   Clock3,
   MapPin,
   ShieldCheck,
@@ -13,6 +11,7 @@ import {
   Star,
   User,
   XCircle,
+  Zap,
 } from "lucide-react";
 import { Button } from "../common/Button";
 import { formatCurrency } from "../../utils/currency";
@@ -307,7 +306,7 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel 
       <article className="relative overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-900/5 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-primary-500/10">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 via-blue-500 to-indigo-500" />
 
-        <div className="px-5 pb-5 pt-6 sm:px-6 sm:pb-6">
+        <div className="px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -351,11 +350,11 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel 
             ) : null}
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {metaItems.map((item) => (
               <div
                 key={item.label}
-                className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4"
+                className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3.5"
               >
                 <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                   <item.icon className="h-3.5 w-3.5" />
@@ -364,7 +363,7 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel 
                 <p className={`mt-2 text-sm font-bold text-slate-900 ${item.valueClassName || ""}`}>
                   {item.value}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">{item.hint}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{item.hint}</p>
               </div>
             ))}
           </div>

@@ -1,198 +1,243 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Heart, Mail, MapPin, Phone, ArrowUp, Send, Sparkles, Shield, Clock, Users, Facebook, Twitter, Instagram, Linkedin, ChevronDown, X } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowUp,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Heart,
+  Image as ImageIcon,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Send,
+  Shield,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import { useState, useEffect } from "react";
+import { publicApi } from "../../services/api";
 import logo from "/logo.png";
 
+const serviceLinks = [
+  { to: "/services", text: "Browse Services" },
+  { to: "/services", text: "Service Categories" },
+  { to: "/gallery", text: "Provider Gallery" },
+  { to: "/contact", text: "Booking Help" },
+];
+
+const companyLinks = [
+  { to: "/about", text: "About Us" },
+  { to: "/contact", text: "Contact" },
+  { to: "/gallery", text: "Gallery" },
+  { to: "/", text: "Home" },
+];
+
+const supportLinks = [
+  { to: "/contact", text: "Support Center" },
+  { to: "/login", text: "Customer Login" },
+  { to: "/admin-login", text: "Admin Login" },
+  { to: "/about", text: "Platform Info" },
+];
+
+const quickActionLinks = [
+  { href: "mailto:hello@eventmitra.com", label: "Email", icon: Mail, tone: "hover:bg-sky-600" },
+  { href: "tel:+919876543210", label: "Call", icon: Phone, tone: "hover:bg-emerald-600" },
+  { to: "/contact", label: "Support", icon: MessageCircle, tone: "hover:bg-primary-600" },
+  { to: "/gallery", label: "Gallery", icon: ImageIcon, tone: "hover:bg-amber-600" },
+];
+
+function FooterLinkList({ links }) {
+  return (
+    <ul className="space-y-2">
+      {links.map((link) => (
+        <li key={link.text}>
+          <Link
+            to={link.to}
+            className="group flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors duration-200 hover:text-primary-400"
+          >
+            <span className="h-1 w-1 rounded-full bg-primary-500 opacity-0 transition-opacity group-hover:opacity-100" />
+            {link.text}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function Footer() {
+  const [expandedSections, setExpandedSections] = useState({});
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [stats, setStats] = useState(null);
+  const [newsletterState, setNewsletterState] = useState({
+    success: false,
+    error: "",
+  });
+  
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [statsResponse, categoriesResponse] = await Promise.all([
+          publicApi.getStats(),
+          publicApi.getServiceCategories()
+        ]);
+        
+        const statsData = statsResponse.data?.data || {};
+        
+        if (categoriesResponse.data?.data) {
+          statsData.totalServiceCategories = categoriesResponse.data.data.length;
+        }
+        
+        setStats(statsData);
+      } catch (error) {
+        console.error("Error fetching footer stats:", error);
+      }
+    };
+    
+    fetchStats();
+  }, []);
+
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const [expandedSections, setExpandedSections] = useState({});
-
   const toggleSection = (section) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [section]: !prev[section]
+      [section]: !prev[section],
     }));
+  };
+
+  const handleNewsletterSubmit = (event) => {
+    event.preventDefault();
+    const trimmedEmail = newsletterEmail.trim();
+
+    if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      setNewsletterState({
+        success: false,
+        error: "Enter a valid email address.",
+      });
+      return;
+    }
+
+    setNewsletterState({
+      success: true,
+      error: "",
+    });
+    setNewsletterEmail("");
   };
 
   return (
     <footer className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-primary-500/50 to-transparent" />
+        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary-500/10 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-500/50 to-transparent" />
       </div>
 
-      {/* Main Footer Content */}
-      <div className="relative py-8 px-4 sm:px-6">
+      <div className="relative px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          {/* Mobile Accordion Layout */}
-          <div className="lg:hidden space-y-4">
-            {/* Brand Section - Always Visible on Mobile */}
-            <motion.div 
+          <div className="space-y-4 lg:hidden">
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-slate-800/50 rounded-2xl p-5 border border-slate-700"
+              className="rounded-2xl border border-slate-700 bg-slate-800/50 p-5"
             >
-              <div className="flex items-center gap-3 mb-4">
+              <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg shadow-primary-500/30">
                   <img src={logo} alt="EventMitra" className="h-6 w-6" />
                 </div>
-                <span className="font-display font-bold text-xl text-white">EventMitra</span>
+                <span className="font-display text-xl font-bold text-white">EventMitra</span>
               </div>
-              <p className="text-slate-400 text-sm leading-relaxed mb-4">
-                Your one-stop solution for all event services. Making event planning simple, elegant, and memorable.
+
+              <p className="mb-4 text-sm leading-relaxed text-slate-400">
+                Your one-stop platform for event discovery, provider comparison, and booking support.
               </p>
-              
-              {/* Quick Contact - Collapsed on Mobile */}
+
               <div className="flex flex-wrap gap-2">
-                <a href="mailto:hello@eventmitra.com" className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-slate-300 text-xs hover:bg-slate-700 hover:text-white transition-colors">
+                <a
+                  href="mailto:hello@eventmitra.com"
+                  className="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-xs text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+                >
                   <Mail className="h-3.5 w-3.5 text-primary-400" />
                   <span>Email</span>
                 </a>
-                <a href="tel:+919876543210" className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-slate-300 text-xs hover:bg-slate-700 hover:text-white transition-colors">
+                <a
+                  href="tel:+919876543210"
+                  className="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-xs text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+                >
                   <Phone className="h-3.5 w-3.5 text-primary-400" />
                   <span>Call</span>
                 </a>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-slate-300 text-xs">
+                <div className="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-xs text-slate-300">
                   <MapPin className="h-3.5 w-3.5 text-primary-400" />
                   <span>India</span>
                 </div>
               </div>
 
-              {/* Social Icons */}
-              <div className="flex gap-2 mt-4">
-                {[
-                  { icon: Facebook, href: "#", color: "hover:bg-blue-600" },
-                  { icon: Twitter, href: "#", color: "hover:bg-sky-500" },
-                  { icon: Instagram, href: "#", color: "hover:bg-pink-600" },
-                  { icon: Linkedin, href: "#", color: "hover:bg-blue-700" },
-                ].map((social, index) => (
-                  <motion.a
-                    key={index}
-                    href={social.href}
-                    whileHover={{ scale: 1.1, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`flex items-center justify-center w-9 h-9 rounded-lg bg-slate-700 text-slate-400 hover:text-white transition-all duration-300 border border-slate-600 ${social.color}`}
-                  >
-                    <social.icon className="h-4 w-4" />
-                  </motion.a>
-                ))}
+              <div className="mt-4 flex gap-2">
+                {quickActionLinks.map((item) => {
+                  const Icon = item.icon;
+                  const actionClassName = `flex h-9 w-9 items-center justify-center rounded-lg border border-slate-600 bg-slate-700 text-slate-400 transition-all duration-300 hover:text-white ${item.tone}`;
+
+                  if (item.to) {
+                    return (
+                      <motion.div key={item.label} whileHover={{ scale: 1.08, y: -2 }} whileTap={{ scale: 0.95 }}>
+                        <Link to={item.to} className={actionClassName} aria-label={item.label}>
+                          <Icon className="h-4 w-4" />
+                        </Link>
+                      </motion.div>
+                    );
+                  }
+
+                  return (
+                    <motion.a
+                      key={item.label}
+                      href={item.href}
+                      whileHover={{ scale: 1.08, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={actionClassName}
+                      aria-label={item.label}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </motion.a>
+                  );
+                })}
               </div>
             </motion.div>
 
-            {/* Services Accordion */}
-            <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
-              <button 
-                onClick={() => toggleSection('services')}
-                className="w-full flex items-center justify-between p-5 text-left"
-              >
-                <h4 className="font-bold text-white text-sm uppercase tracking-wider">Services</h4>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${expandedSections.services ? 'rotate-180' : ''}`} />
-              </button>
-              {expandedSections.services && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="px-5 pb-5"
+            {[
+              { id: "services", title: "Services", links: serviceLinks },
+              { id: "company", title: "Company", links: companyLinks },
+              { id: "support", title: "Support", links: supportLinks },
+            ].map((section) => (
+              <div key={section.id} className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/50">
+                <button
+                  onClick={() => toggleSection(section.id)}
+                  className="flex w-full items-center justify-between p-5 text-left"
                 >
-                  <ul className="space-y-2">
-                    {[
-                      { to: "/services", text: "Browse Services" },
-                      { to: "/services", text: "Categories" },
-                      { to: "/services", text: "Pricing" },
-                      { to: "/services", text: "How It Works" }
-                    ].map((link, index) => (
-                      <li key={index}>
-                        <Link to={link.to} className="text-slate-400 hover:text-primary-400 transition-colors duration-200 text-sm font-medium flex items-center gap-2">
-                          <span className="w-1 h-1 rounded-full bg-primary-500" />
-                          {link.text}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              )}
-            </div>
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-white">{section.title}</h4>
+                  <ChevronDown
+                    className={`h-5 w-5 text-slate-400 transition-transform ${
+                      expandedSections[section.id] ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {expandedSections[section.id] ? (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    className="px-5 pb-5"
+                  >
+                    <FooterLinkList links={section.links} />
+                  </motion.div>
+                ) : null}
+              </div>
+            ))}
 
-            {/* Company Accordion */}
-            <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
-              <button 
-                onClick={() => toggleSection('company')}
-                className="w-full flex items-center justify-between p-5 text-left"
-              >
-                <h4 className="font-bold text-white text-sm uppercase tracking-wider">Company</h4>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${expandedSections.company ? 'rotate-180' : ''}`} />
-              </button>
-              {expandedSections.company && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="px-5 pb-5"
-                >
-                  <ul className="space-y-2">
-                    {[
-                      { to: "/about", text: "About Us" },
-                      { to: "/contact", text: "Contact" },
-                      { to: "/careers", text: "Careers" },
-                      { to: "/press", text: "Press" }
-                    ].map((link, index) => (
-                      <li key={index}>
-                        <Link to={link.to} className="text-slate-400 hover:text-primary-400 transition-colors duration-200 text-sm font-medium flex items-center gap-2">
-                          <span className="w-1 h-1 rounded-full bg-primary-500" />
-                          {link.text}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              )}
-            </div>
-
-            {/* Support Accordion */}
-            <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
-              <button 
-                onClick={() => toggleSection('support')}
-                className="w-full flex items-center justify-between p-5 text-left"
-              >
-                <h4 className="font-bold text-white text-sm uppercase tracking-wider">Support</h4>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${expandedSections.support ? 'rotate-180' : ''}`} />
-              </button>
-              {expandedSections.support && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="px-5 pb-5"
-                >
-                  <ul className="space-y-2">
-                    {[
-                      { href: "#", text: "Help Center" },
-                      { href: "#", text: "Privacy Policy" },
-                      { href: "#", text: "Terms of Service" },
-                      { href: "#", text: "Cookie Policy" }
-                    ].map((link, index) => (
-                      <li key={index}>
-                        <a href={link.href} className="text-slate-400 hover:text-primary-400 transition-colors duration-200 text-sm font-medium flex items-center gap-2">
-                          <span className="w-1 h-1 rounded-full bg-primary-500" />
-                          {link.text}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              )}
-            </div>
-
-            {/* Newsletter for Mobile */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -200,263 +245,257 @@ export function Footer() {
               className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 p-5"
             >
               <div className="absolute inset-0 opacity-10">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-2xl" />
+                <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-white blur-2xl" />
               </div>
               <div className="relative">
-                <h3 className="font-display text-lg font-bold text-white mb-2">Stay Updated</h3>
-                <p className="text-primary-100 text-xs mb-4">Subscribe for latest updates & offers.</p>
-                <div className="flex flex-col gap-2">
+                <h3 className="mb-2 font-display text-lg font-bold text-white">Stay Updated</h3>
+                <p className="mb-4 text-xs text-primary-100">Subscribe for platform updates and offers.</p>
+                <form className="flex flex-col gap-2" onSubmit={handleNewsletterSubmit}>
                   <input
                     type="email"
                     placeholder="Enter your email"
-                    className="w-full px-4 py-2.5 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/60 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
+                    value={newsletterEmail}
+                    onChange={(event) => {
+                      setNewsletterEmail(event.target.value);
+                      if (newsletterState.error || newsletterState.success) {
+                        setNewsletterState({ success: false, error: "" });
+                      }
+                    }}
+                    className="w-full rounded-xl border border-white/30 bg-white/20 px-4 py-2.5 text-sm text-white placeholder-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/50"
                   />
                   <motion.button
+                    type="submit"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white text-primary-600 font-semibold text-sm shadow-lg"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-primary-600 shadow-lg"
                   >
                     <Send className="h-4 w-4" />
                     Subscribe
                   </motion.button>
-                </div>
+                  {newsletterState.error ? (
+                    <p className="text-xs text-white/85">{newsletterState.error}</p>
+                  ) : null}
+                  {newsletterState.success ? (
+                    <div className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-xs font-medium text-white">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Thanks, we will keep you updated.
+                    </div>
+                  ) : null}
+                </form>
               </div>
             </motion.div>
           </div>
 
-          {/* Desktop Grid Layout */}
           <div className="hidden lg:block">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 mb-8">
-              {/* Brand Section */}
-              <motion.div 
+            <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 className="sm:col-span-2 lg:col-span-1"
               >
-                <div className="flex items-center gap-3 mb-4">
+                <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-lg shadow-primary-500/30">
                     <img src={logo} alt="EventMitra" className="h-7 w-7" />
                   </div>
-                  <span className="font-display font-bold text-2xl text-white">EventMitra</span>
+                  <span className="font-display text-2xl font-bold text-white">EventMitra</span>
                 </div>
-                <p className="text-slate-400 text-sm leading-relaxed mb-4 max-w-xs">
-                  Your one-stop solution for all event services. Making event planning simple, elegant, and memorable.
+
+                <p className="mb-4 max-w-xs text-sm leading-relaxed text-slate-400">
+                  Your one-stop platform for event discovery, provider comparison, and booking support.
                 </p>
-                
-                {/* Contact Info */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-3 text-slate-400 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
+
+                <div className="mb-4 space-y-2">
+                  <div className="flex items-center gap-3 text-sm text-slate-400">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 bg-slate-800">
                       <Mail className="h-4 w-4 text-primary-400" />
                     </div>
                     <span>hello@eventmitra.com</span>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-400 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
+                  <div className="flex items-center gap-3 text-sm text-slate-400">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 bg-slate-800">
                       <Phone className="h-4 w-4 text-primary-400" />
                     </div>
                     <span>+91 98765 43210</span>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-400 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
+                  <div className="flex items-center gap-3 text-sm text-slate-400">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 bg-slate-800">
                       <MapPin className="h-4 w-4 text-primary-400" />
                     </div>
-                    <span>Mumbai, India</span>
+                    <span>Serving customers across India</span>
                   </div>
                 </div>
 
-                {/* Social Icons */}
                 <div className="flex gap-3">
-                  {[
-                    { icon: "M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" },
-                    { icon: "M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z" },
-                    { icon: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" }
-                  ].map((social, index) => (
-                    <motion.a
-                      key={index}
-                      href="#"
-                      whileHover={{ scale: 1.1, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800 hover:bg-primary-500 text-slate-400 hover:text-white transition-all duration-300 border border-slate-700 hover:border-primary-500 shadow-sm"
-                    >
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d={social.icon} />
-                      </svg>
-                    </motion.a>
-                  ))}
+                  {quickActionLinks.map((item) => {
+                    const Icon = item.icon;
+                    const actionClassName = `flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-400 shadow-sm transition-all duration-300 hover:text-white ${item.tone}`;
+
+                    if (item.to) {
+                      return (
+                        <motion.div key={item.label} whileHover={{ scale: 1.08, y: -2 }} whileTap={{ scale: 0.95 }}>
+                          <Link to={item.to} className={actionClassName} aria-label={item.label}>
+                            <Icon className="h-4 w-4" />
+                          </Link>
+                        </motion.div>
+                      );
+                    }
+
+                    return (
+                      <motion.a
+                        key={item.label}
+                        href={item.href}
+                        whileHover={{ scale: 1.08, y: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={actionClassName}
+                        aria-label={item.label}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </motion.a>
+                    );
+                  })}
                 </div>
               </motion.div>
 
-              {/* Services */}
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-white">Services</h4>
+                <FooterLinkList links={serviceLinks} />
+              </motion.div>
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
               >
-                <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">Services</h4>
-                <ul className="space-y-2">
-                  {[
-                    { to: "/services", text: "Browse Services" },
-                    { to: "/services", text: "Categories" },
-                    { to: "/services", text: "Pricing" },
-                    { to: "/services", text: "How It Works" }
-                  ].map((link, index) => (
-                    <li key={index}>
-                      <Link to={link.to} className="text-slate-400 hover:text-primary-400 transition-colors duration-200 text-sm font-medium flex items-center gap-2 group">
-                        <span className="w-1 h-1 rounded-full bg-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        {link.text}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-white">Company</h4>
+                <FooterLinkList links={companyLinks} />
               </motion.div>
 
-              {/* Company */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
               >
-                <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">Company</h4>
-                <ul className="space-y-2">
-                  {[
-                    { to: "/about", text: "About Us" },
-                    { to: "/contact", text: "Contact" },
-                    { to: "/careers", text: "Careers" },
-                    { to: "/press", text: "Press" }
-                  ].map((link, index) => (
-                    <li key={index}>
-                      <Link to={link.to} className="text-slate-400 hover:text-primary-400 transition-colors duration-200 text-sm font-medium flex items-center gap-2 group">
-                        <span className="w-1 h-1 rounded-full bg-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        {link.text}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-
-              {/* Support */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
-              >
-                <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">Support</h4>
-                <ul className="space-y-2">
-                  {[
-                    { href: "#", text: "Help Center" },
-                    { href: "#", text: "Privacy Policy" },
-                    { href: "#", text: "Terms of Service" },
-                    { href: "#", text: "Cookie Policy" }
-                  ].map((link, index) => (
-                    <li key={index}>
-                      <a href={link.href} className="text-slate-400 hover:text-primary-400 transition-colors duration-200 text-sm font-medium flex items-center gap-2 group">
-                        <span className="w-1 h-1 rounded-full bg-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        {link.text}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-white">Support</h4>
+                <FooterLinkList links={supportLinks} />
               </motion.div>
             </div>
 
-            {/* Newsletter Section - Desktop */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.5 }}
-              className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 p-5 sm:p-6 mb-8"
+              transition={{ delay: 0.3 }}
+              className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 p-5 sm:p-6"
             >
               <div className="absolute inset-0 opacity-10">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl" />
+                <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-white blur-3xl" />
+                <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-white blur-3xl" />
               </div>
-              <div className="relative flex flex-col sm:flex-row items-center justify-between gap-4">
+
+              <div className="relative flex flex-col items-center justify-between gap-4 sm:flex-row">
                 <div className="text-center sm:text-left">
-                  <h3 className="font-display text-xl font-bold text-white mb-1">Stay Updated</h3>
-                  <p className="text-primary-100 text-sm">Subscribe to our newsletter for the latest updates and offers.</p>
+                  <h3 className="mb-1 font-display text-xl font-bold text-white">Stay Updated</h3>
+                  <p className="text-sm text-primary-100">Subscribe for platform updates and offers.</p>
                 </div>
-                <div className="flex w-full sm:w-auto gap-3">
+
+                <form className="flex w-full gap-3 sm:w-auto" onSubmit={handleNewsletterSubmit}>
                   <input
                     type="email"
                     placeholder="Enter your email"
-                    className="flex-1 sm:w-64 px-4 py-2.5 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/60 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
+                    value={newsletterEmail}
+                    onChange={(event) => {
+                      setNewsletterEmail(event.target.value);
+                      if (newsletterState.error || newsletterState.success) {
+                        setNewsletterState({ success: false, error: "" });
+                      }
+                    }}
+                    className="flex-1 rounded-xl border border-white/30 bg-white/20 px-4 py-2.5 text-sm text-white placeholder-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/50 sm:w-64"
                   />
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-primary-600 font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300"
+                    type="submit"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-primary-600 shadow-lg transition-all duration-300 hover:shadow-xl"
                   >
                     <Send className="h-4 w-4" />
                     Subscribe
                   </motion.button>
-                </div>
+                </form>
               </div>
+
+              {newsletterState.error ? (
+                <p className="relative mt-3 text-sm text-white/85">{newsletterState.error}</p>
+              ) : null}
+              {newsletterState.success ? (
+                <div className="relative mt-3 inline-flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-sm font-medium text-white">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Thanks, we will keep you updated.
+                </div>
+              ) : null}
             </motion.div>
           </div>
 
-          {/* Stats Section - Mobile Optimized */}
-          <motion.div
+           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8"
+            className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4"
           >
             {[
-              { icon: Users, label: "Active Users", value: "10K+", color: "from-blue-500 to-cyan-500" },
-              { icon: Sparkles, label: "Services", value: "500+", color: "from-violet-500 to-purple-500" },
-              { icon: Shield, label: "Verified Providers", value: "1K+", color: "from-emerald-500 to-teal-500" },
-              { icon: Clock, label: "Events Completed", value: "5K+", color: "from-amber-500 to-orange-500" }
-            ].map((stat, index) => (
+              { icon: Users, label: "Active Users", key: "totalBookings", default: "500+", color: "from-blue-500 to-cyan-500" },
+              { icon: Sparkles, label: "Services", key: "totalServiceCategories", default: "3", color: "from-violet-500 to-purple-500" },
+              { icon: Shield, label: "Verified Providers", key: "totalProviders", default: "100+", color: "from-emerald-500 to-teal-500" },
+              { icon: Clock, label: "24/7 Support", key: "supportHours", default: "24/7", color: "from-amber-500 to-orange-500" },
+            ].map((stat) => {
+              const value = stats && stats[stat.key] ? (stats[stat.key] > 0 ? `${stats[stat.key]}+` : stat.default) : stat.default;
+              return (
               <div
-                key={index}
-                className="relative overflow-hidden rounded-xl bg-slate-800/50 border border-slate-700 p-3 text-center backdrop-blur-sm"
+                key={stat.label}
+                className="relative overflow-hidden rounded-xl border border-slate-700 bg-slate-800/50 p-3 text-center backdrop-blur-sm"
               >
-                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.color}`} />
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${stat.color} text-white mx-auto mb-2 shadow-lg`}>
+                <div className={`absolute left-0 right-0 top-0 h-1 bg-gradient-to-r ${stat.color}`} />
+                <div
+                  className={`mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${stat.color} text-white shadow-lg`}
+                >
                   <stat.icon className="h-4 w-4" />
                 </div>
-                <p className="font-display text-lg font-bold text-white mb-0.5">{stat.value}</p>
+                <p className="mb-0.5 font-display text-lg font-bold text-white">{value}</p>
                 <p className="text-xs text-slate-400">{stat.label}</p>
               </div>
-            ))}
+              );
+            })}
           </motion.div>
 
-          {/* Bottom Bar */}
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-6 border-t border-slate-700">
-            <p className="text-center sm:text-left text-sm text-slate-400">
-              © 2024 EventMitra. All rights reserved. Made with{" "}
-              <Heart className="inline h-3 w-3 text-red-500 fill-red-500" />{" "}
-              for event planners.
+          <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-700 pt-6 sm:flex-row">
+            <p className="text-center text-sm text-slate-400 sm:text-left">
+              Copyright 2024 EventMitra. All rights reserved. Made with{" "}
+              <Heart className="inline h-3 w-3 fill-red-500 text-red-500" /> for event planners.
             </p>
-            
-            <div className="flex flex-wrap justify-center items-center gap-2 text-xs text-slate-400">
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700">
-                🇮🇳 Made in India
+
+            <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-400">
+              <span className="flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5">
+                Made in India
               </span>
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700">
-                🌟 500+ Customers
+              <span className="flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5">
+                500+ Customers
               </span>
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700">
-                ⭐ 4.9 Rating
+              <span className="flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5">
+                4.9 Rating
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Scroll to Top Button */}
       <motion.button
         onClick={scrollToTop}
-        whileHover={{ scale: 1.1 }}
+        whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-blue-600 text-white shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all duration-300"
+        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-blue-600 text-white shadow-lg shadow-primary-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/40"
       >
         <ArrowUp className="h-5 w-5" />
       </motion.button>

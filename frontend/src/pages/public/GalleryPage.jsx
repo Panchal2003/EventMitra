@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Sparkles, X, ZoomIn, Globe, Zap, Image, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, ZoomIn, Globe, Image, Loader2 } from "lucide-react";
 import { Footer } from "../../components/common/Footer";
 import { publicApi } from "../../services/api";
 
@@ -195,7 +195,7 @@ export function GalleryPage() {
                 >
                   {categories.map((category) => (
                     <option key={category} value={category}>
-                      {category}
+                      {category} ({categoryCounts[category] || 0})
                     </option>
                   ))}
                 </select>

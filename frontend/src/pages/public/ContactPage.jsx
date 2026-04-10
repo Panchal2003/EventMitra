@@ -14,8 +14,8 @@ const contactItems = [
   {
     icon: Clock,
     title: "Working Hours",
-    description: "Mon - Sat: 9:00 AM - 8:00 PM",
-    extra: "Sunday: 10:00 AM - 6:00 PM",
+    description: "24*7 available",
+    extra: "We respond continuously for booking and support requests.",
     gradient: "from-emerald-500 to-teal-500",
   },
   {
@@ -179,13 +179,25 @@ export function ContactPage() {
                   transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
                   className="group relative"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-blue-500/5 to-indigo-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                  <div className="relative bg-white/80 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 text-center">
-                    <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
+                  <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${[
+                    "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
+                    "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
+                    "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
+                    "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20",
+                  ][index]}`} />
+                  <div className={`relative rounded-2xl border bg-white/85 p-4 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${
+                    ["border-cyan-100/80", "border-emerald-100/80", "border-violet-100/80", "border-amber-100/80"][index]
+                  }`}>
+                    <div className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${[
+                      "bg-gradient-to-br from-cyan-500 to-blue-600",
+                      "bg-gradient-to-br from-emerald-500 to-teal-600",
+                      "bg-gradient-to-br from-violet-500 to-fuchsia-600",
+                      "bg-gradient-to-br from-amber-500 to-orange-600",
+                    ][index]}`}>
                       <stat.icon className="h-5 w-5 text-white" />
                     </div>
                     <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{displayValue}</p>
-                    <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
+                    <p className="text-xs font-semibold text-slate-600">{stat.label}</p>
                   </div>
                 </motion.div>
               );
@@ -244,7 +256,7 @@ export function ContactPage() {
                       className="group relative"
                     >
                       <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                      <div className="relative bg-white/90 backdrop-blur-2xl rounded-2xl p-4 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 border border-white/60 hover:border-primary-200/50 transition-all duration-500">
+                      <div className="relative rounded-3xl border border-white/60 bg-white/90 p-4 shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary-200/30">
                         <div className="flex items-start gap-3">
                           <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient} shadow-lg shadow-primary-500/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
                             <Icon className="h-4 w-4 text-white" />
@@ -263,7 +275,7 @@ export function ContactPage() {
                 })}
               </div>
 
-              {/* Office Map */}
+              {/* Coverage Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -273,19 +285,35 @@ export function ContactPage() {
               >
                 <div className="border-b border-slate-100 bg-gradient-to-r from-slate-950 via-primary-800 to-blue-700 px-6 py-4 text-white">
                   <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-200">
-                    Office Map
+                    Support Coverage
                   </p>
-                  <p className="mt-1 text-sm text-slate-300">Visit us or use this as a location reference.</p>
+                  <p className="mt-1 text-sm text-slate-300">We support customers and providers across India.</p>
                 </div>
-                <div className="h-72 overflow-hidden">
-                  <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3151.835434509374!2d144.9537353153167!3d-37.8172099797517!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzfCsDQ5JzA0LjYiUyAxNDTCsDU3JzIyLjQiRQ!5e0!3m2!1sen!2sus!4v1614134567890!5m2!1sen!2sus"
-                    className="h-full w-full border-0"
-                    allowFullScreen=""
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Office Location"
-                  />
+                <div className="space-y-4 p-6">
+                  <div className="rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50 to-blue-50 p-5">
+                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-700">
+                      Based in India
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      Reach EventMitra for booking help, provider support, or account issues by phone or email. We are available for event planning questions across major Indian cities.
+                    </p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <a
+                      href="tel:+919876543210"
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-700"
+                    >
+                      <Phone className="h-4 w-4" />
+                      Call support
+                    </a>
+                    <a
+                      href="mailto:support@eventmitra.com"
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-700"
+                    >
+                      <Mail className="h-4 w-4" />
+                      Email support
+                    </a>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>

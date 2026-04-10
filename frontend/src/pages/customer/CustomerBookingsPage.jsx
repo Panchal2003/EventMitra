@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   CalendarCheck2,
@@ -180,10 +180,16 @@ export function CustomerBookingsPage({ embedded = false }) {
                     icon: Shield,
                   },
                 ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm hover:bg-white/20 transition-all duration-300"
-                  >
+                      <div
+                        key={item.label}
+                        className={`rounded-2xl border px-4 py-3 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 ${
+                          item.label === "Total"
+                            ? "border-cyan-300/30 bg-cyan-400/10"
+                            : item.label === "Active"
+                              ? "border-emerald-300/30 bg-emerald-400/10"
+                              : "border-violet-300/30 bg-violet-400/10"
+                        }`}
+                      >
                     <div className="flex items-center gap-2 mb-2">
                       <item.icon className="h-4 w-4 text-primary-400" />
                       <p className="text-xs uppercase tracking-[0.18em] text-slate-300">{item.label}</p>
@@ -209,7 +215,7 @@ export function CustomerBookingsPage({ embedded = false }) {
                 placeholder="Search by service, provider, or location..."
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white/90 backdrop-blur-2xl py-3 pl-12 pr-4 text-sm shadow-lg shadow-slate-200/20 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+                className="w-full rounded-2xl border border-slate-200 bg-white/90 py-3 pl-12 pr-4 text-sm shadow-lg shadow-slate-200/20 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
               />
             </div>
           </motion.div>

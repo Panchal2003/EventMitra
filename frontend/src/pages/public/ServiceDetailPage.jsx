@@ -6,14 +6,10 @@ import {
   ChevronRight,
   Lock,
   MapPin,
-  ShieldCheck,
   Sparkles,
   Star,
   Users,
   Globe,
-  Zap,
-  Award,
-  CheckCircle2,
   TrendingUp,
 } from "lucide-react";
 import { publicApi } from "../../services/api";
@@ -134,21 +130,17 @@ export function ServiceDetailPage() {
     );
   }
 
+  const displayServiceName =
+    category?.name ||
+    decodedServiceName
+      .split("-")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
   const minPrices = providers
     .flatMap((item) => (item.services || []).map((service) => Number(service.startingPrice) || 0))
     .filter((price) => price > 0);
   const startingFrom = minPrices.length > 0 ? Math.min(...minPrices) : null;
-  const ratedProviders = providers.filter((item) => Number(item.provider?.ratingCount || 0) > 0);
-  const totalReviewCount = ratedProviders.reduce(
-    (sum, item) => sum + Number(item.provider?.ratingCount || 0),
-    0
-  );
-  const averageProviderRating = ratedProviders.length
-    ? (
-        ratedProviders.reduce((sum, item) => sum + Number(item.provider?.rating || 0), 0) /
-        ratedProviders.length
-      ).toFixed(1)
-    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 relative overflow-hidden">
@@ -210,7 +202,7 @@ export function ServiceDetailPage() {
               transition={{ delay: 0.3, duration: 0.6 }}
               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-black text-slate-900 mb-5 leading-[0.9] tracking-tight"
             >
-              {decodedServiceName}
+              {displayServiceName}
               <br />
               <span className="bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent animate-gradient-x relative inline-block">
                 Providers
@@ -236,20 +228,20 @@ export function ServiceDetailPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.7 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:mt-8 items-stretch"
+            className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-4 md:grid-cols-4 items-stretch"
           >
             {[
               { value: providers.length, label: "Providers", icon: Users },
               {
                 value: canShowPrices
                   ? startingFrom
-                    ? `₹${startingFrom.toLocaleString()}`
+                    ? `INR ${startingFrom.toLocaleString()}`
                     : "Custom"
                   : "Login",
                 label: canShowPrices ? "Starting From" : "Pricing",
                 icon: TrendingUp,
               },
-              { value: category?.name || decodedServiceName, label: "Category", icon: Globe },
+              { value: category?.name || displayServiceName, label: "Category", icon: Globe },
               { value: "4.9★", label: "Avg Rating", icon: Star },
             ].map((stat, index) => (
               <motion.div
@@ -259,13 +251,25 @@ export function ServiceDetailPage() {
                 transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
                 className="group relative flex"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-blue-500/5 to-indigo-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                <div className="relative bg-white/80 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 text-center flex flex-col items-center justify-center w-full">
-                  <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
+                <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${[
+                  "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
+                  "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
+                  "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
+                  "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20",
+                ][index]}`} />
+                <div className={`relative flex w-full flex-col items-center justify-center rounded-2xl border bg-white/85 p-4 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${
+                  ["border-cyan-100/80", "border-emerald-100/80", "border-violet-100/80", "border-amber-100/80"][index]
+                }`}>
+                  <div className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${[
+                    "bg-gradient-to-br from-cyan-500 to-blue-600",
+                    "bg-gradient-to-br from-emerald-500 to-teal-600",
+                    "bg-gradient-to-br from-violet-500 to-fuchsia-600",
+                    "bg-gradient-to-br from-amber-500 to-orange-600",
+                  ][index]}`}>
                     <stat.icon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{stat.value}</p>
-                  <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
+                  <p className="mb-1 text-2xl font-display font-black text-slate-900 sm:text-3xl">{stat.value}</p>
+                  <p className="text-xs font-semibold text-slate-600">{stat.label}</p>
                 </div>
               </motion.div>
             ))}
@@ -307,7 +311,10 @@ export function ServiceDetailPage() {
             {providers.map((item, index) => {
               const provider = item.provider;
               const services = item.services || [];
-              const minPrice = Math.min(...services.map((service) => Number(service.startingPrice) || 0));
+              const validPrices = services
+                .map((service) => Number(service.startingPrice) || 0)
+                .filter((price) => price > 0);
+              const minPrice = validPrices.length ? Math.min(...validPrices) : null;
               const previewImages = getProviderGalleryImages(services);
               const providerRatingCount = Number(provider.ratingCount || 0);
               const providerRatingLabel = providerRatingCount > 0
@@ -324,8 +331,7 @@ export function ServiceDetailPage() {
                   className="group relative"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                  <div className="relative bg-white/95 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-lg shadow-slate-200/30 hover:shadow-2xl hover:shadow-primary-200/40 border border-white/60 hover:border-primary-200/60 transition-all duration-500 h-full flex flex-col">
-                    {/* Card Header with Gradient */}
+                  <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/60 bg-white/95 shadow-lg shadow-slate-200/30 transition-all duration-500 hover:-translate-y-1 hover:border-primary-200/60 hover:shadow-2xl hover:shadow-primary-200/40">
                     <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 sm:p-6">
                       {/* Background Pattern */}
                       <div className="absolute inset-0 opacity-10">
@@ -369,83 +375,56 @@ export function ServiceDetailPage() {
                       </div>
                     </div>
 
-                    {/* Card Body */}
-                    <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between gap-5">
-                      <div>
+                    <div className="flex flex-1 flex-col justify-between gap-5 p-5 sm:p-6">
+                      <div className="space-y-4">
                         {previewImages.length ? (
-                          <div className="mb-5">
-                            <div className="mb-3 flex items-center justify-between">
-                              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                Recent Work Preview
-                              </span>
-                              <span className="text-xs font-semibold text-primary-700">
-                                1 featured image
-                              </span>
-                            </div>
-                            <div className="overflow-hidden rounded-2xl bg-slate-100">
-                              <img
-                                src={previewImages[0]}
-                                alt={`${provider.businessName || provider.name} featured work`}
-                                className="h-[192px] w-full object-cover"
-                              />
-                            </div>
+                          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                            <img
+                              src={previewImages[0]}
+                              alt={`${provider.businessName || provider.name} featured work`}
+                              className="h-40 w-full object-cover"
+                            />
                           </div>
                         ) : null}
 
-                        <div className="rounded-2xl bg-slate-50/90 p-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-slate-500">Service lineup</span>
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-700">
-                              <Users className="h-3.5 w-3.5" />
-                              {services.length} service{services.length === 1 ? "" : "s"}
-                            </span>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50 to-blue-50 p-4">
+                            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-blue-600 shadow-md">
+                              <Users className="h-4 w-4 text-white" />
+                            </div>
+                            <p className="text-xl font-display font-black text-slate-900">{services.length}</p>
+                            <p className="text-xs font-semibold text-slate-500">Services offered</p>
                           </div>
-                          <div className="mt-4 space-y-2">
-                            {services.slice(0, 3).map((service) => (
-                              <div key={service._id} className="flex items-center justify-between gap-3 text-sm">
-                                <span className="truncate text-slate-700">{service.name}</span>
-                                {canShowPrices ? (
-                                  <span className="shrink-0 font-semibold text-primary-700">
-                                    ₹{Number(service.startingPrice || 0).toLocaleString()}
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-slate-500">
-                                    <Lock className="h-3.5 w-3.5" />
-                                    Login
-                                  </span>
-                                )}
-                              </div>
+                          <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 p-4">
+                            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-md">
+                              <Star className="h-4 w-4 text-white" />
+                            </div>
+                            <p className="text-xl font-display font-black text-slate-900">{providerRatingLabel}</p>
+                            <p className="text-xs font-semibold text-slate-500">
+                              {providerRatingCount ? `${providerRatingCount} review${providerRatingCount === 1 ? "" : "s"}` : "No reviews yet"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {services.slice(0, 2).map((service) => (
+                              <span
+                                key={service._id}
+                                className="inline-flex max-w-full items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                              >
+                                <span className="truncate">{service.name}</span>
+                              </span>
                             ))}
-                            {services.length > 3 ? (
-                              <p className="text-sm text-slate-500">
-                                +{services.length - 3} more service{services.length - 3 === 1 ? "" : "s"}
-                              </p>
+                            {services.length > 2 ? (
+                              <span className="inline-flex items-center rounded-full border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+                                +{services.length - 2} more
+                              </span>
                             ) : null}
                           </div>
                         </div>
                       </div>
 
-                      {/* Stats Row */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-xl bg-slate-50 p-3 text-center">
-                          <div className="flex items-center justify-center w-8 h-8 mx-auto mb-2 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-md">
-                            <Users className="h-4 w-4 text-white" />
-                          </div>
-                          <p className="text-lg font-display font-bold text-slate-900">{services.length}</p>
-                          <p className="text-xs text-slate-500">Services</p>
-                        </div>
-                        <div className="rounded-xl bg-slate-50 p-3 text-center">
-                          <div className="flex items-center justify-center w-8 h-8 mx-auto mb-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-md">
-                            <Star className="h-4 w-4 text-white" />
-                          </div>
-                          <p className="text-lg font-display font-bold text-slate-900">{providerRatingLabel}</p>
-                          <p className="text-xs text-slate-500">
-                            {providerRatingCount ? `${providerRatingCount} review${providerRatingCount === 1 ? "" : "s"}` : "No reviews"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Price and CTA */}
                       <div className="border-t border-slate-100 pt-5">
                         <div className="mb-4 flex items-center justify-between">
                           <span className="text-sm text-slate-500">
@@ -453,7 +432,7 @@ export function ServiceDetailPage() {
                           </span>
                           {canShowPrices ? (
                             <span className="font-display text-2xl font-semibold text-slate-950">
-                              ₹{Number(minPrice || 0).toLocaleString()}
+                              {minPrice ? `INR ${Number(minPrice).toLocaleString()}` : "Custom"}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">

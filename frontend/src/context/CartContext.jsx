@@ -6,16 +6,25 @@ const CartContext = createContext(null);
 export function CartProvider({ children }) {
   const { user } = useAuth();
   const cartKey = user ? `eventmitra_cart_${user._id}` : "eventmitra_cart_guest";
+  const readStoredCart = (key) => {
+    const savedCart = localStorage.getItem(key);
+    return savedCart ? JSON.parse(savedCart) : [];
+  };
 
   const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem(cartKey);
-    return savedCart ? JSON.parse(savedCart) : [];
+    return readStoredCart(cartKey);
   });
-  const [provider, setProvider] = useState(null);
+  const [provider, setProvider] = useState(() => readStoredCart(cartKey)[0]?.provider || null);
 
   useEffect(() => {
     localStorage.setItem(cartKey, JSON.stringify(cart));
   }, [cart, cartKey]);
+
+  useEffect(() => {
+    const storedCart = readStoredCart(cartKey);
+    setCart(storedCart);
+    setProvider(storedCart[0]?.provider || null);
+  }, [cartKey]);
 
   // Clear cart when user changes
   useEffect(() => {
@@ -24,6 +33,10 @@ export function CartProvider({ children }) {
       setProvider(null);
     }
   }, [user]);
+
+  useEffect(() => {
+    setProvider(cart[0]?.provider || null);
+  }, [cart]);
 
   const addToCart = (service, providerInfo) => {
     // If adding from a different provider, clear cart first
@@ -65,7 +78,7 @@ export function CartProvider({ children }) {
   };
 
   const getCartTotal = () => {
-    return cart.reduce((total, item) => total + (item.startingPrice || 0), 0);
+    return cart.reduce((total, item) => total + (Number(item.startingPrice) || 0), 0);
   };
 
   const getCartCount = () => {

@@ -1,12 +1,11 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { customerApi, publicApi } from "../../services/api";
+import { customerApi } from "../../services/api";
 import {
   ArrowRight,
   CalendarCheck2,
-  CreditCard,
   Heart,
   Loader2,
   Sparkles,
@@ -15,20 +14,12 @@ import {
   Users,
   Zap,
   Shield,
-  Clock,
-  CheckCircle2,
   Clock3,
-  MapPin,
-  Award,
-  BadgeCheck,
-  ChevronRight,
   BarChart3,
   Activity,
-  Target,
   Rocket,
   LogOut,
 } from "lucide-react";
-import { GlassCard } from "../../components/admin/GlassCard";
 
 export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
   const { user, logout } = useAuth();
@@ -296,7 +287,7 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
                     >
                       <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-all duration-500`} />
                       <div className="relative bg-white rounded-2xl p-5 border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 overflow-hidden">
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.color}" />
+                        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.color}`} />
                         <div className="flex items-center gap-4">
                           <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color} text-white shadow-lg ${stat.shadow} group-hover:scale-110 transition-transform duration-300`}>
                             <Icon className="h-6 w-6" />
@@ -347,7 +338,7 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
                       className="group text-left"
                     >
                       <div className="relative bg-white rounded-2xl p-5 border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 h-full overflow-hidden">
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${action.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${action.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                         <div className="flex items-center gap-4">
                           <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${action.gradient} text-white shadow-lg ${action.shadow} group-hover:scale-110 transition-transform duration-300`}>
                             <Icon className="h-6 w-6" />

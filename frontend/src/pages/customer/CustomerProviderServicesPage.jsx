@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
+  AlertCircle,
   ArrowLeft,
   Calendar,
   CheckCircle2,
@@ -19,9 +20,6 @@ import {
   Trash2,
   Globe,
   Users,
-  Zap,
-  Award,
-  Heart,
   Shield,
   Clock,
   CreditCard,
@@ -33,7 +31,6 @@ import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/common/Button";
 import { Footer } from "../../components/common/Footer";
-import { Modal } from "../../components/common/Modal";
 import { formatCurrency } from "../../utils/currency";
 
 function getServiceInitials(name) {
@@ -104,29 +101,8 @@ export function CustomerProviderServicesPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [imageErrors, setImageErrors] = useState({});
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
-
-  const handleImageError = (serviceId, imageIndex) => {
-    setImageErrors(prev => ({
-      ...prev,
-      [`${serviceId}-${imageIndex}`]: true
-    }));
-  };
-
-  const isImageFailed = (serviceId, imageIndex) => {
-    return imageErrors[`${serviceId}-${imageIndex}`];
-  };
-
-  const handleImageLoadWithRetry = (e, retryCount = 0) => {
-    const maxRetries = 2;
-    if (e.target.naturalWidth === 0 && retryCount < maxRetries) {
-      setTimeout(() => {
-        const img = e.target;
-        img.src = img.src;
-      }, 1000 * (retryCount + 1));
-    }
-  };
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
 
   useEffect(() => {
     let timer;
@@ -332,6 +308,10 @@ export function CustomerProviderServicesPage() {
     setActiveImageIndex(0);
   }, [displayService?._id]);
 
+  useEffect(() => {
+    setDescriptionExpanded(false);
+  }, [displayService?._id]);
+
   const handleBookNow = (selectedServices = currentCart) => {
     if (!canShowPrices) {
       redirectToLogin();
@@ -381,14 +361,6 @@ export function CustomerProviderServicesPage() {
       setSuccessMessage(response.data?.message || "Booking created successfully!");
       setShowSuccessModal(true);
       setShowBookingModal(false);
-      setBookingSelection([]);
-      setBookingData({
-        eventDate: "",
-        eventTime: "",
-        eventLocation: "",
-        guestCount: "1",
-        notes: "",
-      });
       setBookingSelection([]);
       setBookingData({
         eventDate: "",
@@ -501,9 +473,9 @@ export function CustomerProviderServicesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
-                className="flex flex-col md:flex-row items-center gap-6 mb-6"
+                className="mb-6 grid gap-5 rounded-[32px] border border-white/70 bg-white/80 p-5 shadow-xl shadow-slate-200/20 backdrop-blur-2xl md:grid-cols-[auto,1fr]"
               >
-                <div className="relative">
+                <div className="relative mx-auto md:mx-0">
                   {provider?.avatar ? (
                     <img
                       src={provider.avatar}
@@ -514,31 +486,46 @@ export function CustomerProviderServicesPage() {
                         const next = e.target.nextSibling;
                         if (next) next.style.display = 'flex';
                       }}
-                      className="h-32 w-32 rounded-2xl border-4 border-white/20 object-cover shadow-xl"
+                      className="h-28 w-28 rounded-3xl border-4 border-white/40 object-cover shadow-xl sm:h-32 sm:w-32"
                     />
                   ) : (
                     <div
-                      className={`flex h-32 w-32 items-center justify-center rounded-2xl border-4 border-white/20 bg-gradient-to-br ${getProviderColor(providerName)} text-5xl font-bold text-white shadow-xl`}
+                      className={`flex h-28 w-28 items-center justify-center rounded-3xl border-4 border-white/40 bg-gradient-to-br ${getProviderColor(providerName)} text-5xl font-bold text-white shadow-xl sm:h-32 sm:w-32`}
                     >
                       {getFirstInitial(providerName)}
                     </div>
                   )}
-                  <div className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full bg-blue-400 shadow-lg">
+                  <div className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
                     <CheckCircle2 className="h-5 w-5 text-white" />
                   </div>
                 </div>
                 <div className="text-center md:text-left">
-                  <h2 className="text-2xl sm:text-3xl font-display font-black text-slate-900">{providerName}</h2>
-                  <p className="text-slate-600 mt-1">{providerCategoryLabel}</p>
-                  <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/20 px-3 py-1 text-xs font-semibold text-amber-900">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-primary-100 bg-primary-50 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary-700">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Trusted provider profile
+                  </div>
+                  <h2 className="mt-4 text-2xl font-display font-black text-slate-900 sm:text-3xl">{providerName}</h2>
+                  <p className="mt-1 text-sm text-slate-600 sm:text-base">{providerCategoryLabel}</p>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                    {canShowPrices
+                      ? `Compare ${activeFocusLabel.toLowerCase()} packages, review recent work, and book directly with this provider.`
+                      : "Login as a customer to unlock pricing, shortlist services, and start your booking instantly."}
+                  </p>
+                  <div className="mt-4 flex flex-wrap justify-center gap-2 md:justify-start">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900">
                       <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
                       {providerRatingCount > 0 ? `${providerRatingLabel} rating` : "New Provider"}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300/30 bg-slate-200/50 px-3 py-1 text-xs font-medium text-slate-800">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
                       <TrendingUp className="h-3.5 w-3.5 text-slate-600" />
                       {provider?.experience || 0}+ years
                     </span>
+                    {provider?.address ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {provider.address}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </motion.div>
@@ -546,62 +533,69 @@ export function CustomerProviderServicesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.6 }}
-                className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+                className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4"
               >
-                <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
-                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg">
-                    <Package className="h-6 w-6 text-white" />
+                {heroStats.map((stat, index) => (
+                  <div
+                    key={stat.label}
+                    className={`rounded-3xl border bg-white/90 p-4 shadow-lg backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-xl ${
+                      ["border-violet-100", "border-blue-100", "border-amber-100", "border-emerald-100"][index]
+                    }`}
+                  >
+                    <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg ${
+                      ["from-violet-500 to-purple-600", "from-blue-500 to-cyan-600", "from-amber-500 to-orange-600", "from-emerald-500 to-teal-600"][index]
+                    }`}>
+                      <stat.icon className="h-5 w-5" />
+                    </div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{stat.label}</p>
+                    <p className="mt-2 text-2xl font-display font-black text-slate-900">{stat.value}</p>
+                    <p className="mt-1 text-xs text-slate-500">{stat.subLabel || "Live provider data"}</p>
                   </div>
-                  <p className="text-2xl font-bold text-slate-900 text-center">{services.length}</p>
-                  <p className="text-xs font-medium text-slate-500 text-center mt-1">Services</p>
-                </div>
-                <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
-                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg">
-                    <Sparkles className="h-6 w-6 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold text-slate-900 text-center">{categoryOptions.length}</p>
-                  <p className="text-xs font-medium text-slate-500 text-center mt-1">Categories</p>
-                </div>
-                <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
-                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg">
-                    <Star className="h-6 w-6 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold text-slate-900 text-center">
-                    {providerRatingCount > 0 ? providerRatingLabel : "New"}
-                  </p>
-                  <p className="text-xs font-medium text-slate-500 text-center mt-1">Rating</p>
-                </div>
-                <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
-                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
-                    <Award className="h-6 w-6 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold text-slate-900 text-center">{providerRatingCount}</p>
-                  <p className="text-xs font-medium text-slate-500 text-center mt-1">Reviews</p>
-                </div>
+                ))}
               </motion.div>
 
-              {/* CTA Info */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.6 }}
-                className={`inline-flex max-w-xl flex-wrap items-center gap-2 rounded-2xl border px-5 py-3 text-sm backdrop-blur-md ${
+                className="grid gap-3 md:grid-cols-[1fr_auto]"
+              >
+                <div className={`flex flex-wrap items-center gap-2 rounded-2xl border px-5 py-3 text-sm backdrop-blur-md ${
                   canShowPrices
                     ? "border-emerald-300/30 bg-emerald-100/80 text-emerald-900"
                     : "border-slate-300/30 bg-slate-200/80 text-slate-800"
-                }`}
-              >
+                }`}>
+                  {canShowPrices ? (
+                    <>
+                      <ShoppingCart className="h-4 w-4 text-emerald-600" />
+                      Pricing unlocked. Compare packages, add services to cart, or book directly.
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-4 w-4 text-slate-500" />
+                      Login as customer to unlock service pricing and instant booking.
+                    </>
+                  )}
+                </div>
                 {canShowPrices ? (
-                  <>
-                    <ShoppingCart className="h-4 w-4 text-emerald-600" />
-                    Pricing unlocked. Compare rates, shortlist services, and move straight to booking.
-                  </>
-                ) : (
-                  <>
-                    <Lock className="h-4 w-4 text-slate-500" />
-                    Login as customer to unlock service pricing and instant booking.
-                  </>
-                )}
+                  <div className={`rounded-2xl border px-5 py-3 text-sm shadow-lg ${
+                    hasForeignCart
+                      ? "border-amber-200 bg-amber-50 text-amber-800"
+                      : "border-primary-100 bg-white/90 text-slate-700"
+                  }`}>
+                    {hasForeignCart ? (
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                        <span>Your cart has services from another provider.</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <ShoppingCart className="h-4 w-4 text-primary-600" />
+                        <span>{currentCart.length} item{currentCart.length === 1 ? "" : "s"} in cart · {formatCurrency(cartTotal)}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </motion.div>
             </motion.div>
           </div>
@@ -630,7 +624,7 @@ export function CustomerProviderServicesPage() {
                 {displayService ? displayService.name : "Available Services"}
               </h2>
               <p className="text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-                Explore this provider's service like a product detail page, review recent work photos, and book with full context.
+                Explore this provider&apos;s service like a product detail page, review recent work photos, and book with full context.
               </p>
             </motion.div>
 
@@ -832,34 +826,70 @@ export function CustomerProviderServicesPage() {
                             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                               {displayServiceImages.length || 1} gallery photo{(displayServiceImages.length || 1) === 1 ? "" : "s"}
                             </span>
+                            {displayService.allowsMembers ? (
+                              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                                Group pricing
+                              </span>
+                            ) : null}
                           </div>
-                          <h3 className="font-display text-3xl font-semibold leading-tight text-slate-950">
-                            {displayService.name}
-                          </h3>
-                          {displayService.description ? (
-                            <div className="mt-3">
-                              <p
-                                className={`text-sm leading-7 text-slate-600 ${
-                                  !descriptionExpanded ? "line-clamp-3 sm:line-clamp-none" : ""
-                                }`}
-                              >
-                                {displayService.description}
-                              </p>
-                              {displayService.description.length > 150 && (
-                                <button
-                                  type="button"
-                                  onClick={() => setDescriptionExpanded(!descriptionExpanded)}
-                                  className="mt-1 text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors sm:hidden"
+                          <div className="space-y-3">
+                            <h3 className="font-display text-3xl font-semibold leading-tight text-slate-950">
+                              {displayService.name}
+                            </h3>
+                            {displayService.description ? (
+                              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
+                                <p
+                                  className={`text-sm leading-7 text-slate-600 ${
+                                    !descriptionExpanded ? "line-clamp-4" : ""
+                                  }`}
                                 >
-                                  {descriptionExpanded ? "Show less" : "Show more"}
-                                </button>
-                              )}
+                                  {displayService.description}
+                                </p>
+                             {displayService.description.length > 180 ? (
+                                   <button
+                                     type="button"
+                                     onClick={() => setShowDescriptionModal(true)}
+                                     className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-primary-600 transition-colors hover:text-primary-700"
+                                   >
+                                     View more
+                                     <ChevronRight className="h-4 w-4 rotate-90" />
+                                   </button>
+                                 ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-3">
+                            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-cyan-50 p-4">
+                              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 shadow-md">
+                                <Sparkles className="h-4 w-4 text-white" />
+                              </div>
+                              <p className="text-sm font-bold text-slate-900">Gallery-backed</p>
+                              <p className="mt-1 text-xs text-slate-500">Real service photos included</p>
                             </div>
-                          ) : null}
+                            <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 to-fuchsia-50 p-4">
+                              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 shadow-md">
+                                <Shield className="h-4 w-4 text-white" />
+                              </div>
+                              <p className="text-sm font-bold text-slate-900">Provider-ready</p>
+                              <p className="mt-1 text-xs text-slate-500">Live package from this provider</p>
+                            </div>
+                            <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 p-4">
+                              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-md">
+                                <Users className="h-4 w-4 text-white" />
+                              </div>
+                              <p className="text-sm font-bold text-slate-900">
+                                {displayService.allowsMembers ? "Scales with guests" : "Fixed package"}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                {displayService.allowsMembers ? "Extra-member pricing supported" : "Single package pricing"}
+                              </p>
+                            </div>
+                          </div>
                         </div>
 
                         <div className="space-y-4">
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                               {canShowPrices ? "Starting Price" : "Access"}
                             </p>
@@ -879,45 +909,40 @@ export function CustomerProviderServicesPage() {
                             ) : null}
                           </div>
 
-                          <div className="flex flex-wrap gap-2">
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
-                              <Sparkles className="h-3.5 w-3.5" />
-                              Real work photos
-                            </span>
-                            {displayService.allowsMembers ? (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
-                                <Users className="h-3.5 w-3.5" />
-                                Group-friendly pricing
-                              </span>
-                            ) : null}
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700">
-                              <Shield className="h-3.5 w-3.5" />
-                              Provider-ready package
-                            </span>
-                          </div>
-
-                          <div className="rounded-xl border border-slate-200 bg-white p-5">
-                            <div className="flex items-center gap-2 mb-4">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-blue-600">
-                                <Sparkles className="h-4 w-4 text-white" />
+                          {canShowPrices && currentCart.length > 0 ? (
+                            <div className="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-blue-50 p-5 shadow-lg shadow-primary-100/40">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary-700">
+                                    Cart Summary
+                                  </p>
+                                  <p className="mt-2 text-lg font-bold text-slate-900">
+                                    {currentCart.length} selected service{currentCart.length === 1 ? "" : "s"}
+                                  </p>
+                                </div>
+                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-blue-600 shadow-md">
+                                  <ShoppingCart className="h-5 w-5 text-white" />
+                                </div>
                               </div>
-                              <p className="text-sm font-semibold text-slate-900">What you can review</p>
-                            </div>
-                            <div className="space-y-3">
-                              <div className="flex items-start gap-2.5">
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                                <p className="text-sm text-slate-600">Service photos to judge actual work quality before booking.</p>
+                              <div className="mt-4 space-y-2">
+                                {currentCart.slice(0, 2).map((item) => (
+                                  <div key={item._id} className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-sm shadow-sm">
+                                    <span className="truncate font-medium text-slate-700">{item.name}</span>
+                                    <span className="font-semibold text-primary-700">{formatCurrency(item.startingPrice)}</span>
+                                  </div>
+                                ))}
                               </div>
-                              <div className="flex items-start gap-2.5">
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                                <p className="text-sm text-slate-600">Package pricing, category, and extra-member cost if enabled.</p>
-                              </div>
-                              <div className="flex items-start gap-2.5">
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                                <p className="text-sm text-slate-600">Quick actions to book now or shortlist in your cart.</p>
+                              {currentCart.length > 2 ? (
+                                <p className="mt-3 text-xs font-semibold text-slate-500">
+                                  +{currentCart.length - 2} more item{currentCart.length - 2 === 1 ? "" : "s"}
+                                </p>
+                              ) : null}
+                              <div className="mt-4 flex items-center justify-between rounded-2xl border border-primary-100 bg-white px-4 py-3">
+                                <span className="text-sm font-medium text-slate-500">Current total</span>
+                                <span className="text-xl font-display font-black text-primary-700">{formatCurrency(cartTotal)}</span>
                               </div>
                             </div>
-                          </div>
+                          ) : null}
 
                           <div className="grid gap-3 sm:grid-cols-2 pt-2">
                             <button
@@ -959,74 +984,130 @@ export function CustomerProviderServicesPage() {
         </section>
       </div>
 
+      {/* Description Modal */}
+      {showDescriptionModal ? (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowDescriptionModal(false)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+              <h3 className="font-display text-xl font-bold text-slate-900">{displayService?.name}</h3>
+              <button
+                type="button"
+                onClick={() => setShowDescriptionModal(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm leading-8 text-slate-700">
+                {displayService?.description}
+              </p>
+            </div>
+            <div className="flex justify-end border-t border-slate-200 px-6 py-4">
+              <Button onClick={() => setShowDescriptionModal(false)}>
+                Close
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      ) : null}
+
       {/* Booking Modal */}
       {showBookingModal ? (
         <div className="fixed inset-0 z-[999] flex items-start justify-center overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.95),rgba(241,245,249,0.9)_45%,rgba(226,232,240,0.84)_100%)] p-3 pt-4 pb-24 backdrop-blur-md sm:items-center sm:p-5">
           <motion.div
             initial={{ opacity: 0, scale: 0.94, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[30px] border border-white/80 bg-white/95 shadow-[0_24px_70px_rgba(148,163,184,0.24)]"
+            className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[32px] border border-white/80 bg-white/95 shadow-[0_24px_70px_rgba(148,163,184,0.24)]"
           >
-            <div className="rounded-t-[30px] border-b border-slate-100 bg-gradient-to-r from-primary-50 via-white to-blue-50 px-5 py-5 sm:px-7">
-              <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">Confirm Your Booking</h3>
-              <p className="mt-1 text-sm text-slate-600">
-                {bookingSelection.length} service{bookingSelection.length !== 1 ? "s" : ""}
-              </p>
-              <p className="mt-1 text-sm text-primary-700">{providerName}</p>
+            <div className="rounded-t-[32px] border-b border-slate-100 bg-gradient-to-r from-slate-950 via-primary-900 to-blue-900 px-5 py-5 text-white sm:px-7">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-primary-100">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    Booking review
+                  </div>
+                  <h3 className="mt-4 text-2xl font-display font-black sm:text-3xl">Confirm Your Booking</h3>
+                  <p className="mt-2 text-sm text-primary-100">
+                    Finalize {bookingSelection.length} service{bookingSelection.length !== 1 ? "s" : ""} with {providerName}.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:min-w-[260px]">
+                  <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-100">Services</p>
+                    <p className="mt-2 text-2xl font-display font-black">{bookingSelection.length}</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-100">Est. total</p>
+                    <p className="mt-2 text-2xl font-display font-black">{formatCurrency(bookingTotal)}</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-5 p-6 sm:p-7">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700">
-                    Event Date *
-                  </label>
+            <div className="grid gap-6 p-6 sm:p-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+              <div className="space-y-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <Calendar className="h-4 w-4 text-primary-600" />
+                      Event Date *
+                    </label>
                   <input
                     type="date"
                     value={bookingData.eventDate}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={new Date().toISOString().split("T")[0]}
                     onChange={(event) =>
                       setBookingData({ ...bookingData, eventDate: event.target.value, eventTime: "" })
                     }
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
                   />
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <Clock className="h-4 w-4 text-primary-600" />
+                      Event Time
+                    </label>
+                    {availableTimeSlots.length > 0 ? (
+                      <select
+                        value={bookingData.eventTime}
+                        onChange={(event) =>
+                          setBookingData({ ...bookingData, eventTime: event.target.value })
+                        }
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
+                      >
+                        <option value="">Select a time slot</option>
+                        {availableTimeSlots.map((slot) => (
+                          <option key={slot} value={slot}>
+                            {slot}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="time"
+                        value={bookingData.eventTime}
+                        onChange={(event) =>
+                          setBookingData({ ...bookingData, eventTime: event.target.value })
+                        }
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
+                      />
+                    )}
+                  </div>
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700">
-                    Event Time
-                  </label>
-                  {availableTimeSlots.length > 0 ? (
-                    <select
-                      value={bookingData.eventTime}
-                      onChange={(event) =>
-                        setBookingData({ ...bookingData, eventTime: event.target.value })
-                      }
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
-                    >
-                      <option value="">Select a time slot</option>
-                      {availableTimeSlots.map((slot) => (
-                        <option key={slot} value={slot}>{slot}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="time"
-                      value={bookingData.eventTime}
-                      onChange={(event) =>
-                        setBookingData({ ...bookingData, eventTime: event.target.value })
-                      }
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
-                    />
-                  )}
-                </div>
-              </div>
-
-              {bookingHasMemberPricing ? (
-                <div className="rounded-2xl border border-amber-100 bg-amber-50/80 p-4">
-                  <label className="mb-1.5 block text-sm font-semibold text-amber-900">
-                    Member/Guest Count
-                  </label>
+                {bookingHasMemberPricing ? (
+                  <div className="rounded-3xl border border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 p-4 shadow-sm">
+                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-900">
+                      <Users className="h-4 w-4" />
+                      Member/Guest Count
+                    </label>
                   <input
                     type="number"
                     min="1"
@@ -1037,15 +1118,16 @@ export function CustomerProviderServicesPage() {
                     className="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
                   />
                   <p className="mt-2 text-xs font-medium text-amber-700">
-                    This appears only when the provider enabled extra-member pricing.
+                    Pricing updates automatically for services with extra-member support.
                   </p>
-                </div>
-              ) : null}
+                  </div>
+                ) : null}
 
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Event Location *
-                </label>
+                <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <MapPin className="h-4 w-4 text-primary-600" />
+                    Event Location *
+                  </label>
                 <input
                   type="text"
                   value={bookingData.eventLocation}
@@ -1055,12 +1137,13 @@ export function CustomerProviderServicesPage() {
                   placeholder="Enter event location"
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
                 />
-              </div>
+                </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Additional Notes
-                </label>
+                <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <Tag className="h-4 w-4 text-primary-600" />
+                    Additional Notes
+                  </label>
                 <textarea
                   value={bookingData.notes}
                   onChange={(event) =>
@@ -1068,16 +1151,17 @@ export function CustomerProviderServicesPage() {
                   }
                   placeholder="Any special requirements..."
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
-                  rows={3}
+                  rows={4}
                 />
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
                 <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
                   Selected Services
                 </h4>
                 {bookingSelection.map((item) => (
-                  <div key={item._id} className="mt-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm first:mt-4">
+                  <div key={item._id} className="mt-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm first:mt-4">
                     <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <span className="block truncate font-semibold text-slate-900">{item.name}</span>
@@ -1086,11 +1170,11 @@ export function CustomerProviderServicesPage() {
                       ) : null}
                       {item.allowsMembers && item.pricePerMember && bookingData.guestCount ? (
                         <p className="mt-2 text-xs text-amber-700">
-                          Base: {formatCurrency(item.startingPrice)} + {formatCurrency(item.pricePerMember)} × {Number(bookingData.guestCount) - 1} extra
+                          Base {formatCurrency(item.startingPrice)} + {formatCurrency(item.pricePerMember)} x {Math.max(normalizedGuestCount - 1, 0)} extra
                         </p>
                       ) : null}
                     </div>
-                    <span className="font-medium">
+                    <span className="font-semibold text-slate-900">
                       {item.allowsMembers && item.pricePerMember && bookingData.guestCount
                         ? (() => {
                             const members = normalizedGuestCount;
@@ -1122,7 +1206,7 @@ export function CustomerProviderServicesPage() {
               <Button
                 variant="secondary"
                 onClick={() => setShowBookingModal(false)}
-                className="flex-1 py-3"
+                className="flex-1 rounded-2xl border-2 border-slate-200 py-3 text-slate-700 transition hover:border-primary-200 hover:text-primary-700"
               >
                 Cancel
               </Button>
@@ -1131,7 +1215,7 @@ export function CustomerProviderServicesPage() {
                 disabled={
                   bookingLoading || !bookingData.eventDate || !bookingData.eventLocation
                 }
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 to-primary-600 py-3 font-semibold text-white transition-all hover:shadow-lg disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-blue-500 to-indigo-600 py-3 font-semibold text-white shadow-lg shadow-primary-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-50"
               >
                 {bookingLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />

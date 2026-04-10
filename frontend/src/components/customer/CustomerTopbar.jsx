@@ -13,7 +13,7 @@ export function CustomerTopbar({ onMenuClick }) {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-      className="relative mb-6 overflow-hidden rounded-2xl border border-white/60 bg-white/80 backdrop-blur-2xl shadow-xl shadow-slate-200/20"
+      className="relative mb-6 overflow-hidden rounded-2xl border border-white/70 bg-white/90 backdrop-blur-2xl shadow-xl shadow-slate-200/20"
     >
       {/* Premium Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -41,7 +41,7 @@ export function CustomerTopbar({ onMenuClick }) {
               className="inline-flex items-center gap-2 mb-1 px-3 py-1 rounded-full bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-100"
             >
               <Sparkles className="h-3 w-3 text-primary-600" />
-              <span className="text-[10px] font-bold text-primary-700 tracking-widest uppercase">Customer Dashboard</span>
+              <span className="text-[10px] font-bold tracking-widest text-primary-700 uppercase">Customer Dashboard</span>
             </motion.div>
             <motion.h1 
               initial={{ opacity: 0, x: -10 }}
@@ -49,8 +49,11 @@ export function CustomerTopbar({ onMenuClick }) {
               transition={{ delay: 0.3 }}
               className="font-display text-xl font-black tracking-tight text-slate-950 sm:text-2xl"
             >
-              Customer Spac
+              Customer Space
             </motion.h1>
+            <p className="text-xs font-medium text-slate-500 sm:text-sm">
+              Clear booking updates, profile actions, and event progress in one place.
+            </p>
           </div>
         </div>
 
@@ -58,7 +61,7 @@ export function CustomerTopbar({ onMenuClick }) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 backdrop-blur-sm border border-white/60 text-slate-600 shadow-lg shadow-slate-200/20 hover:bg-white hover:text-primary-600 transition-all duration-300"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-200/20 transition-all duration-300 hover:bg-white hover:text-primary-600"
           >
             <Search className="h-4 w-4" />
           </motion.button>
@@ -66,7 +69,7 @@ export function CustomerTopbar({ onMenuClick }) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 backdrop-blur-sm border border-white/60 text-slate-600 shadow-lg shadow-slate-200/20 hover:bg-white hover:text-primary-600 transition-all duration-300"
+            className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-200/20 transition-all duration-300 hover:bg-white hover:text-primary-600"
           >
             <Bell className="h-4 w-4" />
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">
@@ -76,7 +79,7 @@ export function CustomerTopbar({ onMenuClick }) {
 
           <motion.div 
             whileHover={{ scale: 1.02 }}
-            className="flex items-center gap-3 rounded-xl border border-white/60 bg-white/90 backdrop-blur-sm px-4 py-2.5 shadow-lg shadow-slate-200/20"
+            className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white px-4 py-2.5 shadow-lg shadow-slate-200/20"
           >
             {user?.avatar ? (
               <img
@@ -91,10 +94,10 @@ export function CustomerTopbar({ onMenuClick }) {
             )}
 
             <div className="hidden sm:block">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
                 Welcome Back
               </p>
-              <p className="font-bold text-slate-900">{firstName}</p>
+              <p className="font-bold text-slate-950">{firstName}</p>
             </div>
           </motion.div>
 

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, User, Briefcase, Mail, Lock, Eye, EyeOff, Phone, UserPlus, LogIn, Sparkles, ArrowRight, CheckCircle2, Zap, Star, Calendar, Users, Award } from "lucide-react";
+import { User, Briefcase, Mail, Lock, Eye, EyeOff, Phone, UserPlus, LogIn, Sparkles, ArrowRight, CheckCircle2, Zap, Star, Calendar, Users, Award } from "lucide-react";
 import logo from "/logo.png";
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -21,7 +21,6 @@ export function LoginPage({ adminBackdoor = false }) {
   const initialAdminMode = adminBackdoor || query.get("admin") === "true";
 
   const [selectedRole, setSelectedRole] = useState(initialAdminMode ? "admin" : "customer");
-  const [isAdminMode, setIsAdminMode] = useState(initialAdminMode);
   const [isRegistering, setIsRegistering] = useState(false);
   
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
@@ -71,7 +70,6 @@ export function LoginPage({ adminBackdoor = false }) {
   const handleLoginChange = (event) => {
     const { name, value } = event.target;
     if (name === "password" && value === "ADMIN-SHIFT-2026") {
-      setIsAdminMode(true);
       setSelectedRole("admin");
     }
     setLoginForm((previous) => ({ ...previous, [name]: value }));
@@ -196,7 +194,7 @@ export function LoginPage({ adminBackdoor = false }) {
   };
 
   return (
-    <div className="h-screen flex relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700">
+    <div className="min-h-screen flex relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div 
@@ -346,7 +344,7 @@ export function LoginPage({ adminBackdoor = false }) {
         </motion.div>
 
         {/* Form Container - Scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 lg:py-12 lg:px-16 flex items-center justify-center">
+        <div className="flex flex-1 items-center justify-center overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-16 lg:py-12">
           <div className="w-full max-w-md">
             {/* Mobile Welcome Text */}
             <motion.div
@@ -559,7 +557,7 @@ export function LoginPage({ adminBackdoor = false }) {
                       className="space-y-4"
                     >
                       {/* Name Fields - 2 in a row */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                           <label className="block text-sm font-semibold text-slate-700 mb-2">First Name</label>
                           <input
@@ -587,7 +585,7 @@ export function LoginPage({ adminBackdoor = false }) {
                       </div>
 
                       {/* Phone & Email - 2 in a row */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                           <label className="block text-sm font-semibold text-slate-700 mb-2">Phone Number</label>
                           <div className="relative group">
@@ -627,7 +625,7 @@ export function LoginPage({ adminBackdoor = false }) {
                       </div>
 
                       {/* Password & Confirm Password - 2 in a row */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                           <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
                           <div className="relative group">

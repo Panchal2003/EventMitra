@@ -71,24 +71,24 @@ export function CustomerOtpModal({ booking, busy, onClose, onSubmit, open, ratin
       }
     >
       <form id="customer-otp-form" className="space-y-5" onSubmit={handleSubmit}>
-        <div className="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-blue-50 p-4 sm:p-5">
+        <div className="rounded-3xl border border-primary-100 bg-gradient-to-br from-slate-950 via-primary-900 to-blue-900 p-4 text-white shadow-xl sm:p-5">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-primary-600 shadow-sm">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white shadow-sm backdrop-blur-sm">
               <Sparkles className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-100">
                 Completion Review
               </p>
-              <p className="mt-1 text-base font-semibold text-slate-900 sm:text-lg">{bookingTitle}</p>
-              <div className="mt-2 flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:flex-wrap sm:items-center">
+              <p className="mt-1 text-base font-semibold text-white sm:text-lg">{bookingTitle}</p>
+              <div className="mt-2 flex flex-col gap-2 text-sm text-primary-100 sm:flex-row sm:flex-wrap sm:items-center">
                 <span className="inline-flex items-center gap-1.5">
-                  <User className="h-4 w-4 text-slate-400" />
+                  <User className="h-4 w-4 text-primary-200" />
                   {providerName}
                 </span>
                 {booking?.eventDate ? (
                   <span className="inline-flex items-center gap-1.5">
-                    <CalendarCheck2 className="h-4 w-4 text-slate-400" />
+                    <CalendarCheck2 className="h-4 w-4 text-primary-200" />
                     {new Date(booking.eventDate).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "short",
@@ -102,14 +102,14 @@ export function CustomerOtpModal({ booking, busy, onClose, onSubmit, open, ratin
         </div>
 
         {booking?.customerOtp ? (
-          <div className="rounded-3xl border border-primary-100 bg-primary-50/80 p-4 text-sm text-primary-700">
+          <div className="rounded-3xl border border-primary-100 bg-primary-50/80 p-4 text-sm text-primary-700 shadow-sm">
             Your OTP for this booking: <span className="font-semibold">{booking.customerOtp}</span>
           </div>
         ) : null}
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
           <div className="space-y-4">
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
               <label className="block">
                 <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
                   <ShieldCheck className="h-4 w-4 text-primary-600" />
@@ -130,7 +130,7 @@ export function CustomerOtpModal({ booking, busy, onClose, onSubmit, open, ratin
               </p>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
               <label className="mb-3 block text-sm font-semibold text-slate-700">
                 Rate your experience
               </label>

@@ -9,7 +9,6 @@ import {
   ImagePlus,
   LayoutDashboard,
   Loader2,
-  LogOut,
   Mail,
   MapPin,
   MessageCircle,
@@ -20,7 +19,6 @@ import {
   XCircle,
   Zap,
   Shield,
-  Heart,
   Edit3,
   Camera,
   Clock,
@@ -46,7 +44,6 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { GlassCard } from "../../components/admin/GlassCard";
 import { Button } from "../../components/common/Button";
 import { Modal } from "../../components/common/Modal";
 import { authApi } from "../../services/api";
@@ -69,7 +66,7 @@ function getInitial(name) {
 }
 
 export function CustomerProfilePage() {
-  const { user, logout, updateUser, isBootstrapping } = useAuth();
+  const { user, updateUser, isBootstrapping } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -129,11 +126,6 @@ export function CustomerProfilePage() {
 
   const profileAvatar = user?.avatar || "";
   const draftAvatar = formData.avatar || "";
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -259,7 +251,7 @@ export function CustomerProfilePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-2xl bg-white/90 backdrop-blur-2xl p-2 shadow-xl border border-white/60"
+            className="rounded-3xl border border-white/70 bg-white/90 p-2 shadow-xl backdrop-blur-2xl"
           >
             {/* Mobile: Grid layout */}
             <div className="grid grid-cols-4 gap-2 sm:hidden">
@@ -273,9 +265,9 @@ export function CustomerProfilePage() {
                     type="button"
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-3 text-sm font-bold transition-all ${
+                    className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-3 text-sm font-bold transition-all ${
                       isActive
-                        ? "bg-gradient-to-br from-primary-600 to-blue-600 text-white shadow-lg shadow-primary-500/20"
+                        ? "bg-gradient-to-br from-primary-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-primary-500/20"
                         : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                     }`}
                   >
@@ -298,9 +290,9 @@ export function CustomerProfilePage() {
                     type="button"
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`relative flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all flex-1 justify-center ${
+                    className={`relative flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-all ${
                       isActive
-                        ? "bg-gradient-to-br from-primary-600 to-blue-600 text-white shadow-lg shadow-primary-500/20"
+                        ? "bg-gradient-to-br from-primary-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-primary-500/20"
                         : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                     }`}
                   >

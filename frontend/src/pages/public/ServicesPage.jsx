@@ -6,7 +6,6 @@ import {
   Filter,
   Loader2,
   Search,
-  ShieldCheck,
   Sparkles,
   Users,
   Globe,
@@ -14,10 +13,8 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 import { useUI } from "../../context/UIContext";
 import { publicApi } from "../../services/api";
-import { Button } from "../../components/common/Button";
 import { Footer } from "../../components/common/Footer";
 
 function slugify(value) {
@@ -67,7 +64,6 @@ function buildServiceGroups(services) {
 
 
 export function ServicesPage() {
-  const { isAuthenticated } = useAuth();
   const { hideBottomNav, showBottomNav } = useUI();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category") || "";
@@ -79,7 +75,6 @@ export function ServicesPage() {
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   useEffect(() => {
     let isCancelled = false;
@@ -157,12 +152,10 @@ export function ServicesPage() {
   };
 
   const handleSearchFocus = () => {
-    setIsSearchFocused(true);
     hideBottomNav();
   };
 
   const handleSearchBlur = () => {
-    setIsSearchFocused(false);
     showBottomNav();
   };
 
@@ -251,7 +244,7 @@ export function ServicesPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.7 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:mt-8"
+            className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-4 md:grid-cols-4"
           >
             {[
               { value: stats.categories, label: "Categories", icon: Globe },
@@ -266,13 +259,25 @@ export function ServicesPage() {
                 transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
                 className="group relative"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-blue-500/5 to-indigo-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                <div className="relative bg-white/80 backdrop-blur-xl rounded-xl p-4 sm:p-5 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 text-center h-full flex flex-col items-center justify-center">
-                  <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform duration-300">
+                <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${[
+                  "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
+                  "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
+                  "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
+                  "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20",
+                ][index]}`} />
+                <div className={`relative flex h-full flex-col items-center justify-center rounded-2xl border bg-white/85 p-4 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${
+                  ["border-cyan-100/80", "border-violet-100/80", "border-emerald-100/80", "border-amber-100/80"][index]
+                }`}>
+                  <div className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${[
+                    "bg-gradient-to-br from-cyan-500 to-blue-600",
+                    "bg-gradient-to-br from-violet-500 to-fuchsia-600",
+                    "bg-gradient-to-br from-emerald-500 to-teal-600",
+                    "bg-gradient-to-br from-amber-500 to-orange-600",
+                  ][index]}`}>
                     <stat.icon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{stat.value}</p>
-                  <p className="text-xs text-slate-600 font-medium">{stat.label}</p>
+                  <p className="mb-1 text-2xl font-display font-black text-slate-900 sm:text-3xl">{stat.value}</p>
+                  <p className="text-xs font-semibold text-slate-600">{stat.label}</p>
                 </div>
               </motion.div>
             ))}
@@ -358,7 +363,7 @@ export function ServicesPage() {
                     </div>
                   </div>
 
-                  <div className="grid gap-3 grid-cols-2 md:grid-cols-[1fr_280px]">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_280px]">
                     <label className="relative block">
                       <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/10">
                         <Search className="h-4 w-4 sm:h-5 sm:w-5 text-white/70" />
@@ -379,7 +384,7 @@ export function ServicesPage() {
                       <button
                         type="button"
                         onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                        className="flex items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm px-3 sm:px-4 py-3 sm:py-4 hover:bg-white/20 transition-colors w-full h-[48px] sm:h-[56px]"
+                        className="flex h-[48px] w-full items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-3 backdrop-blur-sm transition-colors hover:bg-white/20 sm:h-[56px] sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-4"
                       >
                         <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/10">
                           <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-white/70" />
@@ -442,9 +447,10 @@ export function ServicesPage() {
                           Category: {selectedCategoryName}
                           <button
                             onClick={() => updateCategory("")}
-                            className="ml-1 hover:text-white transition-colors"
+                            className="ml-1 inline-flex items-center justify-center rounded-full hover:text-white transition-colors"
+                            aria-label="Clear category filter"
                           >
-                            ×
+                            <X className="h-3.5 w-3.5" />
                           </button>
                         </span>
                       ) : null}
@@ -454,9 +460,10 @@ export function ServicesPage() {
                           Search: {searchTerm}
                           <button
                             onClick={() => setSearchTerm("")}
-                            className="ml-1 hover:text-white transition-colors"
+                            className="ml-1 inline-flex items-center justify-center rounded-full hover:text-white transition-colors"
+                            aria-label="Clear search"
                           >
-                            ×
+                            <X className="h-3.5 w-3.5" />
                           </button>
                         </span>
                       ) : null}
@@ -504,8 +511,7 @@ export function ServicesPage() {
                     className="group relative"
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                    <div className="relative bg-white/95 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-lg shadow-slate-200/30 hover:shadow-2xl hover:shadow-primary-200/40 border border-white/60 hover:border-primary-200/60 transition-all duration-500 h-full flex flex-col">
-                      {/* Card Header with Gradient */}
+                    <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/60 bg-white/95 shadow-lg shadow-slate-200/30 transition-all duration-500 hover:-translate-y-1 hover:border-primary-200/60 hover:shadow-2xl hover:shadow-primary-200/40">
                       <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 sm:p-6">
                         {/* Background Pattern */}
                         <div className="absolute inset-0 opacity-10">
@@ -526,29 +532,25 @@ export function ServicesPage() {
                         </div>
                       </div>
 
-                      {/* Card Body */}
-                      <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between gap-5">
-                        <div>
-                          <p className="text-sm leading-relaxed text-slate-600">
-                            Browse providers offering this service category and compare availability before booking.
-                          </p>
-
-                          {/* Stats Row */}
-                          <div className="mt-5 grid grid-cols-2 gap-3">
-                            <div className="rounded-xl bg-slate-50 p-3 text-center">
-                              <div className="flex items-center justify-center w-8 h-8 mx-auto mb-2 rounded-lg bg-gradient-to-br from-primary-500 to-blue-500 shadow-md">
-                                <Users className="h-4 w-4 text-white" />
-                              </div>
-                              <p className="text-lg font-display font-bold text-slate-900">{service.providerCount || 0}</p>
-                              <p className="text-xs text-slate-500">Provider{service.providerCount === 1 ? "" : "s"}</p>
+                      <div className="flex flex-1 flex-col justify-between gap-5 p-5 sm:p-6">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50 to-blue-50 p-4">
+                            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-blue-600 shadow-md">
+                              <Users className="h-4 w-4 text-white" />
                             </div>
-                            <div className="rounded-xl bg-slate-50 p-3 text-center">
-                              <div className="flex items-center justify-center w-8 h-8 mx-auto mb-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-md">
-                                <Star className="h-4 w-4 text-white" />
-                              </div>
-                              <p className="text-lg font-display font-bold text-slate-900">4.9</p>
-                              <p className="text-xs text-slate-500">Avg Rating</p>
+                            <p className="text-xl font-display font-black text-slate-900">{service.providerCount || 0}</p>
+                            <p className="text-xs font-semibold text-slate-500">
+                              Provider{service.providerCount === 1 ? "" : "s"}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
+                            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md">
+                              <Sparkles className="h-4 w-4 text-white" />
                             </div>
+                            <p className="text-sm font-bold text-slate-900">
+                              {service.category?.name || "Service category"}
+                            </p>
+                            <p className="text-xs font-semibold text-slate-500">Ready to compare</p>
                           </div>
                         </div>
 

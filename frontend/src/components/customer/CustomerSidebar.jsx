@@ -8,7 +8,6 @@ import {
   Phone,
   Image,
   User,
-  Sparkles,
   LogOut
 } from "lucide-react";
 import logo from "/logo.png";
@@ -43,11 +42,10 @@ export function CustomerSidebar() {
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-0 z-50 hidden h-screen w-72 flex-col border-r border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl md:relative md:flex"
+        className="fixed left-0 top-0 z-50 hidden h-screen w-72 flex-col border-r border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.98))] shadow-2xl backdrop-blur-xl md:relative md:flex"
       >
         <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="relative flex h-16 shrink-0 items-center border-b border-slate-100 px-5">
+          <div className="relative flex shrink-0 items-center border-b border-slate-100 px-5 py-5">
             <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-primary-100 via-blue-100 to-amber-50 opacity-60 blur-2xl"></div>
             <div className="relative flex w-full items-center gap-3">
               <motion.div
@@ -69,7 +67,6 @@ export function CustomerSidebar() {
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4">
             <p className="mb-2 px-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
               Menu
@@ -81,10 +78,10 @@ export function CustomerSidebar() {
                     to={item.to}
                     end={item.end}
                     className={({ isActive }) =>
-                      `group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
+                      `group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all ${
                         isActive
                           ? "bg-gradient-to-r from-slate-950 via-primary-700 to-blue-600 text-white shadow-lg shadow-primary-500/20"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-md"
                       }`
                     }
                   >
@@ -118,10 +115,10 @@ export function CustomerSidebar() {
                         to={item.to}
                         end={item.end}
                         className={({ isActive }) =>
-                          `group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
+                          `group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all ${
                             isActive
                               ? "bg-gradient-to-r from-slate-950 via-primary-700 to-blue-600 text-white shadow-lg shadow-primary-500/20"
-                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                              : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-md"
                           }`
                         }
                       >
@@ -145,14 +142,24 @@ export function CustomerSidebar() {
             )}
           </nav>
 
-          {/* Logout Button */}
           {isAuthenticated && (
             <div className="border-t border-slate-100 p-4">
+              <div className="mb-4 rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-blue-50 p-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-blue-600 text-sm font-bold text-white shadow-md">
+                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">{user?.name}</p>
+                    <p className="truncate text-xs text-slate-500">{user?.email || "Customer account"}</p>
+                  </div>
+                </div>
+              </div>
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleLogout}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-50 to-red-100 px-4 py-3 text-sm font-medium text-red-600 transition-all hover:from-red-100 hover:to-red-50"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-50 to-red-100 px-4 py-3 text-sm font-medium text-red-600 transition-all hover:from-red-100 hover:to-red-50"
               >
                 <LogOut className="h-4 w-4" />
                 Logout
@@ -160,7 +167,6 @@ export function CustomerSidebar() {
             </div>
           )}
 
-          {/* Version */}
           <div className="border-t border-slate-100 p-4">
             <p className="text-center text-xs text-slate-400">
               EventMitra v1.0.0
