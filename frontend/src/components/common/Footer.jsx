@@ -154,7 +154,7 @@ export function Footer() {
               </div>
 
               <p className="mb-4 text-sm leading-relaxed text-slate-400">
-                Your one-stop platform for event discovery, provider comparison, and booking support.
+              The ultimate destination for event discovery, provider comparison, and hassle-free bookings.
               </p>
 
               <div className="flex flex-wrap gap-2">

@@ -483,18 +483,17 @@ export const uploadMultipleServiceImages = asyncHandler(async (req, res) => {
 
   // Upload to Cloudinary if configured, otherwise use local storage
   const imageUrls = await Promise.all(req.files.map(async (file) => {
-    // file.path contains the actual path where multer saved the file
     const localPath = file.path;
     
-    // Check if Cloudinary is configured
+    // Check if Cloudinary is configured (simplified check)
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    console.log("Cloudinary configured:", !!cloudName, "Value:", cloudName);
+    console.log("CLOUDINARY_CLOUD_NAME:", cloudName);
     
-    if (cloudName && cloudName !== "your-cloud-name" && cloudName !== "demo") {
+    if (cloudName && cloudName.length > 5) {
       try {
         const { v2: cloudinary } = await import('cloudinary');
         cloudinary.config({
-          cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+          cloud_name: cloudName,
           api_key: process.env.CLOUDINARY_API_KEY,
           api_secret: process.env.CLOUDINARY_API_SECRET,
         });
@@ -505,17 +504,17 @@ export const uploadMultipleServiceImages = asyncHandler(async (req, res) => {
           folder: "eventmitra/services",
         });
         
-        console.log("Cloudinary upload success:", result.secure_url);
+        console.log("Cloudinary success:", result.secure_url);
         
         // Delete local file after Cloudinary upload
         fs.unlinkSync(localPath);
         
         return result.secure_url;
       } catch (err) {
-        console.error("Cloudinary upload failed:", err.message);
+        console.error("Cloudinary error:", err.message);
       }
     } else {
-      console.log("Cloudinary NOT configured, using local URL");
+      console.log("Skipping Cloudinary, cloud_name:", cloudName);
     }
     
     // Fall back to local URL
