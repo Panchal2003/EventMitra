@@ -477,17 +477,16 @@ export function CustomerProviderServicesPage() {
               >
                 <div className="relative mx-auto md:mx-0">
                   {provider?.avatar ? (
-                    <img
-                      src={provider.avatar}
-                      alt={providerName}
-                      loading="lazy"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        const next = e.target.nextSibling;
-                        if (next) next.style.display = 'flex';
-                      }}
-                      className="h-28 w-28 rounded-3xl border-4 border-white/40 object-cover shadow-xl sm:h-32 sm:w-32"
-                    />
+                     <img
+                       src={provider.avatar}
+                       alt={providerName}
+                       onError={(e) => {
+                         e.target.style.display = 'none';
+                         const next = e.target.nextSibling;
+                         if (next) next.style.display = 'flex';
+                       }}
+                       className="h-28 w-28 rounded-3xl border-4 border-white/40 object-cover shadow-xl sm:h-32 sm:w-32"
+                     />
                   ) : (
                     <div
                       className={`flex h-28 w-28 items-center justify-center rounded-3xl border-4 border-white/40 bg-gradient-to-br ${getProviderColor(providerName)} text-5xl font-bold text-white shadow-xl sm:h-32 sm:w-32`}
@@ -743,34 +742,32 @@ export function CustomerProviderServicesPage() {
                     {/* Main Image */}
                     {displayServiceImages.length > 0 ? (
                       <div className="overflow-hidden">
-                        <img
-                          src={displayServiceImages[activeImageIndex] || displayServiceImages[0]}
-                          alt={displayService.name}
-                          loading="lazy"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            const next = e.target.nextSibling;
-                            if (next) next.style.display = 'flex';
-                          }}
-                          className="h-[280px] w-full object-cover sm:h-[360px] lg:h-[420px]"
-                        />
+                         <img
+                           src={displayServiceImages[activeImageIndex] || displayServiceImages[0]}
+                           alt={displayService.name}
+                           onError={(e) => {
+                             e.target.style.display = 'none';
+                             const next = e.target.nextSibling;
+                             if (next) next.style.display = 'flex';
+                           }}
+                           className="h-[280px] w-full object-cover sm:h-[360px] lg:h-[420px]"
+                         />
                         <div className="hidden h-[280px] items-center justify-center bg-gradient-to-br from-primary-100 to-primary-50 font-display text-6xl font-semibold text-primary-700 sm:h-[360px] lg:h-[420px]">
                           {getServiceInitials(displayService.name)}
                         </div>
                       </div>
                     ) : displayService.image ? (
                       <div className="overflow-hidden">
-                        <img
-                          src={displayService.image}
-                          alt={displayService.name}
-                          loading="lazy"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            const next = e.target.nextSibling;
-                            if (next) next.style.display = 'flex';
-                          }}
-                          className="h-[280px] w-full object-cover sm:h-[360px] lg:h-[420px]"
-                        />
+                         <img
+                           src={displayService.image}
+                           alt={displayService.name}
+                           onError={(e) => {
+                             e.target.style.display = 'none';
+                             const next = e.target.nextSibling;
+                             if (next) next.style.display = 'flex';
+                           }}
+                           className="h-[280px] w-full object-cover sm:h-[360px] lg:h-[420px]"
+                         />
                         <div className="hidden h-[280px] items-center justify-center bg-gradient-to-br from-primary-100 to-primary-50 font-display text-6xl font-semibold text-primary-700 sm:h-[360px] lg:h-[420px]">
                           {getServiceInitials(displayService.name)}
                         </div>
@@ -795,17 +792,16 @@ export function CustomerProviderServicesPage() {
                                 : "border-slate-200 hover:border-primary-200"
                             }`}
                           >
-                            <img
-                              src={image}
-                              alt={`${displayService.name} thumbnail ${imageIndex + 1}`}
-                              loading="lazy"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                const fallback = e.target.parentElement.querySelector('.initials');
-                                if (fallback) fallback.style.display = 'flex';
-                              }}
-                              className="h-full w-full object-cover"
-                            />
+                             <img
+                               src={image}
+                               alt={`${displayService.name} thumbnail ${imageIndex + 1}`}
+                               onError={(e) => {
+                                 e.target.style.display = 'none';
+                                 const fallback = e.target.parentElement.querySelector('.initials');
+                                 if (fallback) fallback.style.display = 'flex';
+                               }}
+                               className="h-full w-full object-cover"
+                             />
                             <div className="initials hidden h-full w-full items-center justify-center bg-primary-100 text-xs font-bold text-primary-700">
                               {imageIndex + 1}
                             </div>
