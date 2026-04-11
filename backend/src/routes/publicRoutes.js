@@ -9,6 +9,38 @@ import { getProviderRatingSummary, getProviderRatingSummaryMap } from "../utils/
 
 export const publicRoutes = Router();
 
+// Helper to replace localhost URLs with production URL
+const replaceLocalhostUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  if (url.includes('localhost:5000')) {
+    return url.replace('http://localhost:5000', 'https://event-mitra-backend.vercel.app');
+  }
+  return url;
+};
+
+// Helper to transform service object with replaced URLs
+const transformService = (service) => {
+  if (!service) return service;
+  const obj = service.toObject ? service.toObject() : service;
+  if (obj.images && Array.isArray(obj.images)) {
+    obj.images = obj.images.map(replaceLocalhostUrl);
+  }
+  if (obj.image) {
+    obj.image = replaceLocalhostUrl(obj.image);
+  }
+  return obj;
+};
+
+// Helper to transform user/provider with replaced avatar URL
+const transformUser = (user) => {
+  if (!user) return user;
+  const obj = user.toObject ? user.toObject() : user;
+  if (obj.avatar) {
+    obj.avatar = replaceLocalhostUrl(obj.avatar);
+  }
+  return obj;
+};
+
 // Get all active service categories (only from approved providers)
 publicRoutes.get("/service-categories", asyncHandler(async (req, res) => {
   const categories = await ServiceCategory.find().sort({ name: 1 });
@@ -74,7 +106,14 @@ publicRoutes.get("/services", asyncHandler(async (req, res) => {
     })
     .sort({ createdAt: -1 });
 
-  const filteredServices = services.filter(service => service.createdBy);
+  const filteredServices = services.filter(service => service.createdBy).map(transformService);
+
+  // Also transform provider avatars
+  filteredServices.forEach(service => {
+    if (service.createdBy) {
+      service.createdBy = transformUser(service.createdBy);
+    }
+  });
 
   res.json({
     success: true,
@@ -231,15 +270,19 @@ publicRoutes.get("/provider-services/:providerId", asyncHandler(async (req, res)
   
   const ratingSummary = await getProviderRatingSummary(providerId);
 
+  // Transform provider avatar and services
+  const transformedProvider = {
+    ...transformUser(provider),
+    rating: ratingSummary.rating,
+    ratingCount: ratingSummary.ratingCount,
+  };
+  const transformedServices = services.map(transformService);
+
   res.json({
     success: true,
     data: {
-      provider: {
-        ...(provider.toObject ? provider.toObject() : provider),
-        rating: ratingSummary.rating,
-        ratingCount: ratingSummary.ratingCount,
-      },
-      services
+      provider: transformedProvider,
+      services: transformedServices
     }
   });
 }));
@@ -255,8 +298,17 @@ publicRoutes.get("/gallery", asyncHandler(async (req, res) => {
   
   const images = await Gallery.find(query).sort({ createdAt: -1 });
   
+  // Transform image URLs
+  const transformedImages = images.map(img => {
+    const obj = img.toObject ? img.toObject() : img;
+    if (obj.imageUrl) {
+      obj.imageUrl = replaceLocalhostUrl(obj.imageUrl);
+    }
+    return obj;
+  });
+  
   // Shuffle array for random display
-  const shuffled = images.sort(() => Math.random() - 0.5);
+  const shuffled = transformedImages.sort(() => Math.random() - 0.5);
   
   res.json({
     success: true,

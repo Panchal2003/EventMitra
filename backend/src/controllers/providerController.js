@@ -72,8 +72,35 @@ const buildProviderProfileResponse = async (userId) => {
     return null;
   }
 
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://event-mitra-backend.vercel.app'
+    : '';
+
+  const replaceUrl = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    if (url.includes('localhost:5000')) {
+      return url.replace('http://localhost:5000', baseUrl);
+    }
+    return url;
+  };
+
+  const profileObj = profile.toObject();
+  
+  // Replace avatar URL
+  if (profileObj.avatar) {
+    profileObj.avatar = replaceUrl(profileObj.avatar);
+  }
+  
+  // Replace portfolio URLs
+  if (profileObj.portfolio && Array.isArray(profileObj.portfolio)) {
+    profileObj.portfolio = profileObj.portfolio.map(item => ({
+      ...item,
+      fileUrl: replaceUrl(item.fileUrl),
+    }));
+  }
+
   return {
-    ...profile.toObject(),
+    ...profileObj,
     rating: ratingSummary.rating,
     ratingCount: ratingSummary.ratingCount,
   };
@@ -383,9 +410,13 @@ export const uploadPortfolio = asyncHandler(async (req, res) => {
     throw new AppError("Provider profile not found.", 404);
   }
 
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://event-mitra-backend.vercel.app'
+    : `${req.protocol}://${req.get("host")}`;
+  
   const uploadedItems = req.files.map((file) => ({
     fileName: file.originalname,
-    fileUrl: `${req.protocol}://${req.get("host")}/uploads/portfolio/${file.filename}`,
+    fileUrl: `${baseUrl}/uploads/portfolio/${file.filename}`,
     mimeType: file.mimetype,
     size: file.size,
     uploadedAt: new Date(),
@@ -413,8 +444,12 @@ export const uploadMultipleServiceImages = asyncHandler(async (req, res) => {
     throw new AppError("You can upload maximum 5 images.", 400);
   }
 
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://event-mitra-backend.vercel.app'
+    : `${req.protocol}://${req.get("host")}`;
+  
   const imageUrls = req.files.map((file) =>
-    `${req.protocol}://${req.get("host")}/uploads/services/${file.filename}`
+    `${baseUrl}/uploads/services/${file.filename}`
   );
 
   res.status(201).json({
@@ -431,7 +466,11 @@ export const uploadServiceImage = asyncHandler(async (req, res) => {
     throw new AppError("Please choose an image to upload.", 400);
   }
 
-  const imageUrl = `${req.protocol}://${req.get("host")}/uploads/services/${req.file.filename}`;
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://event-mitra-backend.vercel.app'
+    : `${req.protocol}://${req.get("host")}`;
+  
+  const imageUrl = `${baseUrl}/uploads/services/${req.file.filename}`;
 
   res.status(201).json({
     success: true,

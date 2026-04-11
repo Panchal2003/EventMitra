@@ -88,9 +88,26 @@ export const getProfile = asyncHandler(async (req, res) => {
     .select("-password")
     .populate("serviceCategory", "name slug");
 
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://event-mitra-backend.vercel.app'
+    : '';
+
+  const replaceUrl = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    if (url.includes('localhost:5000')) {
+      return url.replace('http://localhost:5000', baseUrl);
+    }
+    return url;
+  };
+
+  const userObj = user.toObject();
+  if (userObj.avatar) {
+    userObj.avatar = replaceUrl(userObj.avatar);
+  }
+
   res.json({
     success: true,
-    data: user,
+    data: userObj,
   });
 });
 

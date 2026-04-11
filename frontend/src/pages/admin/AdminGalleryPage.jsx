@@ -200,7 +200,6 @@ export function AdminGalleryPage() {
                   src={image.imageUrl}
                   alt={image.alt}
                   className="h-full w-full object-cover"
-                  loading="lazy"
                 />
               </div>
               <div className="p-2 sm:p-3">
