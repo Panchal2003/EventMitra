@@ -2,11 +2,43 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { v2 as cloudinary } from "cloudinary";
+import { promises as fsPromises } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Cloudinary config (use env variables in production)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "your-cloud-name",
+  api_key: process.env.CLOUDINARY_API_KEY || "your-api-key",
+  api_secret: process.env.CLOUDINARY_API_SECRET || "your-api-secret",
+});
+
 const uploadsRoot = path.resolve(__dirname, "../../uploads");
+
+// Upload to Cloudinary and return URL
+const uploadToCloudinary = async (filePath, folder) => {
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: `eventmitra/${folder}`,
+      resource_type: "image",
+    });
+    return result.secure_url;
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    return null;
+  }
+};
+
+// Delete local file after Cloudinary upload
+const deleteLocalFile = async (filePath) => {
+  try {
+    await fsPromises.unlink(filePath);
+  } catch (error) {
+    console.warn("Could not delete local file:", error.message);
+  }
+};
 
 const ensureUploadDirectories = () => {
   try {
@@ -21,6 +53,28 @@ const ensureUploadDirectories = () => {
   } catch (error) {
     console.warn("Could not create upload directories:", error.message);
   }
+};
+
+// Storage that also uploads to Cloudinary
+const createCloudinaryStorage = (folder) => {
+  ensureUploadDirectories();
+  return {
+    destination: async (req, file, callback) => {
+      const tempDir = path.join(uploadsRoot, "temp");
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      callback(null, tempDir);
+    },
+    filename: (req, file, callback) => {
+      const extension = path.extname(file.originalname);
+      const sanitizedBase = path
+        .basename(file.originalname, extension)
+        .replace(/[^a-zA-Z0-9-_]/g, "-")
+        .slice(0, 48);
+      callback(null, `${Date.now()}-${sanitizedBase || "file"}${extension}`);
+    },
+  };
 };
 
 const getPortfolioStorage = () => {
@@ -119,3 +173,6 @@ export const serviceMultipleImageUpload = multer({
     files: 5,
   },
 });
+
+// Export cloudinary for use in controllers
+export { uploadToCloudinary, deleteLocalFile };
