@@ -9,6 +9,13 @@ import { BOOKING_STATUS, assertBookingStatus } from "../utils/bookingLifecycle.j
 import { upsertPendingPaymentForBooking } from "../utils/paymentLifecycle.js";
 import { generateOtp } from "../utils/otp.js";
 import { getProviderRatingSummary } from "../utils/providerRatings.js";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsRoot = path.resolve(__dirname, "../../uploads");
 
 const providerProfilePopulate = {
   path: "serviceCategory",
@@ -444,10 +451,37 @@ export const uploadMultipleServiceImages = asyncHandler(async (req, res) => {
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://event-mitra-backend.vercel.app'
     : 'http://localhost:5000';
-  
-  const imageUrls = req.files.map((file) =>
-    `${baseUrl}/uploads/services/${file.filename}`
-  );
+
+  // Upload to Cloudinary if configured, otherwise use local storage
+  const imageUrls = await Promise.all(req.files.map(async (file) => {
+    const localPath = path.join(uploadsRoot, "services", file.filename);
+    
+    // Check if Cloudinary is configured
+    if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== "your-cloud-name") {
+      try {
+        const cloudinary = (await import('cloudinary')).v2;
+        cloudinary.config({
+          cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+          api_key: process.env.CLOUDINARY_API_KEY,
+          api_secret: process.env.CLOUDINARY_API_SECRET,
+        });
+        
+        const result = await cloudinary.uploader.upload(localPath, {
+          folder: "eventmitra/services",
+        });
+        
+        // Delete local file after Cloudinary upload
+        fs.unlinkSync(localPath);
+        
+        return result.secure_url;
+      } catch (err) {
+        console.error("Cloudinary upload failed:", err);
+      }
+    }
+    
+    // Fall back to local URL
+    return `${baseUrl}/uploads/services/${file.filename}`;
+  }));
 
   res.status(201).json({
     success: true,
