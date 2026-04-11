@@ -10,21 +10,6 @@ export const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Dynamic URL replacement for localhost images
-const replaceLocalhost = (url) => {
-  if (!url) return url;
-  if (typeof url !== 'string') return url;
-  
-  // Only replace if it's localhost
-  if (url.includes('localhost:5000')) {
-    return url.replace('http://localhost:5000', 'https://event-mitra-backend.vercel.app');
-  }
-  return url;
-};
-
-// Attach helper to app for use in routes
-app.locals.replaceLocalhost = replaceLocalhost;
-
 app.use(
   cors({
     origin: env.clientUrl,

@@ -9,10 +9,11 @@ import { getProviderRatingSummary, getProviderRatingSummaryMap } from "../utils/
 
 export const publicRoutes = Router();
 
-// Helper to replace localhost URLs with production URL
+// Helper to replace localhost URLs - only in production
 const replaceLocalhostUrl = (url) => {
   if (!url || typeof url !== 'string') return url;
-  if (url.includes('localhost:5000')) {
+  // Only replace in production (not localhost)
+  if (url.includes('localhost:5000') && process.env.NODE_ENV === 'production') {
     return url.replace('http://localhost:5000', 'https://event-mitra-backend.vercel.app');
   }
   return url;

@@ -72,14 +72,11 @@ const buildProviderProfileResponse = async (userId) => {
     return null;
   }
 
-  const baseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://event-mitra-backend.vercel.app'
-    : '';
-
   const replaceUrl = (url) => {
     if (!url || typeof url !== 'string') return url;
-    if (url.includes('localhost:5000')) {
-      return url.replace('http://localhost:5000', baseUrl);
+    // Only replace in production, not localhost
+    if (url.includes('localhost:5000') && process.env.NODE_ENV === 'production') {
+      return url.replace('http://localhost:5000', 'https://event-mitra-backend.vercel.app');
     }
     return url;
   };
@@ -412,7 +409,7 @@ export const uploadPortfolio = asyncHandler(async (req, res) => {
 
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://event-mitra-backend.vercel.app'
-    : `${req.protocol}://${req.get("host")}`;
+    : `http://localhost:5000`;
   
   const uploadedItems = req.files.map((file) => ({
     fileName: file.originalname,
@@ -446,7 +443,7 @@ export const uploadMultipleServiceImages = asyncHandler(async (req, res) => {
 
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://event-mitra-backend.vercel.app'
-    : `${req.protocol}://${req.get("host")}`;
+    : 'http://localhost:5000';
   
   const imageUrls = req.files.map((file) =>
     `${baseUrl}/uploads/services/${file.filename}`
@@ -468,7 +465,7 @@ export const uploadServiceImage = asyncHandler(async (req, res) => {
 
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://event-mitra-backend.vercel.app'
-    : `${req.protocol}://${req.get("host")}`;
+    : 'http://localhost:5000';
   
   const imageUrl = `${baseUrl}/uploads/services/${req.file.filename}`;
 
