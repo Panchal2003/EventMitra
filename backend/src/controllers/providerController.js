@@ -416,14 +416,43 @@ export const uploadPortfolio = asyncHandler(async (req, res) => {
 
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://event-mitra-backend.vercel.app'
-    : `http://localhost:5000`;
-  
-  const uploadedItems = req.files.map((file) => ({
-    fileName: file.originalname,
-    fileUrl: `${baseUrl}/uploads/portfolio/${file.filename}`,
-    mimeType: file.mimetype,
-    size: file.size,
-    uploadedAt: new Date(),
+    : 'http://localhost:5000';
+
+  // Upload to Cloudinary if configured
+  const uploadedItems = await Promise.all(req.files.map(async (file) => {
+    const localPath = file.path;
+    let fileUrl = `${baseUrl}/uploads/portfolio/${file.filename}`;
+    
+    // Upload to Cloudinary if configured
+    if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== "your-cloud-name") {
+      try {
+        const { v2: cloudinary } = await import('cloudinary');
+        cloudinary.config({
+          cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+          api_key: process.env.CLOUDINARY_API_KEY,
+          api_secret: process.env.CLOUDINARY_API_SECRET,
+        });
+        
+        const result = await cloudinary.uploader.upload(localPath, {
+          folder: "eventmitra/portfolio",
+        });
+        
+        // Delete local file after Cloudinary upload
+        fs.unlinkSync(localPath);
+        
+        fileUrl = result.secure_url;
+      } catch (err) {
+        console.error("Cloudinary upload failed:", err);
+      }
+    }
+    
+    return {
+      fileName: file.originalname,
+      fileUrl: fileUrl,
+      mimeType: file.mimetype,
+      size: file.size,
+      uploadedAt: new Date(),
+    };
   }));
 
   provider.portfolio.push(...uploadedItems);
@@ -454,12 +483,13 @@ export const uploadMultipleServiceImages = asyncHandler(async (req, res) => {
 
   // Upload to Cloudinary if configured, otherwise use local storage
   const imageUrls = await Promise.all(req.files.map(async (file) => {
-    const localPath = path.join(uploadsRoot, "services", file.filename);
+    // file.path contains the actual path where multer saved the file
+    const localPath = file.path;
     
     // Check if Cloudinary is configured
     if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== "your-cloud-name") {
       try {
-        const cloudinary = (await import('cloudinary')).v2;
+        const { v2: cloudinary } = await import('cloudinary');
         cloudinary.config({
           cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
           api_key: process.env.CLOUDINARY_API_KEY,
@@ -500,8 +530,32 @@ export const uploadServiceImage = asyncHandler(async (req, res) => {
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://event-mitra-backend.vercel.app'
     : 'http://localhost:5000';
+
+  const localPath = req.file.path;
+  let imageUrl = `${baseUrl}/uploads/services/${req.file.filename}`;
   
-  const imageUrl = `${baseUrl}/uploads/services/${req.file.filename}`;
+  // Upload to Cloudinary if configured
+  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== "your-cloud-name") {
+    try {
+      const { v2: cloudinary } = await import('cloudinary');
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+      });
+      
+      const result = await cloudinary.uploader.upload(localPath, {
+        folder: "eventmitra/services",
+      });
+      
+      // Delete local file after Cloudinary upload
+      fs.unlinkSync(localPath);
+      
+      imageUrl = result.secure_url;
+    } catch (err) {
+      console.error("Cloudinary upload failed:", err);
+    }
+  }
 
   res.status(201).json({
     success: true,
