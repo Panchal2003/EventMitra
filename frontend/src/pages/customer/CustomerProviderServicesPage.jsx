@@ -739,35 +739,49 @@ export function CustomerProviderServicesPage() {
                   transition={{ delay: 0.2 }}
                 >
                   <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-                    {/* Main Image */}
+{/* Main Image */}
                     {displayServiceImages.length > 0 ? (
-                      <div className="overflow-hidden">
-                         <img
-                           src={displayServiceImages[activeImageIndex] || displayServiceImages[0]}
-                           alt={displayService.name}
-                           onError={(e) => {
-                             e.target.style.display = 'none';
-                             const next = e.target.nextSibling;
-                             if (next) next.style.display = 'flex';
-                           }}
-                           className="h-[280px] w-full object-cover sm:h-[360px] lg:h-[420px]"
-                         />
+                      <div className="relative overflow-hidden">
+                        <img
+                          src={displayServiceImages[activeImageIndex] || displayServiceImages[0]}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover opacity-25"
+                        />
+                        <div className="relative bg-black/5">
+                          <img
+                            src={displayServiceImages[activeImageIndex] || displayServiceImages[0]}
+                            alt={displayService.name}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              const next = e.target.nextSibling;
+                              if (next) next.style.display = 'flex';
+                            }}
+                            className="relative h-[280px] w-full object-contain sm:h-[360px] lg:h-[420px]"
+                          />
+                        </div>
                         <div className="hidden h-[280px] items-center justify-center bg-gradient-to-br from-primary-100 to-primary-50 font-display text-6xl font-semibold text-primary-700 sm:h-[360px] lg:h-[420px]">
                           {getServiceInitials(displayService.name)}
                         </div>
                       </div>
                     ) : displayService.image ? (
-                      <div className="overflow-hidden">
-                         <img
-                           src={displayService.image}
-                           alt={displayService.name}
-                           onError={(e) => {
-                             e.target.style.display = 'none';
-                             const next = e.target.nextSibling;
-                             if (next) next.style.display = 'flex';
-                           }}
-                           className="h-[280px] w-full object-cover sm:h-[360px] lg:h-[420px]"
-                         />
+                      <div className="relative overflow-hidden">
+                        <img
+                          src={displayService.image}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover opacity-25"
+                        />
+                        <div className="relative bg-black/5">
+                          <img
+                            src={displayService.image}
+                            alt={displayService.name}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              const next = e.target.nextSibling;
+                              if (next) next.style.display = 'flex';
+                            }}
+                            className="relative h-[280px] w-full object-contain sm:h-[360px] lg:h-[420px]"
+                          />
+                        </div>
                         <div className="hidden h-[280px] items-center justify-center bg-gradient-to-br from-primary-100 to-primary-50 font-display text-6xl font-semibold text-primary-700 sm:h-[360px] lg:h-[420px]">
                           {getServiceInitials(displayService.name)}
                         </div>
@@ -792,16 +806,16 @@ export function CustomerProviderServicesPage() {
                                 : "border-slate-200 hover:border-primary-200"
                             }`}
                           >
-                             <img
-                               src={image}
-                               alt={`${displayService.name} thumbnail ${imageIndex + 1}`}
-                               onError={(e) => {
-                                 e.target.style.display = 'none';
-                                 const fallback = e.target.parentElement.querySelector('.initials');
-                                 if (fallback) fallback.style.display = 'flex';
-                               }}
-                               className="h-full w-full object-cover"
-                             />
+<img
+                                src={image}
+                                alt={`${displayService.name} thumbnail ${imageIndex + 1}`}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  const fallback = e.target.parentElement.querySelector('.initials');
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                                className="h-full w-full object-contain"
+                              />
                             <div className="initials hidden h-full w-full items-center justify-center bg-primary-100 text-xs font-bold text-primary-700">
                               {imageIndex + 1}
                             </div>
