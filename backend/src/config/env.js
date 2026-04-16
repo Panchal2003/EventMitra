@@ -2,9 +2,12 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// ❗ important check
 if (!process.env.MONGODB_URI) {
   throw new Error("MONGODB_URI missing in .env ❌");
+}
+
+if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+  console.warn("⚠️  Razorpay credentials missing - payment features will not work!");
 }
 
 export const env = {
@@ -17,7 +20,10 @@ export const env = {
   adminName: process.env.ADMIN_NAME || "EventMitra Admin",
   adminEmail: process.env.ADMIN_EMAIL || "admin@eventmitra.com",
   adminPassword: process.env.ADMIN_PASSWORD || "Admin@123",
+  adminCommissionPercent: Number(process.env.ADMIN_COMMISSION_PERCENT || 10),
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || "",
   razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || "",
+  platformUpiId: process.env.PLATFORM_UPI_ID || "eventmitra312405.rzp@rxairtel",
+  platformUpiName: process.env.PLATFORM_UPI_NAME || "EventMitra",
 };

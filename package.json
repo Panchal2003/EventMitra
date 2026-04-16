@@ -15,7 +15,7 @@
     "seed": "npm run seed --workspace backend"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "vite-plugin-mkcert": "^2.0.0"
   }
 }
-

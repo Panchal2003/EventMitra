@@ -3,11 +3,15 @@ import { Payment } from "../../models/Payment.js";
 import { User } from "../../models/User.js";
 import { AppError } from "../../utils/appError.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { groupPaymentsByBookingId } from "../../utils/bookingPayments.js";
 import {
   BOOKING_ASSIGNABLE_STATUSES,
   BOOKING_STATUS,
   assertBookingStatus,
 } from "../../utils/bookingLifecycle.js";
+import { toPaise, upsertPaymentRecord } from "../../utils/paymentLifecycle.js";
+import { calculateRefundDetails } from "../../utils/refundPolicy.js";
+import { createRazorpayRefund } from "../../utils/razorpay.js";
 
 const adminBookingPopulate = [
   {
@@ -58,7 +62,10 @@ export const getBookings = asyncHandler(async (req, res) => {
     }
   }
 
-  const bookings = await Booking.find(query)
+  const bookings = await Booking.find({
+    ...query,
+    paymentStatus: { $ne: "advance_pending" }
+  })
     .populate(adminBookingPopulate)
     .sort({ createdAt: -1 });
 
@@ -95,7 +102,7 @@ export const getCancelledBookings = asyncHandler(async (req, res) => {
     .populate(adminBookingPopulate)
     .sort({ "cancellation.cancelledAt": -1 });
 
-  const totalRefunds = bookings.reduce((sum, b) => sum + (b.cancellation?.refundAmount || 0), 0);
+  const totalRefunds = bookings.reduce((sum, booking) => sum + (booking.cancellation?.refundAmount || 0), 0);
 
   res.json({
     success: true,
@@ -147,25 +154,14 @@ export const assignProvider = asyncHandler(async (req, res) => {
     verifiedAt: undefined,
   };
 
-  await Payment.deleteOne({
+  await Payment.deleteMany({
     booking: booking._id,
-    status: "pending",
+    status: { $in: ["pending", "created"] },
   });
 
   await booking.save();
 
-  const populatedBooking = await booking.populate([
-    {
-      path: "service",
-      select: "name category startingPrice image",
-      populate: {
-        path: "category",
-        select: "name slug",
-      },
-    },
-    { path: "customer", select: "name email" },
-    { path: "provider", select: "name email businessName providerStatus" },
-  ]);
+  const populatedBooking = await booking.populate(adminBookingPopulate);
 
   res.json({
     success: true,
@@ -191,38 +187,58 @@ export const cancelBooking = asyncHandler(async (req, res) => {
     throw new AppError("This booking is already cancelled.", 400);
   }
 
-  const eventDateTime = new Date(booking.eventDate);
-  const currentTime = new Date();
-  const hoursUntilEvent = (eventDateTime - currentTime) / (1000 * 60 * 60);
+  const refundDetails = calculateRefundDetails({
+    totalAmount: booking.totalAmount,
+    advancePaid: booking.advancePaid,
+    eventDate: booking.eventDate,
+    eventTime: booking.eventTime,
+  });
 
-  let refundPercentage = 0;
-  let cancellationPolicy = "no_refund";
+  const paymentSummary = await groupPaymentsByBookingId([booking._id]);
+  const advancePayment = paymentSummary.get(String(booking._id))?.advance || null;
 
-  if (hoursUntilEvent >= 48) {
-    refundPercentage = 100;
-    cancellationPolicy = "full_refund";
-  } else if (hoursUntilEvent >= 24) {
-    refundPercentage = 50;
-    cancellationPolicy = "partial_refund";
+  if (
+    refundDetails.refundAmount > 0 &&
+    advancePayment?.razorpay_payment_id &&
+    advancePayment.status === "paid"
+  ) {
+    const refund = await createRazorpayRefund({
+      paymentId: advancePayment.razorpay_payment_id,
+      amountInPaise: toPaise(refundDetails.refundAmount),
+      notes: {
+        bookingId: String(booking._id),
+        cancelledBy: String(req.user._id),
+      },
+    });
+
+    await upsertPaymentRecord({
+      booking,
+      paymentType: "refund",
+      amount: refundDetails.refundAmount,
+      status: "processed",
+      method: "online",
+      razorpay_payment_id: advancePayment.razorpay_payment_id,
+      razorpay_refund_id: refund.id,
+      metadata: { refund },
+    });
   }
-
-  const refundAmount = Math.round((booking.totalAmount * refundPercentage) / 100);
 
   booking.status = BOOKING_STATUS.CANCELLED;
   booking.cancellation = {
     cancelledAt: new Date(),
     cancelledBy: req.user._id,
     cancelReason: cancelReason?.trim() || "Cancelled by admin",
-    refundAmount,
-    refundStatus: refundAmount > 0 ? "pending" : "none",
-    cancellationPolicy,
+    refundAmount: refundDetails.refundAmount,
+    refundStatus: refundDetails.refundAmount > 0 ? "completed" : "none",
+    refundProcessedAt: refundDetails.refundAmount > 0 ? new Date() : undefined,
+    cancellationPolicy: refundDetails.cancellationPolicy,
   };
 
   await booking.save();
 
   let message = "Booking cancelled successfully.";
-  if (refundAmount > 0) {
-    message += ` A refund of ₹${refundAmount} has been initiated (${cancellationPolicy.replace('_', ' ')}).`;
+  if (refundDetails.refundAmount > 0) {
+    message += ` Refund of Rs. ${refundDetails.refundAmount} processed as per the cancellation policy.`;
   }
 
   res.json({

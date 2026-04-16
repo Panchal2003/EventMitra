@@ -42,14 +42,16 @@ import {
   Calendar,
   Clock3,
   ArrowRight,
+  CreditCard,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/common/Button";
 import { Modal } from "../../components/common/Modal";
-import { authApi } from "../../services/api";
+import { authApi, customerApi } from "../../services/api";
 import { AvatarCropModal } from "../../components/customer/AvatarCropModal";
 import { CustomerDashboardPage } from "./CustomerDashboardPage";
 import { CustomerBookingsPage } from "./CustomerBookingsPage";
+import { formatCurrency } from "../../utils/currency";
 
 const tabs = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -85,6 +87,9 @@ export function CustomerProfilePage() {
   const [cropOpen, setCropOpen] = useState(false);
   const [cropSaving, setCropSaving] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackBooking, setFeedbackBooking] = useState(null);
+  const [feedbackData, setFeedbackData] = useState({ rating: 5, comment: "" });
 
   useEffect(() => {
     const requestedTab = searchParams.get("tab");
@@ -136,6 +141,11 @@ export function CustomerProfilePage() {
     }
 
     setSearchParams({ tab: tabId }, { replace: true });
+  };
+
+  const handlePayRemainingFromProfile = (booking) => {
+    // Navigate directly to payment page - feedback will be collected there
+    navigate(`/customer/payment/${booking._id}`);
   };
 
   const syncFormWithUser = () => {
@@ -749,6 +759,18 @@ export function CustomerProfilePage() {
                                           </p>
                                         </div>
                                       )}
+                                      
+                                      {/* Show Pay Remaining if there's remaining amount or payment is not full_paid */}
+                                      {(booking.payment?.remainingAmount > 0 || (booking.payment?.paymentStatus !== "full_paid" && booking.payment?.paymentStatus !== "advance_pending")) && (
+                                        <button
+                                          onClick={() => handlePayRemainingFromProfile(booking)}
+                                        className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold rounded-xl transition-all duration-300"
+                                      >
+                                        <CreditCard className="h-4 w-4" />
+                                        Pay Remaining
+                                        </button>
+                                      )}
+                                      
                                       <Button
                                         onClick={() => setVerifyOtpBooking(booking)}
                                         variant="success"
@@ -761,13 +783,13 @@ export function CustomerProfilePage() {
                                 </div>
                               )}
 
-                              {booking.status === "completed" && booking.feedback && (
+                              {booking.status === "completed" && (
                                 <div className="rounded-2xl border border-primary-200/50 bg-gradient-to-br from-primary-50 to-emerald-50 p-5 shadow-sm">
                                   <div className="flex items-start gap-3">
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-emerald-600 text-white shadow-lg shadow-primary-500/20">
                                       <Star className="h-5 w-5" />
                                     </div>
-                                    <div>
+                                    <div className="flex-1">
                                       <p className="text-sm font-bold text-primary-800">
                                         Booking completed with your feedback
                                       </p>
@@ -790,6 +812,21 @@ export function CustomerProfilePage() {
                                       )}
                                     </div>
                                   </div>
+                                  
+                                  {booking.payment?.remainingAmount > 0 && booking.payment?.paymentStatus !== "full_paid" && (
+                                    <div className="mt-4 pt-4 border-t border-amber-200">
+                                      <p className="text-sm font-bold text-amber-800 mb-2">
+                                        Remaining payment pending
+                                      </p>
+                                      <button
+                                        onClick={() => handlePayRemainingFromProfile(booking)}
+                                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold rounded-xl transition-all duration-300"
+                                      >
+                                        <CreditCard className="h-4 w-4" />
+                                        Pay Remaining
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1529,8 +1566,99 @@ export function CustomerProfilePage() {
           setCropOpen(false);
           setCropSource("");
         }}
-        onApply={handleApplyCrop}
+onApply={handleApplyCrop}
       />
+
+      {feedbackModalOpen && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)", zIndex: 9999 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setFeedbackModalOpen(false);
+            }
+          }}
+        >
+          <div 
+            className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500">
+                <Star className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="mt-4 text-xl font-bold text-slate-900">Rate Your Experience</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Please rate your experience before making payment.
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-slate-700">Rating</label>
+              <div className="mt-2 flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setFeedbackData({ ...feedbackData, rating: star })}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className={`h-8 w-8 ${
+                        star <= feedbackData.rating
+                          ? "fill-amber-400 text-amber-400"
+                          : "text-slate-300"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-semibold text-slate-700">Comment (optional)</label>
+              <textarea
+                value={feedbackData.comment}
+                onChange={(e) => setFeedbackData({ ...feedbackData, comment: e.target.value })}
+                placeholder="Share your experience..."
+                className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-primary-500 focus:outline-none"
+                rows={3}
+              />
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                onClick={() => {
+                  setFeedbackModalOpen(false);
+                  setFeedbackBooking(null);
+                  setFeedbackData({ rating: 5, comment: "" });
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:from-amber-600 hover:to-orange-700 transition-all"
+                onClick={() => {
+                  // Navigate to payment page with feedback data
+                  localStorage.setItem("pendingFeedback", JSON.stringify({
+                    bookingId: feedbackBooking._id,
+                    feedback: feedbackData
+                  }));
+                  setFeedbackModalOpen(false);
+                  setFeedbackBooking(null);
+                  setFeedbackData({ rating: 5, comment: "" });
+                  navigate(`/customer/payment/${feedbackBooking._id}`);
+                }}
+              >
+                Continue to Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

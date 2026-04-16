@@ -13,16 +13,17 @@ export const getDashboardMetrics = asyncHandler(async (req, res) => {
     adminProfitAgg,
   ] = await Promise.all([
     Booking.countDocuments(),
-    Booking.aggregate([
+    Payment.aggregate([
       {
         $match: {
-          status: "completed",
+          paymentType: { $in: ["advance", "remaining"] },
+          status: "paid",
         },
       },
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: "$totalAmount" },
+          totalRevenue: { $sum: "$amount" },
         },
       },
     ]),
@@ -35,12 +36,13 @@ export const getDashboardMetrics = asyncHandler(async (req, res) => {
       providerStatus: "pending",
     }),
     Payment.countDocuments({
+      paymentType: "provider_payout",
       status: "pending",
     }),
     Payment.aggregate([
       {
         $match: {
-          status: "released",
+          paymentType: "provider_payout",
         },
       },
       {
@@ -64,4 +66,3 @@ export const getDashboardMetrics = asyncHandler(async (req, res) => {
     },
   });
 });
-

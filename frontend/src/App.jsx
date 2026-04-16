@@ -51,6 +51,7 @@ import { AdminGalleryPage } from "./pages/admin/AdminGalleryPage";
 // Customer Pages
 import { CustomerProfilePage } from "./pages/customer/CustomerProfilePage";
 import { CustomerProviderServicesPage } from "./pages/customer/CustomerProviderServicesPage";
+import { CustomerRemainingPaymentPage } from "./pages/customer/CustomerRemainingPaymentPage";
 import { CustomerSupportPage } from "./pages/customer/CustomerSupportPage";
 
 // Provider Pages
@@ -138,6 +139,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["customer"]}>
                 <CustomerSupportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customer/payment/:bookingId"
+            element={
+              <ProtectedRoute allowedRoles={["customer"]}>
+                <CustomerRemainingPaymentPage />
               </ProtectedRoute>
             }
           />

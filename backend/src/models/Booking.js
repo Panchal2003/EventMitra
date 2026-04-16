@@ -42,6 +42,54 @@ const bookingSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    advancePaid: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    remainingAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    paymentStatus: {
+      type: String,
+      enum: [
+        "unpaid",
+        "advance_pending",
+        "advance_paid",
+        "full_paid",
+        "partially_refunded",
+        "refunded",
+      ],
+      default: "unpaid",
+    },
+    paymentMeta: {
+      advancePercentage: {
+        type: Number,
+        default: 20,
+      },
+      remainingPercentage: {
+        type: Number,
+        default: 80,
+      },
+      advancePaidAt: {
+        type: Date,
+      },
+      remainingPaidAt: {
+        type: Date,
+      },
+      lastPaymentAt: {
+        type: Date,
+      },
+      remainingPaymentLink: {
+        type: String,
+        trim: true,
+      },
+      remainingQrGeneratedAt: {
+        type: Date,
+      },
+    },
     notes: {
       type: String,
       trim: true,
@@ -151,7 +199,29 @@ const bookingSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+bookingSchema.virtual("userId").get(function userIdGetter() {
+  return this.customer;
+});
+
+bookingSchema.virtual("providerId").get(function providerIdGetter() {
+  return this.provider;
+});
+
+bookingSchema.virtual("serviceId").get(function serviceIdGetter() {
+  return this.service;
+});
+
+bookingSchema.virtual("totalPrice").get(function totalPriceGetter() {
+  return this.totalAmount;
+});
+
+bookingSchema.virtual("bookingStatus").get(function bookingStatusGetter() {
+  return this.status;
+});
 
 export const Booking = mongoose.model("Booking", bookingSchema);

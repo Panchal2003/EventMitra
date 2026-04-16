@@ -97,6 +97,35 @@ export function ProviderBookingDetailsModal({ booking, onClose, open }) {
                   <span className="text-sm text-slate-600">Total Amount</span>
                   <span className="text-lg font-bold text-slate-900">{formatCurrency(booking.totalAmount)}</span>
                 </div>
+                {booking.providerAmount && (
+                  <div className="mt-3 pt-3 border-t border-slate-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-emerald-600">Your Share (89%)</span>
+                      <span className="font-semibold text-emerald-700">{formatCurrency(booking.providerAmount)}</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-sm text-slate-500">Admin Fee (11%)</span>
+                      <span className="text-sm text-slate-600">{formatCurrency(booking.adminProfit)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-white p-4">
+                  <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Advance Paid</p>
+                  <p className="font-medium text-emerald-700">{formatCurrency(booking.payment?.advancePaid || 0)}</p>
+                </div>
+                <div className="rounded-2xl bg-white p-4">
+                  <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Remaining Due</p>
+                  <p className="font-medium text-amber-700">{formatCurrency(booking.payment?.remainingAmount || 0)}</p>
+                </div>
+                <div className="rounded-2xl bg-white p-4">
+                  <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Payment Status</p>
+                  <p className="font-medium capitalize text-slate-900">
+                    {(booking.payment?.paymentStatus || "unpaid").replace(/_/g, " ")}
+                  </p>
+                </div>
               </div>
             </>
           )}

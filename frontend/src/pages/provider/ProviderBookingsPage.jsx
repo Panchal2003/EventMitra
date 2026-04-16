@@ -22,7 +22,8 @@ import {
   Users,
   DollarSign,
   Calendar,
-  Shield
+  Shield,
+  CreditCard,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { GlassCard } from "../../components/admin/GlassCard";
@@ -31,8 +32,10 @@ import { StatusBadge } from "../../components/common/StatusBadge";
 import { ProviderBookingDetailsModal } from "../../components/provider/ProviderBookingDetailsModal";
 import { ProviderCompleteJobModal } from "../../components/provider/ProviderCompleteJobModal";
 import { useProviderDashboardData } from "../../hooks/useProviderDashboardData";
+import { providerApi } from "../../services/api";
 import { formatCurrency } from "../../utils/currency";
 import { formatDate } from "../../utils/date";
+import { openRazorpayCheckout } from "../../utils/razorpay";
 
 const sectionAnimation = {
   hidden: { opacity: 0, y: 22 },
@@ -48,6 +51,7 @@ export function ProviderBookingsPage() {
     completeJob,
     error,
     loading,
+    refresh,
     respondToBooking,
     verifyStartOtp,
     regenerateCompletionOtp,
@@ -61,6 +65,10 @@ export function ProviderBookingsPage() {
   const [startOtpValue, setStartOtpValue] = useState("");
   const [startOtpError, setStartOtpError] = useState("");
   const [activeTab, setActiveTab] = useState("requests");
+  const [qrCodeBooking, setQrCodeBooking] = useState(null);
+  const [qrCodeData, setQrCodeData] = useState(null);
+  const [qrCodeLoading, setQrCodeLoading] = useState(false);
+  const [remainingPaymentBookingId, setRemainingPaymentBookingId] = useState("");
   
   const requestBookings = useMemo(
     () => bookings.filter((booking) => booking.status === "provider_assigned"),
@@ -160,6 +168,149 @@ export function ProviderBookingsPage() {
     }
   };
 
+  const handleProviderRemainingPayment = async (booking) => {
+    if (!booking.payment?.remainingAmount || booking.payment?.paymentStatus === "full_paid") {
+      setNotice({ type: "error", message: "No remaining payment due for this booking." });
+      return;
+    }
+
+    try {
+      setRemainingPaymentBookingId(booking._id);
+
+      const response = await providerApi.getRemainingPayment(booking._id);
+      const data = response.data?.data || {};
+
+      if (!data.key) {
+        throw new Error("Payment key not available. Please contact support.");
+      }
+      if (!data.amount || data.amount <= 0) {
+        throw new Error("Invalid payment amount.");
+      }
+      if (!data.orderId) {
+        throw new Error(data.razorpayErrorMessage || "Failed to create remaining payment order.");
+      }
+
+      const razorpayResponse = await openRazorpayCheckout({
+        key: data.key,
+        amount: Number(data.amount),
+        currency: data.currency || "INR",
+        order_id: data.orderId,
+        name: "EventMitra",
+        description: `Remaining payment for ${data.serviceNames || "booking"}`,
+        theme: { color: "#0f766e" },
+      });
+
+      if (!razorpayResponse.razorpay_payment_id) {
+        return;
+      }
+
+      await providerApi.verifyRemainingPayment(booking._id, razorpayResponse);
+      setNotice({ type: "success", message: "Payment collected successfully!" });
+      await refresh();
+    } catch (err) {
+      console.error("Payment error:", err);
+      if (err.message?.includes("modal closed") || err.message?.includes("Payment modal")) {
+        setNotice({ type: "info", message: "Payment cancelled. You can try again." });
+      } else if (err.response?.data?.message) {
+        setNotice({ type: "error", message: err.response.data.message });
+      } else {
+        setNotice({ type: "error", message: err.message || "Failed to process payment." });
+      }
+    } finally {
+      setRemainingPaymentBookingId("");
+    }
+  };
+
+  const handleShowPaymentQR = async (booking) => {
+    if (!booking.payment?.remainingAmount || booking.payment?.paymentStatus === "full_paid") {
+      setNotice({ type: "error", message: "No remaining payment due for this booking." });
+      return;
+    }
+
+    try {
+      setQrCodeLoading(true);
+      setQrCodeBooking(booking);
+      
+      const response = await providerApi.getRemainingPayment(booking._id);
+      const data = response.data?.data || {};
+      
+      console.log("=== Provider Remaining Payment ===");
+      console.log("Full response data:", JSON.stringify(data, null, 2));
+      console.log("orderId value:", data.orderId);
+      console.log("amount value:", data.amount);
+      console.log("key value:", data.key);
+      
+      if (!data.key) {
+        throw new Error("Payment key not available. Please contact support.");
+      }
+      if (!data.amount || data.amount <= 0) {
+        throw new Error("Invalid payment amount.");
+      }
+      if (!data.orderId && !data.upiQrCodeUrl && !data.qrCodeDataUrl) {
+        throw new Error(data.razorpayErrorMessage || "Failed to load payment QR.");
+      }
+      
+      // Store payment data for later use
+      setQrCodeData(data);
+      
+      // Don't auto-open Razorpay - show QR modal first
+      // User can choose to either show QR or open Razorpay
+    } catch (err) {
+      console.error("Payment error:", err);
+      setNotice({ type: "error", message: err.response?.data?.message || err.message || "Failed to load payment." });
+      setQrCodeLoading(false);
+      setQrCodeBooking(null);
+    }
+  };
+
+  const handleProviderCollectPayment = async () => {
+    if (!qrCodeData) return;
+    
+    try {
+      setQrCodeLoading(true);
+
+      if (!qrCodeData.orderId) {
+        throw new Error(qrCodeData.razorpayErrorMessage || "Razorpay popup is not available for this payment yet.");
+      }
+      
+      const razorpayResponse = await openRazorpayCheckout({
+        key: qrCodeData.key,
+        amount: Number(qrCodeData.amount),
+        currency: qrCodeData.currency || "INR",
+        order_id: qrCodeData.orderId,
+        name: "EventMitra",
+        description: `Remaining payment for ${qrCodeData.serviceNames || "booking"}`,
+        theme: { color: "#0f766e" },
+      });
+      
+      console.log("Razorpay response:", razorpayResponse);
+      
+      if (!razorpayResponse.razorpay_payment_id) {
+        console.log("Payment modal closed by user");
+        setQrCodeLoading(false);
+        return;
+      }
+      
+      await providerApi.verifyRemainingPayment(qrCodeBooking._id, razorpayResponse);
+      
+      setNotice({ type: "success", message: "Payment collected successfully!" });
+      setQrCodeBooking(null);
+      setQrCodeData(null);
+      await refresh();
+    } catch (err) {
+      console.error("Payment error:", err);
+      if (err.message?.includes("modal closed") || err.message?.includes("Payment modal")) {
+        setNotice({ type: "info", message: "Payment cancelled. You can try again." });
+      } else if (err.response?.data?.message) {
+        setNotice({ type: "error", message: err.response.data.message });
+      } else {
+        setNotice({ type: "error", message: err.message || "Failed to process payment." });
+      }
+    } finally {
+      setQrCodeLoading(false);
+    }
+  };
+
   const tabs = [
     { id: "requests", label: "Requests", count: requestBookings.length, icon: CalendarCheck2, gradient: "from-amber-500 to-orange-500" },
     { id: "active", label: "Active", count: activeBookings.length, icon: Clock, gradient: "from-blue-500 to-indigo-500" },
@@ -202,10 +353,10 @@ export function ProviderBookingsPage() {
           </div>
           <div className="text-right">
             <p className="text-xs text-primary-700 font-medium">
-              Your Share: {formatCurrency(booking.providerAmount || Math.round(booking.totalAmount * 0.89))}
+              Your Share: {formatCurrency(booking.providerAmount)}
             </p>
             <p className="text-xs text-slate-400">
-              (11% fee: {formatCurrency(booking.adminProfit || Math.round(booking.totalAmount * 0.11))})
+              (11% fee: {formatCurrency(booking.adminProfit)})
             </p>
           </div>
         </div>
@@ -265,6 +416,17 @@ export function ProviderBookingsPage() {
             >
               <KeyRound className="h-4 w-4" />
               Regenerate OTP
+            </Button>
+          )}
+          {type === "active" && booking.status === "otp_pending" && booking.payment?.remainingAmount > 0 && booking.payment?.paymentStatus !== "full_paid" && (
+            <Button
+              size="sm"
+              variant="success"
+              onClick={() => handleShowPaymentQR(booking)}
+              isLoading={qrCodeLoading && qrCodeBooking?._id === booking._id}
+            >
+              <CreditCard className="mr-1 h-4 w-4" />
+              Collect Payment
             </Button>
           )}
         </div>
@@ -534,6 +696,159 @@ export function ProviderBookingsPage() {
           onSubmit={handleCompleteJob}
           busy={actionInFlight === `complete-job-${completionBooking?._id}`}
         />
+
+        {qrCodeBooking && qrCodeData && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Collect Remaining Payment</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Show this QR to the customer to scan and complete payment.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setQrCodeBooking(null);
+                    setQrCodeData(null);
+                  }} 
+                  className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              {qrCodeData.upiQrCodeUrl ? (
+                <div className="mt-4 text-center">
+                  <img
+                    src={qrCodeData.upiQrCodeUrl}
+                    alt="UPI Payment QR Code"
+                    className="mx-auto h-64 w-64 rounded-2xl border border-slate-200 object-contain"
+                  />
+                  <div className="mt-4 rounded-2xl bg-emerald-50 p-4">
+                    <p className="text-xs font-semibold uppercase text-emerald-700">UPI Amount</p>
+                    <p className="hidden mt-1 text-2xl font-bold text-emerald-900">
+                      ₹{qrCodeData.upiAmount}
+                    </p>
+                    <p className="mt-1 text-2xl font-bold text-emerald-900">
+                      {formatCurrency(qrCodeData.upiAmount || qrCodeData.amountInRupees)}
+                    </p>
+                  </div>
+                  <div className="mt-3 text-sm text-slate-600">
+                    <p className="font-medium">UPI ID: <span className="font-mono">{qrCodeData.upiId}</span></p>
+                    <p className="mt-1 text-xs text-slate-500">{qrCodeData.upiNote}</p>
+                  </div>
+                  <p className="mt-4 text-xs text-slate-500">
+                    Customer can scan this QR with any UPI app to pay.
+                  </p>
+                </div>
+              ) : qrCodeData.qrCodeDataUrl ? (
+                <div className="mt-4 text-center">
+                  <img
+                    src={qrCodeData.qrCodeDataUrl}
+                    alt="Payment QR Code"
+                    className="mx-auto h-64 w-64 rounded-2xl border border-slate-200 object-contain"
+                  />
+                  <div className="mt-4 rounded-2xl bg-amber-50 p-4">
+                    <p className="text-xs font-semibold uppercase text-amber-700">Amount Due</p>
+                    <p className="mt-1 text-2xl font-bold text-amber-900">
+                      {formatCurrency(qrCodeData.amountInRupees)}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-8 text-center text-slate-500">
+                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary-600" />
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-col gap-3">
+                {/* QR Code is now primary - Razorpay popup hidden */}
+                {qrCodeData.showVerify && (
+                  <Button
+                    className="w-full"
+                    variant="primary"
+                    onClick={async () => {
+                      try {
+                        await providerApi.verifyRemainingPayment(qrCodeBooking._id, {
+                          manualVerification: true,
+                        });
+                        setNotice({ type: "success", message: "Payment verified successfully!" });
+                        setQrCodeBooking(null);
+                        setQrCodeData(null);
+                        await refresh();
+                      } catch (err) {
+                        setNotice({ type: "error", message: err.response?.data?.message || "Verification failed" });
+                      }
+                    }}
+                  >
+                    Verify Payment Received
+                  </Button>
+                )}
+                
+                {false && (
+                <>
+                {/* QR Code section */}
+                <div className="border-t border-slate-100 pt-4">
+                  <p className="text-center text-sm font-medium text-slate-700 mb-3">
+                    Or show this QR to customer to scan and pay
+                  </p>
+                </div>
+
+                {qrCodeData.upiQrCodeUrl ? (
+                  <div className="text-center">
+                    <img
+                      src={qrCodeData.upiQrCodeUrl}
+                      alt="UPI Payment QR Code"
+                      className="mx-auto h-48 w-48 rounded-2xl border border-slate-200 object-contain"
+                    />
+                    <div className="mt-3 rounded-2xl bg-emerald-50 p-3">
+                      <p className="text-xs font-semibold uppercase text-emerald-700">UPI Amount</p>
+                      <p className="mt-1 text-xl font-bold text-emerald-900">
+                        ₹{qrCodeData.upiAmount}
+                      </p>
+                    </div>
+                    <div className="mt-2 text-sm text-slate-600">
+                      <p className="font-medium">UPI ID: <span className="font-mono">{qrCodeData.upiId}</span></p>
+                    </div>
+                  </div>
+                ) : qrCodeData.qrCodeDataUrl ? (
+                  <div className="text-center">
+                    <img
+                      src={qrCodeData.qrCodeDataUrl}
+                      alt="Payment QR Code"
+                      className="mx-auto h-48 w-48 rounded-2xl border border-slate-200 object-contain"
+                    />
+                    <div className="mt-3 rounded-2xl bg-amber-50 p-3">
+                      <p className="text-xs font-semibold uppercase text-amber-700">Amount Due</p>
+                      <p className="mt-1 text-xl font-bold text-amber-900">
+                        {formatCurrency(qrCodeData.amountInRupees)}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-slate-500">
+                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary-600" />
+                  </div>
+                )}
+
+                </>
+                )}
+
+                <Button
+                  className="w-full"
+                  variant="secondary"
+                  onClick={() => {
+                    setQrCodeBooking(null);
+                    setQrCodeData(null);
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {startOtpBooking ? (
           <div className="fixed inset-0 z-[999] flex items-start justify-center overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.95),rgba(241,245,249,0.9)_45%,rgba(226,232,240,0.84)_100%)] p-3 pt-4 pb-24 backdrop-blur-md sm:items-center sm:p-5">

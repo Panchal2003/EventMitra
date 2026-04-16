@@ -14,6 +14,8 @@ export const getProviders = asyncHandler(async (req, res) => {
     {
       $match: {
         provider: { $in: providers.map((provider) => provider._id) },
+        paymentType: { $in: ["advance", "remaining"] },
+        status: "paid",
       },
     },
     {

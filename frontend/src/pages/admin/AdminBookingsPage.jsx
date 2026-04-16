@@ -11,7 +11,8 @@ import {
   IndianRupee,
   X,
   User,
-  Phone
+  Phone,
+  TrendingUp
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { AssignProviderModal } from "../../components/admin/AssignProviderModal";
@@ -104,6 +105,7 @@ export function AdminBookingsPage() {
   const completedBookings = bookings.filter(b => b.status === "completed").length;
   const pendingBookings = bookings.filter(b => b.status === "pending").length;
   const totalRevenue = bookings.filter(b => b.status === "completed").reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+  const totalAdminProfit = bookings.filter(b => b.status === "completed").reduce((sum, b) => sum + (b.adminProfit || Math.round((b.totalAmount || 0) * 0.11)), 0);
 
   const handleAssignProvider = async (providerId) => {
     try {
@@ -209,6 +211,17 @@ export function AdminBookingsPage() {
               </div>
               <p className="mt-3 sm:mt-4 text-[10px] font-bold uppercase tracking-wider text-purple-600">Revenue</p>
               <p className="text-xl sm:text-2xl font-display font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
+            </div>
+          </div>
+
+          <div className="group relative overflow-hidden rounded-2xl bg-white p-4 sm:p-5 shadow-md hover:shadow-xl transition-all">
+            <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-emerald-100 blur-xl transition-transform group-hover:scale-150"></div>
+            <div className="relative">
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-emerald-100">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+              </div>
+              <p className="mt-3 sm:mt-4 text-[10px] font-bold uppercase tracking-wider text-emerald-600">Admin Profit (11%)</p>
+              <p className="text-xl sm:text-2xl font-display font-bold text-slate-900">{formatCurrency(totalAdminProfit)}</p>
             </div>
           </div>
         </div>
@@ -320,7 +333,14 @@ export function AdminBookingsPage() {
 
                       {/* Price & Actions */}
                       <div className="mt-auto pt-3 flex items-center justify-between">
-                        <p className="text-base font-bold text-slate-900">{formatCurrency(booking.totalAmount)}</p>
+                        <div>
+                          <p className="text-base font-bold text-slate-900">{formatCurrency(booking.totalAmount)}</p>
+                          {booking.paymentStatus && booking.paymentStatus !== "unpaid" && (
+                            <p className={`text-[10px] font-medium ${booking.paymentStatus === "full_paid" ? "text-emerald-600" : "text-amber-600"}`}>
+                              {booking.paymentStatus === "full_paid" ? "Full Paid" : booking.paymentStatus === "advance_pending" ? "Advance Pending" : `Advance: ${formatCurrency(booking.advancePaid || 0)}`}
+                            </p>
+                          )}
+                        </div>
                         <div className="flex gap-1.5">
                           {canAssignProvider && (
                             <Button variant="secondary" size="sm" className="text-xs px-2" onClick={() => setAssignmentState({ open: true, booking })} isLoading={actionInFlight === `assign-provider-${booking._id}`}>
@@ -421,6 +441,51 @@ export function AdminBookingsPage() {
                 </div>
                 <p className="text-xl font-bold text-slate-900">{formatCurrency(selectedBooking.totalAmount)}</p>
               </div>
+
+              {selectedBooking.paymentStatus && selectedBooking.paymentStatus !== "unpaid" && (
+                <div className="rounded-xl bg-emerald-50/80 p-3 sm:p-4 sm:col-span-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <IndianRupee className="h-3.5 w-3.5 text-emerald-500" />
+                    <p className="text-[10px] font-semibold uppercase text-emerald-600">Payment Status</p>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-medium text-slate-500">Advance Paid</p>
+                      <p className="text-sm font-semibold text-emerald-600">{formatCurrency(selectedBooking.advancePaid || 0)}</p>
+                    </div>
+                    {selectedBooking.paymentStatus === "full_paid" ? (
+                      <div>
+                        <p className="text-[10px] font-medium text-slate-500">Remaining Paid</p>
+                        <p className="text-sm font-semibold text-emerald-600">{formatCurrency((selectedBooking.remainingAmount || 0))}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-[10px] font-medium text-slate-500">Remaining Due</p>
+                        <p className="text-sm font-semibold text-amber-600">{formatCurrency(selectedBooking.remainingAmount || 0)}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {selectedBooking.paymentStatus === "full_paid" && (
+                <div className="rounded-xl bg-amber-50/80 p-3 sm:p-4 sm:col-span-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-3.5 w-3.5 text-amber-500" />
+                    <p className="text-[10px] font-semibold uppercase text-amber-600">Admin Profit (11%)</p>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-medium text-slate-500">Total Amount</p>
+                      <p className="text-sm font-semibold text-slate-900">{formatCurrency(selectedBooking.totalAmount)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-slate-500">Admin Profit</p>
+                      <p className="text-sm font-semibold text-amber-600">{formatCurrency(selectedBooking.adminProfit || Math.round((selectedBooking.totalAmount || 0) * 0.11))}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {selectedBooking.notes && (

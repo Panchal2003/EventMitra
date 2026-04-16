@@ -6,6 +6,7 @@ import { GlassCard } from "../../components/admin/GlassCard";
 import { AvatarCropModal } from "../../components/customer/AvatarCropModal";
 import { Button } from "../../components/common/Button";
 import { Modal } from "../../components/common/Modal";
+import { formatCurrency } from "../../utils/currency";
 import { 
   User, 
   BriefcaseBusiness, 
@@ -73,6 +74,7 @@ export function ProviderProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [cropSaving, setCropSaving] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -87,11 +89,32 @@ export function ProviderProfilePage() {
     success: "",
   });
 
+  const [paymentFormData, setPaymentFormData] = useState({
+    providerBankAccount: {
+      bankName: user?.providerBankAccount?.bankName || "",
+      accountNumber: user?.providerBankAccount?.accountNumber || "",
+      ifscCode: user?.providerBankAccount?.ifscCode || "",
+      accountHolderName: user?.providerBankAccount?.accountHolderName || "",
+    },
+    upiId: user?.upiId || "",
+  });
+  const [paymentSaveState, setPaymentSaveState] = useState({
+    saving: false,
+    error: "",
+    success: "",
+  });
+
   // Calculate profile stats
   const completedBookings = bookings.filter(b => b.status === "completed").length;
-  const totalEarnings = bookings
+  const totalGrossRevenue = bookings
     .filter(b => b.status === "completed")
     .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+  const totalEarnings = bookings
+    .filter(b => b.status === "completed")
+    .reduce((sum, b) => sum + (b.providerAmount || Math.round((b.totalAmount || 0) * 0.89)), 0);
+  const totalAdminProfit = bookings
+    .filter(b => b.status === "completed")
+    .reduce((sum, b) => sum + (b.adminProfit || Math.round((b.totalAmount || 0) * 0.11)), 0);
 
   const providerRatingCount = Number(profile?.ratingCount || 0);
   const providerRatingValue = Number(profile?.rating || 0);
@@ -102,8 +125,8 @@ export function ProviderProfilePage() {
 
   const summaryItems = [
     { icon: CalendarCheck2, label: "Completed Jobs", value: completedBookings },
-    { icon: Wallet, label: "Total Earnings", value: `₹${(totalEarnings / 1000).toFixed(1)}k` },
-    { icon: Star, label: "Rating", value: providerRatingLabel },
+    { icon: Wallet, label: "Your Earnings", value: formatCurrency(totalEarnings) },
+    { icon: TrendingUp, label: "Admin Fee (11%)", value: formatCurrency(totalAdminProfit) },
   ];
 
   const overviewItems = [
@@ -113,10 +136,18 @@ export function ProviderProfilePage() {
     { icon: MapPin, label: "Saved Address", value: formData.address || "Not set" },
   ];
 
+  const paymentDetailsItems = [
+    { label: "Bank Name", value: paymentFormData.providerBankAccount?.bankName || "Not set" },
+    { label: "Account Number", value: paymentFormData.providerBankAccount?.accountNumber ? "••••" + paymentFormData.providerBankAccount.accountNumber.slice(-4) : "Not set" },
+    { label: "IFSC Code", value: paymentFormData.providerBankAccount?.ifscCode || "Not set" },
+    { label: "Account Holder", value: paymentFormData.providerBankAccount?.accountHolderName || "Not set" },
+    { label: "UPI ID", value: paymentFormData.upiId || "Not set" },
+  ];
+
   const heroSummaryItems = [
     { icon: CalendarCheck2, label: "Completed Jobs", value: completedBookings },
-    { icon: Wallet, label: "Total Earnings", value: formatCompactAmount(totalEarnings) },
-    { icon: Star, label: "Rating", value: providerRatingLabel },
+    { icon: Wallet, label: "Your Earnings", value: formatCurrency(totalEarnings) },
+    { icon: TrendingUp, label: "Admin Fee (11%)", value: formatCurrency(totalAdminProfit) },
   ];
 
   const heroHighlights = [
@@ -131,6 +162,15 @@ export function ProviderProfilePage() {
       phone: user?.phone || "",
       address: user?.address || "",
       avatar: user?.avatar || "",
+    });
+    setPaymentFormData({
+      providerBankAccount: {
+        bankName: user?.providerBankAccount?.bankName || "",
+        accountNumber: user?.providerBankAccount?.accountNumber || "",
+        ifscCode: user?.providerBankAccount?.ifscCode || "",
+        accountHolderName: user?.providerBankAccount?.accountHolderName || "",
+      },
+      upiId: user?.upiId || "",
     });
   }, [user]);
 
@@ -156,6 +196,49 @@ export function ProviderProfilePage() {
       success: "",
     });
     setEditModalOpen(true);
+  };
+
+  const openPaymentModal = () => {
+    setPaymentFormData({
+      providerBankAccount: {
+        bankName: user?.providerBankAccount?.bankName || "",
+        accountNumber: user?.providerBankAccount?.accountNumber || "",
+        ifscCode: user?.providerBankAccount?.ifscCode || "",
+        accountHolderName: user?.providerBankAccount?.accountHolderName || "",
+      },
+      upiId: user?.upiId || "",
+    });
+    setPaymentSaveState({ saving: false, error: "", success: "" });
+    setPaymentModalOpen(true);
+  };
+
+  const handlePaymentInputChange = (event) => {
+    const { name, value } = event.target;
+    if (name.startsWith("providerBankAccount.")) {
+      const field = name.replace("providerBankAccount.", "");
+      setPaymentFormData((prev) => ({
+        ...prev,
+        providerBankAccount: { ...prev.providerBankAccount, [field]: value },
+      }));
+    } else {
+      setPaymentFormData((prev) => ({ ...prev, [name]: value }));
+    }
+    setPaymentSaveState((prev) => ({ ...prev, error: "", success: "" }));
+  };
+
+  const handleSavePayment = async (event) => {
+    event.preventDefault();
+    setPaymentSaveState({ saving: true, error: "", success: "" });
+    try {
+      const response = await updateProfile(paymentFormData);
+      if (response.data?.success) {
+        updateUser(response.data.data);
+        setPaymentSaveState({ saving: false, error: "", success: "Payment details saved successfully!" });
+        setPaymentModalOpen(false);
+      }
+    } catch (err) {
+      setPaymentSaveState({ saving: false, error: err.response?.data?.message || "Failed to save payment details", success: "" });
+    }
   };
 
   const closeEditModal = () => {
@@ -193,10 +276,23 @@ export function ProviderProfilePage() {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setFormData((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    
+    if (name.startsWith("providerBankAccount.")) {
+      const field = name.replace("providerBankAccount.", "");
+      setFormData((previous) => ({
+        ...previous,
+        providerBankAccount: {
+          ...previous.providerBankAccount,
+          [field]: value,
+        },
+      }));
+    } else {
+      setFormData((previous) => ({
+        ...previous,
+        [name]: value,
+      }));
+    }
+    
     setSaveState((previous) => ({
       ...previous,
       error: "",
@@ -540,7 +636,7 @@ export function ProviderProfilePage() {
                       {[
                         { icon: Bell, label: "Notifications", description: "Manage notification preferences" },
                         { icon: Lock, label: "Privacy & Security", description: "Password and security settings" },
-                        { icon: CreditCard, label: "Payment Settings", description: "Bank details and payouts" },
+                        { icon: CreditCard, label: "Payment Settings", description: "Bank details and payouts", action: openPaymentModal },
                         { icon: HelpCircle, label: "Help & Support", description: "FAQs and customer support" },
                       ].map((setting, index) => (
                         <motion.button
@@ -550,7 +646,8 @@ export function ProviderProfilePage() {
                           transition={{ delay: 0.5 + index * 0.1 }}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-slate-50/80 to-white border border-slate-100 hover:border-primary-200 hover:shadow-md transition-all duration-300 group"
+                          onClick={setting.action || undefined}
+                          className={`flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-slate-50/80 to-white border border-slate-100 hover:border-primary-200 hover:shadow-md transition-all duration-300 group ${setting.action ? 'cursor-pointer' : 'cursor-default'}`}
                         >
                           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
                             <setting.icon className="h-5 w-5" />
@@ -559,7 +656,7 @@ export function ProviderProfilePage() {
                             <p className="font-bold text-slate-900">{setting.label}</p>
                             <p className="text-xs text-slate-500">{setting.description}</p>
                           </div>
-                          <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-primary-500 transition-colors" />
+                          {setting.action && <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-primary-500 transition-colors" />}
                         </motion.button>
                       ))}
                     </div>
@@ -748,6 +845,111 @@ export function ProviderProfilePage() {
         onApply={handleAvatarApply}
         busy={cropSaving}
       />
+
+      <Modal
+        open={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        title="Payment Settings"
+        description="Add your bank details to receive payouts"
+        footer={
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button variant="ghost" onClick={() => setPaymentModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePayment} isLoading={paymentSaveState.saving}>
+              Save Payment Details
+            </Button>
+          </div>
+        }
+      >
+        <form className="space-y-5" onSubmit={handleSavePayment}>
+          {paymentSaveState.error && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+              {paymentSaveState.error}
+            </div>
+          )}
+          {paymentSaveState.success && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-600">
+              {paymentSaveState.success}
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-violet-100 bg-violet-50/80 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard className="h-5 w-5 text-violet-600" />
+              <p className="font-semibold text-violet-900">Bank Account Details</p>
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-600">Bank Name</span>
+                <input
+                  type="text"
+                  name="providerBankAccount.bankName"
+                  value={paymentFormData.providerBankAccount?.bankName || ""}
+                  onChange={handlePaymentInputChange}
+                  className={inputClassName}
+                  placeholder="e.g., HDFC Bank"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-600">Account Number</span>
+                <input
+                  type="text"
+                  name="providerBankAccount.accountNumber"
+                  value={paymentFormData.providerBankAccount?.accountNumber || ""}
+                  onChange={handlePaymentInputChange}
+                  className={inputClassName}
+                  placeholder="Enter account number"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-600">IFSC Code</span>
+                <input
+                  type="text"
+                  name="providerBankAccount.ifscCode"
+                  value={paymentFormData.providerBankAccount?.ifscCode || ""}
+                  onChange={handlePaymentInputChange}
+                  className={inputClassName}
+                  placeholder="e.g., HDFC0001234"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-600">Account Holder Name</span>
+                <input
+                  type="text"
+                  name="providerBankAccount.accountHolderName"
+                  value={paymentFormData.providerBankAccount?.accountHolderName || ""}
+                  onChange={handlePaymentInputChange}
+                  className={inputClassName}
+                  placeholder="Name as per bank records"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-violet-100 bg-violet-50/80 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <p className="font-semibold text-violet-900">Alternative Payment</p>
+            </div>
+            
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-600">UPI ID (Optional)</span>
+              <input
+                type="text"
+                name="upiId"
+                value={paymentFormData.upiId || ""}
+                onChange={handlePaymentInputChange}
+                className={inputClassName}
+                placeholder="e.g., mobilenumber@upi"
+              />
+            </label>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

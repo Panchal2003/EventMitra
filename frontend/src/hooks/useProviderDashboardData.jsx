@@ -89,5 +89,6 @@ export function useProviderDashboardData() {
     verifyCompletionOtp: (id, payload) =>
       wrapAction(`verify-completion-otp-${id}`, () => providerApi.verifyCompletionOtp(id, payload)),
     regenerateCompletionOtp: (id) => wrapAction(`regenerate-otp-${id}`, () => providerApi.regenerateCompletionOtp(id)),
+    getRemainingPayment: (bookingId) => providerApi.getRemainingPayment(bookingId),
   };
 }

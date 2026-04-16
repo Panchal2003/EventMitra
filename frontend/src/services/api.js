@@ -6,6 +6,48 @@ const api = axios.create({
   timeoutErrorMessage: "Request timed out. Please check your connection and try again.",
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const originalRequest = error.config;
+    const errorStatus = error.response?.status;
+    const errorMessage = error.response?.data?.message || "";
+    
+    if (errorStatus === 401) {
+      console.warn("401 Unauthorized - Response:", {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: errorStatus,
+        data: error.response?.data
+      });
+      
+      // Don't redirect to login for payment-related errors
+      const isPaymentError = errorMessage.includes("payment") || 
+                            errorMessage.includes("Razorpay") ||
+                            errorMessage.includes("Payment");
+      
+      const isBookingApi = error.config?.url?.includes("/bookings");
+      
+      if (isPaymentError && isBookingApi) {
+        console.warn("Payment error - not redirecting to login");
+        return Promise.reject(error);
+      }
+    }
+    
+    if (errorStatus === 401 && !originalRequest._retry) {
+      console.warn("401 Unauthorized - clearing auth state");
+      if (error.config.url?.includes("/customer/")) {
+        localStorage.removeItem("eventmitra-auth");
+        window.location.href = "/login";
+      } else if (error.config.url?.includes("/provider/")) {
+        localStorage.removeItem("eventmitra-auth");
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const setAuthToken = (token) => {
   if (token) {
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
@@ -42,8 +84,8 @@ export const adminApi = {
     api.patch(`/admin/bookings/${id}/provider`, { providerId }),
   cancelBooking: (id, payload) => api.patch(`/admin/bookings/${id}/cancel`, payload),
   getPayments: () => api.get("/admin/payments"),
-  releasePayout: (id, transactionId) =>
-    api.patch(`/admin/payments/${id}/release`, { transactionId }),
+  releasePayout: (id, payload) =>
+    api.patch(`/admin/payments/${id}/release`, payload),
   getGallery: () => api.get("/admin/gallery"),
   addGalleryImage: (payload) => api.post("/admin/gallery", payload),
   deleteGalleryImage: (id) => api.delete(`/admin/gallery/${id}`),
@@ -84,6 +126,9 @@ export const providerApi = {
   completeJob: (id) => api.patch(`/provider/bookings/${id}/complete`),
   verifyCompletionOtp: (id, payload) => api.patch(`/provider/bookings/${id}/verify-completion-otp`, payload),
   regenerateCompletionOtp: (id) => api.patch(`/provider/bookings/${id}/regenerate-completion-otp`),
+  getRemainingPayment: (bookingId) => api.get(`/provider/bookings/${bookingId}/remaining-payment`),
+  verifyRemainingPayment: (bookingId, payload) =>
+    api.post(`/provider/bookings/${bookingId}/payments/remaining/verify`, payload),
   getEarnings: () => api.get("/provider/earnings"),
 };
 
@@ -93,6 +138,12 @@ export const customerApi = {
   createBooking: (payload) => api.post("/customer/bookings", payload),
   createCartBooking: (payload) => api.post("/customer/bookings", payload),
   getBookings: () => api.get("/customer/bookings"),
+  verifyAdvancePayment: (bookingId, payload) =>
+    api.post(`/customer/bookings/${bookingId}/payments/advance/verify`, payload),
+  getRemainingPayment: (bookingId) =>
+    api.get(`/customer/bookings/${bookingId}/payments/remaining`),
+  verifyRemainingPayment: (bookingId, payload) =>
+    api.post(`/customer/bookings/${bookingId}/payments/remaining/verify`, payload),
   verifyOtp: (bookingId, payload) => api.patch(`/customer/bookings/${bookingId}/verify-otp`, payload),
   getAvailableSlots: (providerId, eventDate, duration, serviceIds) => api.get("/customer/available-slots", { params: { providerId, eventDate, duration, serviceIds: serviceIds?.join(',') } }),
   cancelBooking: (bookingId, payload) => api.patch(`/customer/bookings/${bookingId}/cancel`, payload),

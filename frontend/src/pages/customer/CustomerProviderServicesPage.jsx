@@ -32,6 +32,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/common/Button";
 import { Footer } from "../../components/common/Footer";
 import { formatCurrency } from "../../utils/currency";
+import { openRazorpayCheckout } from "../../utils/razorpay";
 
 function getServiceInitials(name) {
   return (name || "SV")
@@ -303,6 +304,8 @@ export function CustomerProviderServicesPage() {
   const bookingHasMemberPricing = bookingSelection.some(
     (item) => item.allowsMembers && Number(item.pricePerMember) > 0
   );
+  const advanceAmount = bookingTotal * 0.2;
+  const remainingAmount = bookingTotal - advanceAmount;
 
   useEffect(() => {
     setActiveImageIndex(0);
@@ -335,6 +338,13 @@ export function CustomerProviderServicesPage() {
   };
 
   const handleConfirmBooking = async () => {
+    if (!isAuthenticated || user?.role !== "customer") {
+      redirectToLogin();
+      return;
+    }
+
+    let pendingBookingId = null;
+
     try {
       setBookingLoading(true);
 
@@ -346,6 +356,55 @@ export function CustomerProviderServicesPage() {
         guestCount: bookingHasMemberPricing ? normalizedGuestCount : 1,
         notes: bookingData.notes,
       });
+      const bookingId = response.data?.data?.booking?._id;
+      const paymentConfig = response.data?.data?.payment;
+
+      pendingBookingId = bookingId;
+
+      console.log("Payment Config:", paymentConfig);
+
+      if (!bookingId || !paymentConfig?.orderId) {
+        console.error("Missing bookingId or orderId:", { bookingId, orderId: paymentConfig?.orderId });
+        throw new Error("Unable to initialize the advance payment.");
+      }
+
+      if (!paymentConfig.key) {
+        console.error("Missing Razorpay key in payment config:", paymentConfig);
+        throw new Error("Payment configuration is missing. Please contact support.");
+      }
+
+      console.log("Opening Razorpay with:", {
+        key: paymentConfig.key,
+        amount: paymentConfig.amount,
+        order_id: paymentConfig.orderId,
+      });
+
+      const razorpayResponse = await openRazorpayCheckout({
+        key: paymentConfig.key,
+        amount: paymentConfig.amount,
+        currency: paymentConfig.currency,
+        order_id: paymentConfig.orderId,
+        name: "EventMitra",
+        description: `20% advance for ${paymentConfig.serviceNames || "service booking"}`,
+        prefill: {
+          name: user?.name || "",
+          email: user?.email || "",
+          contact: user?.phone || "",
+        },
+        theme: {
+          color: "#2563eb",
+        },
+      });
+      console.log("Razorpay payment successful:", razorpayResponse);
+
+      if (!razorpayResponse.razorpay_payment_id) {
+        console.log("No payment ID received, user may have closed modal");
+        setBookingLoading(false);
+        return;
+      }
+
+      await customerApi.verifyAdvancePayment(bookingId, razorpayResponse);
+      console.log("Advance payment verified successfully");
 
       const bookedCurrentCart =
         currentCart.length > 0 &&
@@ -358,7 +417,8 @@ export function CustomerProviderServicesPage() {
         clearCart();
       }
 
-      setSuccessMessage(response.data?.message || "Booking created successfully!");
+      pendingBookingId = null;
+      setSuccessMessage("Advance paid successfully. Your booking is now confirmed.");
       setShowSuccessModal(true);
       setShowBookingModal(false);
       setBookingSelection([]);
@@ -373,7 +433,33 @@ export function CustomerProviderServicesPage() {
         navigate("/customer/profile?tab=bookings");
       }, 2500);
     } catch (requestError) {
-      setErrorMessage(requestError.response?.data?.message || "Failed to create booking");
+      console.error("Booking error:", requestError);
+      
+      if (requestError.response) {
+        console.error("Response data:", requestError.response.data);
+        console.error("Response status:", requestError.response.status);
+      }
+
+      const isModalClosed = requestError.message?.includes("modal closed") || requestError.message?.includes("Payment modal");
+      if (isModalClosed) {
+        console.log("Payment modal was closed by user");
+        setBookingLoading(false);
+        return;
+      }
+
+      if (pendingBookingId) {
+        try {
+          await customerApi.cancelBooking(pendingBookingId, {
+            cancelReason: "Advance payment was not completed.",
+          });
+        } catch (cancelError) {
+          // Ignore cleanup failures and surface the original payment error.
+        }
+      }
+
+      setErrorMessage(
+        requestError.response?.data?.message || requestError.message || "Failed to complete advance payment"
+      );
       setShowErrorModal(true);
     } finally {
       setBookingLoading(false);
@@ -1203,6 +1289,19 @@ export function CustomerProviderServicesPage() {
                       {formatCurrency(bookingTotal)}
                     </span>
                   </div>
+                  <div className="mt-3 space-y-2 rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm text-slate-600">
+                    <div className="flex items-center justify-between">
+                      <span>Advance due now (20%)</span>
+                      <span className="font-semibold text-slate-900">{formatCurrency(advanceAmount)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Remaining after completion (80%)</span>
+                      <span className="font-semibold text-slate-900">{formatCurrency(remainingAmount)}</span>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Online payment only. Cash payments are disabled for all bookings.
+                    </p>
+                  </div>
                   {bookingHasMemberPricing ? (
                     <p className="mt-2 text-xs text-slate-500">
                       Total updates only for services where the provider enabled extra-member pricing.
@@ -1232,7 +1331,7 @@ export function CustomerProviderServicesPage() {
                 ) : (
                   <>
                     <CheckCircle2 className="h-5 w-5" />
-                    Confirm Booking
+                    Pay Advance & Confirm
                     <ChevronRight className="h-4 w-4" />
                   </>
                 )}

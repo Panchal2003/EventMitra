@@ -16,7 +16,14 @@ export const checkTimeOverlap = async (providerId, eventDate, startTime, endTime
       $gte: new Date(dateStr),
       $lt: new Date(new Date(dateStr).getTime() + 24 * 60 * 60 * 1000)
     },
-    status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] },
+    status: {
+      $in: [
+        BOOKING_STATUS.CONFIRMED,
+        BOOKING_STATUS.IN_PROGRESS,
+        BOOKING_STATUS.OTP_PENDING,
+        BOOKING_STATUS.COMPLETED,
+      ],
+    },
     eventTime: { $exists: true, $ne: "" }
   };
 
@@ -64,7 +71,14 @@ export const getAvailableTimeSlots = async (providerId, eventDate, durationHours
       $gte: new Date(dateStr),
       $lt: new Date(new Date(dateStr).getTime() + 24 * 60 * 60 * 1000)
     },
-    status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] },
+    status: {
+      $in: [
+        BOOKING_STATUS.CONFIRMED,
+        BOOKING_STATUS.IN_PROGRESS,
+        BOOKING_STATUS.OTP_PENDING,
+        BOOKING_STATUS.COMPLETED,
+      ],
+    },
     eventTime: { $exists: true, $ne: "" }
   };
 
@@ -111,7 +125,14 @@ export const getAvailableTimeSlotsForServices = async (providerId, eventDate, se
       $gte: new Date(dateStr),
       $lt: new Date(new Date(dateStr).getTime() + 24 * 60 * 60 * 1000)
     },
-    status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] },
+    status: {
+      $in: [
+        BOOKING_STATUS.CONFIRMED,
+        BOOKING_STATUS.IN_PROGRESS,
+        BOOKING_STATUS.OTP_PENDING,
+        BOOKING_STATUS.COMPLETED,
+      ],
+    },
     eventTime: { $exists: true, $ne: "" },
     services: { $in: serviceIds }
   }).select("eventTime services");

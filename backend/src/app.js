@@ -32,6 +32,38 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+app.get("/api/test-razorpay", async (req, res) => {
+  try {
+    const { createRazorpayOrder, isRazorpayConfigured } = await import("./utils/razorpay.js");
+    
+    if (!isRazorpayConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: "Razorpay is not configured",
+      });
+    }
+    
+    const testOrder = await createRazorpayOrder({
+      amountInPaise: 100,
+      receipt: "test_" + Date.now(),
+      notes: { test: "true" },
+    });
+    
+    res.json({
+      success: true,
+      message: "Razorpay is working!",
+      orderId: testOrder.id,
+    });
+  } catch (error) {
+    console.error("Razorpay test error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Razorpay test failed",
+      error: error.message,
+    });
+  }
+});
+
 const authRoutes = (await import("./routes/authRoutes.js")).authRoutes;
 const adminRoutes = (await import("./routes/adminRoutes.js")).adminRoutes;
 const providerRoutes = (await import("./routes/providerRoutes.js")).providerRoutes;

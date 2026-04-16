@@ -5,13 +5,15 @@ import { ServiceCategory } from "../models/ServiceCategory.js";
 import { User } from "../models/User.js";
 import { AppError } from "../utils/appError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { ensureRemainingPaymentOrder, groupPaymentsByBookingId } from "../utils/bookingPayments.js";
 import { BOOKING_STATUS, assertBookingStatus } from "../utils/bookingLifecycle.js";
-import { upsertPendingPaymentForBooking } from "../utils/paymentLifecycle.js";
+import { DEFAULT_COMMISSION_PERCENT, calculateCommissionAmount, calculateProviderPayout, toPaise } from "../utils/paymentLifecycle.js";
 import { generateOtp } from "../utils/otp.js";
 import { getProviderRatingSummary } from "../utils/providerRatings.js";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { env } from "../config/env.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,11 +42,11 @@ const bookingPopulate = [
     },
   },
   { path: "customer", select: "name email phone" },
-  { path: "provider", select: "name businessName serviceCategory experience basePrice address phone" },
+  { path: "provider", select: "name businessName serviceCategory experience basePrice address phone upiId" },
   { path: "cancellation.cancelledBy", select: "name email role" },
 ];
 
-const serializeBookingForProvider = (booking) => {
+const serializeBookingForProvider = (booking, paymentSummary) => {
   const serialized = booking.toObject ? booking.toObject() : booking;
 
   serialized.startOtpRequested = Boolean(
@@ -58,10 +60,23 @@ const serializeBookingForProvider = (booking) => {
       !serialized.completionOtp?.isVerified
   );
 
-  // Calculate provider's share after admin commission
   const totalAmount = Number(serialized.totalAmount || 0);
-  serialized.providerAmount = Math.round(totalAmount * 0.89); // 11% admin fee
-  serialized.adminProfit = totalAmount - serialized.providerAmount;
+  const payout = paymentSummary?.payout;
+  const commissionRate = Number(payout?.commissionRate ?? DEFAULT_COMMISSION_PERCENT);
+  serialized.providerAmount = Number(
+    payout?.providerAmount ?? calculateProviderPayout(totalAmount, commissionRate)
+  );
+  serialized.adminProfit = Number(
+    payout?.adminProfit ?? calculateCommissionAmount(totalAmount, commissionRate)
+  );
+  serialized.payment = {
+    paymentStatus: serialized.paymentStatus,
+    advancePaid: Number(serialized.advancePaid || 0),
+    remainingAmount: Number(serialized.remainingAmount || 0),
+    advancePayment: paymentSummary?.advance || null,
+    remainingPayment: paymentSummary?.remaining || null,
+    payout: payout || null,
+  };
 
   delete serialized.bookingOtp;
   delete serialized.completionOtp;
@@ -137,7 +152,7 @@ export const getProviderDashboard = asyncHandler(async (req, res) => {
         },
       },
     ]),
-    Payment.find({ provider: providerId }).select("amount providerAmount adminProfit status"),
+    Payment.find({ provider: providerId, paymentType: "provider_payout" }).select("amount providerAmount adminProfit status"),
     Service.countDocuments({ createdBy: providerId }),
     getProviderRatingSummary(providerId),
   ]);
@@ -149,7 +164,7 @@ export const getProviderDashboard = asyncHandler(async (req, res) => {
 
   const totalEarnings = payments
     .filter((payment) => payment.status === "released")
-    .reduce((sum, payment) => sum + (payment.providerAmount || Math.round(payment.amount * 0.89)), 0);
+    .reduce((sum, payment) => sum + (payment.providerAmount || 0), 0);
   const totalAmount = payments
     .filter((payment) => payment.status === "released")
     .reduce((sum, payment) => sum + payment.amount, 0);
@@ -166,8 +181,8 @@ export const getProviderDashboard = asyncHandler(async (req, res) => {
       totalAmount,
       completedPayments: completedPayments.length,
       pendingPayments: pendingPayments.length,
-      completedPaymentAmount: completedPayments.reduce((sum, payment) => sum + (payment.providerAmount || Math.round(payment.amount * 0.89)), 0),
-      pendingPaymentAmount: pendingPayments.reduce((sum, payment) => sum + (payment.providerAmount || Math.round(payment.amount * 0.89)), 0),
+      completedPaymentAmount: completedPayments.reduce((sum, payment) => sum + (payment.providerAmount || 0), 0),
+      pendingPaymentAmount: pendingPayments.reduce((sum, payment) => sum + (payment.providerAmount || 0), 0),
       serviceCount,
       averageRating: ratingSummary.rating,
       ratingCount: ratingSummary.ratingCount,
@@ -363,7 +378,7 @@ export const deleteProviderService = asyncHandler(async (req, res) => {
 });
 
 export const updateProviderProfile = asyncHandler(async (req, res) => {
-  const { name, serviceCategory, experience, basePrice, address, phone, avatar } = req.body;
+  const { name, serviceCategory, experience, basePrice, address, phone, avatar, providerBankAccount, upiId } = req.body;
 
   if (serviceCategory) {
     const category = await ServiceCategory.findById(serviceCategory);
@@ -381,6 +396,19 @@ export const updateProviderProfile = asyncHandler(async (req, res) => {
     address,
     phone,
   };
+
+  if (providerBankAccount) {
+    updateData.providerBankAccount = {
+      bankName: providerBankAccount.bankName?.trim(),
+      accountNumber: providerBankAccount.accountNumber?.trim(),
+      ifscCode: providerBankAccount.ifscCode?.trim().toUpperCase(),
+      accountHolderName: providerBankAccount.accountHolderName?.trim(),
+    };
+  }
+
+  if (upiId) {
+    updateData.upiId = upiId.trim();
+  }
 
   if (typeof avatar === "string") {
     updateData.avatar = avatar.trim();
@@ -576,13 +604,20 @@ export const uploadServiceImage = asyncHandler(async (req, res) => {
 });
 
 export const getProviderBookings = asyncHandler(async (req, res) => {
-  const bookings = await Booking.find({ provider: req.user._id })
+  const bookings = await Booking.find({ 
+    provider: req.user._id,
+    paymentStatus: { $ne: "advance_pending" }
+  })
     .populate(bookingPopulate)
     .sort({ createdAt: -1, eventDate: -1 });
 
+  const paymentMap = await groupPaymentsByBookingId(bookings.map((booking) => booking._id));
+
   res.json({
     success: true,
-    data: bookings.map(serializeBookingForProvider),
+    data: bookings.map((booking) =>
+      serializeBookingForProvider(booking, paymentMap.get(String(booking._id)))
+    ),
   });
 });
 
@@ -604,9 +639,6 @@ export const respondToBooking = asyncHandler(async (req, res) => {
   booking.status = action === "accept" ? BOOKING_STATUS.CONFIRMED : BOOKING_STATUS.REJECTED;
 
   await booking.save();
-  if (action === "accept") {
-    await upsertPendingPaymentForBooking(booking);
-  }
   await booking.populate(bookingPopulate);
 
   res.json({
@@ -658,17 +690,23 @@ export const completeProviderJob = asyncHandler(async (req, res) => {
   };
 
   await booking.save();
+  const remainingPayment = await ensureRemainingPaymentOrder(booking);
   await booking.populate(bookingPopulate);
 
   res.json({
     success: true,
-    message: "Job marked complete. The customer can now enter the final OTP and submit feedback from their side to close this booking.",
-    data: serializeBookingForProvider(booking),
+    message:
+      "Job marked complete. The remaining payment order and QR are ready for the customer, and the final OTP can be used to close the booking once payment is done.",
+    data: {
+      ...serializeBookingForProvider(booking),
+      remainingPaymentReady: true,
+      remainingPaymentAmount: remainingPayment.amount,
+    },
   });
 });
 
 export const getProviderEarnings = asyncHandler(async (req, res) => {
-  const payments = await Payment.find({ provider: req.user._id })
+  const payments = await Payment.find({ provider: req.user._id, paymentType: "provider_payout" })
     .select("amount providerAmount adminProfit status method payoutDueDate releasedAt createdAt booking")
     .populate({
       path: "booking",
@@ -685,11 +723,11 @@ export const getProviderEarnings = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data: {
-      totalEarnings: releasedPayments.reduce((sum, payment) => sum + (payment.providerAmount || Math.round(payment.amount * 0.89)), 0),
+      totalEarnings: releasedPayments.reduce((sum, payment) => sum + (payment.providerAmount || 0), 0),
       completedPayments: releasedPayments.length,
       pendingPayments: pendingPayments.length,
-      completedPaymentAmount: releasedPayments.reduce((sum, payment) => sum + (payment.providerAmount || Math.round(payment.amount * 0.89)), 0),
-      pendingPaymentAmount: pendingPayments.reduce((sum, payment) => sum + (payment.providerAmount || Math.round(payment.amount * 0.89)), 0),
+      completedPaymentAmount: releasedPayments.reduce((sum, payment) => sum + (payment.providerAmount || 0), 0),
+      pendingPaymentAmount: pendingPayments.reduce((sum, payment) => sum + (payment.providerAmount || 0), 0),
       payments,
     },
   });
@@ -787,5 +825,138 @@ export const regenerateCompletionOtp = asyncHandler(async (req, res) => {
     success: true,
     message: "A new final OTP has been generated. The customer can use it in their booking screen.",
     data: serializeBookingForProvider(booking),
+  });
+});
+
+// Get remaining payment QR for provider
+export const getProviderRemainingPayment = asyncHandler(async (req, res) => {
+  const booking = await ensureProviderBooking(req.params.bookingId, req.user._id);
+
+  // Check if there's remaining payment due
+  if (!booking.remainingAmount || booking.remainingAmount <= 0) {
+    throw new AppError("No remaining payment due for this booking.", 400);
+  }
+
+  if (booking.paymentStatus === "full_paid") {
+    throw new AppError("Remaining payment has already been completed.", 400);
+  }
+
+  if (![BOOKING_STATUS.OTP_PENDING, BOOKING_STATUS.COMPLETED].includes(booking.status)) {
+    throw new AppError("Remaining payment can only be collected after the job is marked complete.", 400);
+  }
+
+  const {
+    payment,
+    paymentLink,
+    qrCodeDataUrl,
+    amount,
+    upiPayment,
+    upiQrCodeUrl,
+    razorpayOrder,
+    razorpayReady,
+    razorpayErrorMessage,
+  } = await ensureRemainingPaymentOrder(booking);
+
+  res.json({
+    success: true,
+    message: razorpayReady
+      ? "Remaining payment ready."
+      : "UPI QR is ready. Razorpay popup is temporarily unavailable.",
+    data: {
+      bookingId: booking._id,
+      orderId: payment.razorpay_order_id,
+      paymentId: payment._id,
+      amount: Number(razorpayOrder?.amount || payment.metadata?.razorpayOrder?.amount || toPaise(amount)),
+      amountInRupees: amount,
+      currency: razorpayOrder?.currency || payment.metadata?.razorpayOrder?.currency || "INR",
+      key: env.razorpayKeyId,
+      paymentLink,
+      paymentLinkUrl: paymentLink,
+      qrCodeDataUrl,
+      customerName: booking.customer?.name || "Customer",
+      providerName: booking.provider?.businessName || booking.provider?.name || "EventMitra",
+      serviceNames: booking.services?.map((service) => service.name).join(", ") || booking.service?.name || "Service",
+      upiId: upiPayment?.upiId || "",
+      upiAmount: upiPayment?.amount || amount,
+      upiNote: upiPayment?.note || `Remaining payment for booking ${booking._id}`,
+      upiQrCodeUrl: upiQrCodeUrl || "",
+      razorpayReady,
+      razorpayErrorMessage,
+      showVerify: Boolean(upiQrCodeUrl),
+    },
+  });
+});
+
+// Verify remaining payment for provider
+export const verifyProviderRemainingPayment = asyncHandler(async (req, res) => {
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    manualVerification,
+  } = req.body;
+
+  const booking = await ensureProviderBooking(req.params.bookingId, req.user._id);
+
+  const { payment: remainingPayment } = await ensureRemainingPaymentOrder(booking);
+  const isManualVerification = Boolean(manualVerification);
+
+  // If order_id provided, verify it matches
+  if (!isManualVerification && razorpay_order_id && remainingPayment.razorpay_order_id !== razorpay_order_id) {
+    throw new AppError("Remaining payment order mismatch.", 400);
+  }
+
+  // If signature provided, verify it
+  if (!isManualVerification && razorpay_signature && razorpay_payment_id) {
+    const { verifyRazorpayPaymentSignature } = await import("../utils/razorpay.js");
+    const signatureIsValid = verifyRazorpayPaymentSignature({
+      razorpayOrderId: razorpay_order_id || remainingPayment.razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpaySignature: razorpay_signature,
+    });
+
+    if (!signatureIsValid) {
+      remainingPayment.status = "failed";
+      await remainingPayment.save();
+      throw new AppError("Payment signature verification failed.", 400);
+    }
+
+    remainingPayment.razorpay_payment_id = razorpay_payment_id;
+    remainingPayment.razorpay_signature = razorpay_signature;
+  }
+
+  if (isManualVerification) {
+    remainingPayment.method = "upi";
+    remainingPayment.paymentGateway = "manual";
+    remainingPayment.metadata = {
+      ...(remainingPayment.metadata || {}),
+      manuallyVerifiedByProvider: String(req.user._id),
+      manuallyVerifiedAt: new Date(),
+    };
+  }
+
+  remainingPayment.status = "paid";
+  remainingPayment.paidAt = new Date();
+  await remainingPayment.save();
+
+  booking.remainingAmount = 0;
+  booking.paymentStatus = "full_paid";
+  booking.paymentMeta = {
+    ...booking.paymentMeta,
+    remainingPaidAt: new Date(),
+    lastPaymentAt: new Date(),
+  };
+  booking.status = BOOKING_STATUS.COMPLETED;
+  await booking.save();
+
+  res.json({
+    success: true,
+    message: "Remaining payment verified and completed successfully.",
+    data: {
+      bookingId: booking._id,
+      paymentId: remainingPayment._id,
+      amountPaid: remainingPayment.amount,
+      paymentStatus: booking.paymentStatus,
+    },
   });
 });

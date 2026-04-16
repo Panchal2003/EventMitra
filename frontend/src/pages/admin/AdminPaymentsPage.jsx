@@ -11,7 +11,9 @@ import {
   X,
   TrendingUp,
   Users,
-  ArrowRight
+  ArrowRight,
+  CreditCard,
+  AlertCircle
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { GlassCard } from "../../components/admin/GlassCard";
@@ -34,6 +36,7 @@ const getStatusConfig = (status) => {
     released: { bg: "bg-blue-100", text: "text-blue-700", icon: CheckCircle, label: "Released" },
     pending: { bg: "bg-amber-100", text: "text-amber-700", icon: Clock, label: "Pending" },
     processing: { bg: "bg-purple-100", text: "text-purple-700", icon: Clock, label: "Processing" },
+    collection_pending: { bg: "bg-slate-100", text: "text-slate-700", icon: Clock, label: "Awaiting Collection" },
   };
   return configs[status] || configs.pending;
 };
@@ -52,6 +55,8 @@ export function AdminPaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [commissionRateDraft, setCommissionRateDraft] = useState("11");
+  const [transactionIdDraft, setTransactionIdDraft] = useState("");
 
   useEffect(() => {
     if (searchQuery.length > 0) {
@@ -61,6 +66,12 @@ export function AdminPaymentsPage() {
     }
     return () => showBottomNav();
   }, [searchQuery, hideBottomNav, showBottomNav]);
+
+  useEffect(() => {
+    if (selectedPayment) {
+      setTransactionIdDraft(selectedPayment?.transactionId || "");
+    }
+  }, [selectedPayment]);
 
   const handleSearchFocus = () => {
     if (window.innerWidth < 768) {
@@ -92,10 +103,14 @@ export function AdminPaymentsPage() {
     });
   }, [payments, searchQuery, filterStatus]);
 
-  const handleReleasePayout = async (paymentId) => {
+  const handleReleasePayout = async (payment) => {
     try {
-      await releasePayout(paymentId);
+      await releasePayout(payment._id, {
+        transactionId: transactionIdDraft.trim(),
+        commissionRate: commissionRateDraft === "" ? undefined : Number(commissionRateDraft),
+      });
       setNotice({ type: "success", message: "Payout released successfully." });
+      setSelectedPayment(null);
     } catch (requestError) {
       setNotice({ type: "error", message: getErrorMessage(requestError, "Unable to release payout.") });
     }
@@ -170,7 +185,7 @@ export function AdminPaymentsPage() {
               <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-amber-100">
                 <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
               </div>
-              <p className="mt-3 sm:mt-4 text-[10px] font-bold uppercase tracking-wider text-amber-600">Profit (11%)</p>
+              <p className="mt-3 sm:mt-4 text-[10px] font-bold uppercase tracking-wider text-amber-600">Commission</p>
               <p className="text-xl sm:text-2xl font-display font-bold text-slate-900">{formatCurrency(totalAdminProfit)}</p>
             </div>
           </div>
@@ -236,6 +251,7 @@ export function AdminPaymentsPage() {
                 className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 sm:py-3 text-xs text-slate-700 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
               >
                 <option value="all">All Status</option>
+                <option value="collection_pending">Awaiting Collection</option>
                 <option value="pending">Pending</option>
                 <option value="released">Released</option>
               </select>
@@ -263,7 +279,7 @@ export function AdminPaymentsPage() {
             {filteredPayments.map((payment, index) => {
               const statusConfig = getStatusConfig(payment.status);
               const StatusIcon = statusConfig.icon;
-              const canRelease = payment.status === "pending" && payment.booking?.status === "completed";
+              const canRelease = payment.status !== "released";
 
               return (
                 <motion.div
@@ -292,7 +308,7 @@ export function AdminPaymentsPage() {
                       </div>
 
                       {/* Info */}
-                      <div className="mt-3 space-y-2 text-xs text-slate-500">
+                        <div className="mt-3 space-y-2 text-xs text-slate-500">
                         <div className="flex items-center gap-2">
                           <User className="h-3 w-3 text-violet-500" />
                           <span className="truncate">{payment.booking?.customer?.name}</span>
@@ -305,14 +321,34 @@ export function AdminPaymentsPage() {
                           <span className="text-slate-400">Method:</span>
                           <span className="capitalize">{payment.method?.replace(/_/g, " ") || "N/A"}</span>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400">Advance:</span>
+                          <span>{formatCurrency(payment.advancePaid || 0)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400">Remaining:</span>
+                          <span>
+                            {payment.paymentStatus === "full_paid"
+                              ? formatCurrency(payment.remainingPaid || 0)
+                              : `${formatCurrency(payment.remainingDue || 0)} due`}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Price & Actions */}
                       <div className="mt-auto pt-3 flex items-center justify-between">
                         <div>
                           <p className="text-base font-bold text-blue-600">{formatCurrency(payment.amount)}</p>
-                          {payment.adminProfit > 0 && (
-                            <p className="text-[10px] font-medium text-amber-600">Profit: {formatCurrency(payment.adminProfit)}</p>
+                          {payment.providerAmount > 0 && (
+                            <p className="text-[10px] font-medium text-emerald-600">
+                              Provider: {formatCurrency(payment.providerAmount)} 
+                              (11% fee)
+                            </p>
+                          )}
+                          {(payment.providerBankAccount || payment.providerUpiId) ? (
+                            <p className="text-[10px] font-medium text-violet-600">✓ Payment details added</p>
+                          ) : (
+                            <p className="text-[10px] font-medium text-amber-600">⚠ No payment details</p>
                           )}
                         </div>
                         <div className="flex gap-1.5">
@@ -320,7 +356,7 @@ export function AdminPaymentsPage() {
                             View
                           </Button>
                           {canRelease && (
-                            <Button variant="success" size="sm" className="text-xs" onClick={() => handleReleasePayout(payment._id)} isLoading={actionInFlight === `release-payment-${payment._id}`}>
+                            <Button variant="success" size="sm" className="text-xs" onClick={() => setSelectedPayment(payment)} isLoading={actionInFlight === `release-payment-${payment._id}`}>
                               <ArrowUpRight className="h-3 w-3 mr-1" />
                               Release
                             </Button>
@@ -353,7 +389,7 @@ export function AdminPaymentsPage() {
       <Modal open={!!selectedPayment} onClose={() => setSelectedPayment(null)} title="Payment Details" size="lg">
         {selectedPayment && (
           <div className="space-y-4 sm:space-y-5">
-            {/* Header */}
+            {/* Header with Status */}
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100">
                 <WalletCards className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600" />
@@ -366,56 +402,151 @@ export function AdminPaymentsPage() {
               </div>
             </div>
 
-            {/* Info Grid */}
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="rounded-xl bg-violet-50/80 p-3 sm:p-4">
-                <p className="text-[10px] font-semibold uppercase text-violet-600 mb-1">Service</p>
-                <p className="text-sm font-medium text-slate-900">{selectedPayment.booking?.service?.name}</p>
-              </div>
-              <div className="rounded-xl bg-blue-50/80 p-3 sm:p-4">
-                <p className="text-[10px] font-semibold uppercase text-blue-600 mb-1">Customer</p>
-                <p className="text-sm font-medium text-slate-900">{selectedPayment.booking?.customer?.name}</p>
-              </div>
-              <div className="rounded-xl bg-emerald-50/80 p-3 sm:p-4">
-                <p className="text-[10px] font-semibold uppercase text-emerald-600 mb-1">Provider</p>
-                <p className="text-sm font-medium text-slate-900">{selectedPayment.provider?.businessName || selectedPayment.provider?.name}</p>
-              </div>
-              <div className="rounded-xl bg-amber-50/80 p-3 sm:p-4">
-                <p className="text-[10px] font-semibold uppercase text-amber-600 mb-1">Method</p>
-                <p className="text-sm font-medium text-slate-900 capitalize">{selectedPayment.method?.replace(/_/g, " ")}</p>
-              </div>
-              {selectedPayment.transactionId && (
-                <div className="rounded-xl bg-slate-100 p-3 sm:p-4 sm:col-span-2">
-                  <p className="text-[10px] font-semibold uppercase text-slate-500 mb-1">Transaction ID</p>
-                  <p className="font-mono text-sm font-medium text-slate-900">{selectedPayment.transactionId}</p>
+            {/* Booking Info */}
+            <div className="rounded-xl bg-slate-50 p-4">
+              <p className="text-[10px] font-semibold uppercase text-slate-500 mb-3">Booking Information</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-[10px] text-slate-400">Service</p>
+                  <p className="text-sm font-medium text-slate-900">{selectedPayment.booking?.service?.name}</p>
                 </div>
-              )}
-              {selectedPayment.releasedAt && (
-                <div className="rounded-xl bg-emerald-50/80 p-3 sm:p-4 sm:col-span-2">
-                  <p className="text-[10px] font-semibold uppercase text-emerald-600 mb-1">Released On</p>
-                  <p className="text-sm font-medium text-slate-900">{formatDate(selectedPayment.releasedAt)}</p>
+                <div>
+                  <p className="text-[10px] text-slate-400">Customer</p>
+                  <p className="text-sm font-medium text-slate-900">{selectedPayment.booking?.customer?.name}</p>
                 </div>
-              )}
-            </div>
-
-            {/* Profit Info */}
-            <div className="flex items-center justify-between rounded-xl bg-amber-50/80 p-3 sm:p-4">
-              <div>
-                <p className="text-[10px] font-semibold uppercase text-amber-600">Provider Amount</p>
-                <p className="text-base sm:text-lg font-bold text-slate-900">{formatCurrency(selectedPayment.providerAmount)}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-semibold uppercase text-amber-600">Admin Profit</p>
-                <p className="text-base sm:text-lg font-bold text-slate-900">{formatCurrency(selectedPayment.adminProfit)}</p>
+                <div>
+                  <p className="text-[10px] text-slate-400">Provider</p>
+                  <p className="text-sm font-medium text-slate-900">{selectedPayment.provider?.businessName || selectedPayment.provider?.name}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400">Event Date</p>
+                  <p className="text-sm font-medium text-slate-900">{selectedPayment.booking?.eventDate ? formatDate(selectedPayment.booking.eventDate) : "N/A"}</p>
+                </div>
               </div>
             </div>
 
-            {/* Actions */}
-            {selectedPayment.status === "pending" && selectedPayment.booking?.status === "completed" && (
-              <Button variant="success" className="w-full text-sm" onClick={() => { handleReleasePayout(selectedPayment._id); setSelectedPayment(null); }} isLoading={actionInFlight === `release-payment-${selectedPayment._id}`}>
-                <ArrowUpRight className="h-4 w-4 mr-1.5" />
-                Release Payout
-              </Button>
+            {/* Payment Breakdown */}
+            <div className="rounded-xl bg-emerald-50 p-4">
+              <p className="text-[10px] font-semibold uppercase text-emerald-600 mb-3">Payment Received</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <p className="text-[10px] text-emerald-600">Total Amount</p>
+                  <p className="text-lg font-bold text-slate-900">{formatCurrency(selectedPayment.totalAmount)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-emerald-600">Advance Paid</p>
+                  <p className="text-base font-semibold text-slate-900">{formatCurrency(selectedPayment.advancePaid || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-emerald-600">Remaining Paid</p>
+                  <p className="text-base font-semibold text-slate-900">{formatCurrency(selectedPayment.remainingPaid || 0)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Payout Calculation */}
+            <div className="rounded-xl bg-amber-50 p-4">
+              <p className="text-[10px] font-semibold uppercase text-amber-600 mb-3">Payout Calculation (11% Commission)</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-amber-600">Provider Gets</p>
+                  <p className="text-2xl font-bold text-emerald-600">{formatCurrency(selectedPayment.providerAmount)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-amber-600">Admin Profit</p>
+                  <p className="text-xl font-bold text-slate-900">{formatCurrency(selectedPayment.adminProfit)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Provider Payment Details */}
+            {(selectedPayment.providerBankAccount || selectedPayment.providerUpiId) ? (
+              <div className="rounded-xl bg-violet-50 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <CreditCard className="h-4 w-4 text-violet-600" />
+                  <p className="text-[10px] font-semibold uppercase text-violet-600">Provider Payment Details</p>
+                </div>
+                {selectedPayment.providerBankAccount && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] text-slate-500">Bank Name</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedPayment.providerBankAccount.bankName}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500">Account Number</p>
+                      <p className="text-sm font-medium text-slate-900 font-mono">••••{selectedPayment.providerBankAccount.accountNumber?.slice(-4)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500">IFSC Code</p>
+                      <p className="text-sm font-medium text-slate-900 font-mono">{selectedPayment.providerBankAccount.ifscCode}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500">Account Holder</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedPayment.providerBankAccount.accountHolderName}</p>
+                    </div>
+                  </div>
+                )}
+                {selectedPayment.providerUpiId && (
+                  <div className="mt-3 pt-3 border-t border-violet-200">
+                    <p className="text-[10px] text-slate-500">UPI ID</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedPayment.providerUpiId}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <p className="text-sm font-medium text-amber-700">No payment details added by provider</p>
+                </div>
+              </div>
+            )}
+
+            {/* Release Form */}
+            {selectedPayment.status !== "released" && (
+              <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+                <p className="text-[10px] font-semibold uppercase text-slate-500">Release Payout</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <label className="text-[10px] font-semibold uppercase text-slate-500">Commission %</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={commissionRateDraft}
+                      onChange={(event) => setCommissionRateDraft(event.target.value)}
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-100"
+                    />
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <label className="text-[10px] font-semibold uppercase text-slate-500">Transaction ID</label>
+                    <input
+                      type="text"
+                      value={transactionIdDraft}
+                      onChange={(event) => setTransactionIdDraft(event.target.value)}
+                      placeholder="Enter reference"
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-100"
+                    />
+                  </div>
+                </div>
+                <Button variant="success" className="w-full text-sm" onClick={() => handleReleasePayout(selectedPayment)} isLoading={actionInFlight === `release-payment-${selectedPayment._id}`}>
+                  <ArrowUpRight className="h-4 w-4 mr-1.5" />
+                  Release {formatCurrency(selectedPayment.providerAmount)} to Provider
+                </Button>
+              </div>
+            )}
+
+            {/* Released Info */}
+            {selectedPayment.status === "released" && selectedPayment.releasedAt && (
+              <div className="rounded-xl bg-emerald-50 p-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                  <p className="font-semibold text-emerald-700">Payout Released on {formatDate(selectedPayment.releasedAt)}</p>
+                </div>
+                {selectedPayment.transactionId && (
+                  <p className="mt-2 text-sm text-emerald-600">Transaction ID: {selectedPayment.transactionId}</p>
+                )}
+              </div>
             )}
           </div>
         )}

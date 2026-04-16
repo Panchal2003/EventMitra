@@ -15,7 +15,7 @@ customerRoutes.get("/", asyncHandler(async (req, res) => {
   const customersWithStats = await Promise.all(
     customers.map(async (customer) => {
       const bookingStats = await Booking.aggregate([
-        { $match: { customer: customer._id } },
+        { $match: { customer: customer._id, paymentStatus: { $ne: "advance_pending" } } },
         {
           $group: {
             _id: "$status",
@@ -30,7 +30,7 @@ customerRoutes.get("/", asyncHandler(async (req, res) => {
       }, {});
 
       const totalSpent = await Booking.aggregate([
-        { $match: { customer: customer._id, status: "completed" } },
+        { $match: { customer: customer._id, status: "completed", paymentStatus: { $ne: "advance_pending" } } },
         { $group: { _id: null, total: { $sum: "$totalAmount" } } },
       ]);
 
@@ -62,7 +62,10 @@ customerRoutes.get("/:customerId", asyncHandler(async (req, res) => {
     });
   }
 
-  const bookings = await Booking.find({ customer: customer._id })
+  const bookings = await Booking.find({ 
+    customer: customer._id,
+    paymentStatus: { $ne: "advance_pending" }
+  })
     .populate({
       path: "service",
       select: "name category startingPrice",

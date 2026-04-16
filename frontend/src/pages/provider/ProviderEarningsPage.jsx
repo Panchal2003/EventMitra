@@ -27,7 +27,7 @@ export function ProviderEarningsPage() {
     const totalEarnings = Number(earningsSummary?.completedPaymentAmount || 0);
     const pendingPayouts = (earnings || [])
       .filter(e => e.status === "pending")
-      .reduce((sum, e) => sum + (e.providerAmount || Math.round(e.amount * 0.89) || 0), 0);
+      .reduce((sum, e) => sum + (e.providerAmount || 0), 0);
     const paidOut = Number(earningsSummary?.completedPaymentAmount || 0);
     
     return {
@@ -52,7 +52,7 @@ export function ProviderEarningsPage() {
       header: "Amount",
       render: (payment) => (
         <div>
-          <p className="font-semibold text-slate-900">{formatCurrency(payment.providerAmount || Math.round(payment.amount * 0.89))}</p>
+          <p className="font-semibold text-slate-900">{formatCurrency(payment.providerAmount)}</p>
           <p className="mt-1 text-xs text-slate-500 capitalize">
             {payment.method?.replace("_", " ") || "Online"}
           </p>

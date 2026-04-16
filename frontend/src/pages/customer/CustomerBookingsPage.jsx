@@ -7,9 +7,10 @@ import {
   Loader2,
   Search,
   Sparkles,
-  Zap,
   Shield,
   XCircle,
+  CreditCard,
+  Star,
 } from "lucide-react";
 import { GlassCard } from "../../components/admin/GlassCard";
 import { CustomerOtpModal } from "../../components/customer/CustomerOtpModal";
@@ -25,6 +26,9 @@ export function CustomerBookingsPage({ embedded = false }) {
   const [verifyOtpBooking, setVerifyOtpBooking] = useState(null);
   const [verifyOtpBusy, setVerifyOtpBusy] = useState(false);
   const [cancelSuccess, setCancelSuccess] = useState(null);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackBooking, setFeedbackBooking] = useState(null);
+  const [feedbackData, setFeedbackData] = useState({ rating: 5, comment: "" });
 
   const fetchBookings = async () => {
     try {
@@ -76,6 +80,11 @@ export function CustomerBookingsPage({ embedded = false }) {
       setError(requestError.response?.data?.message || "Failed to cancel booking");
       throw requestError;
     }
+  };
+
+  const handlePayRemaining = (booking) => {
+    // Navigate directly to payment page - feedback will be collected there
+    navigate(`/customer/payment/${booking._id}`);
   };
 
   const filteredBookings = useMemo(() => {
@@ -279,6 +288,7 @@ export function CustomerBookingsPage({ embedded = false }) {
                 index={index}
                 onVerifyOtp={setVerifyOtpBooking}
                 onCancel={handleCancelBooking}
+                onPayRemaining={handlePayRemaining}
               />
             ))}
           </motion.div>
@@ -292,6 +302,96 @@ export function CustomerBookingsPage({ embedded = false }) {
         onClose={() => setVerifyOtpBooking(null)}
         onSubmit={handleVerifyOtp}
       />
+
+      {feedbackModalOpen && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)", zIndex: 9999 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setFeedbackModalOpen(false);
+            }
+          }}
+        >
+          <div 
+            className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500">
+                <Star className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="mt-4 text-xl font-bold text-slate-900">Rate Your Experience</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Please rate your experience before making payment.
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-slate-700">Rating</label>
+              <div className="mt-2 flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setFeedbackData({ ...feedbackData, rating: star })}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className={`h-8 w-8 ${
+                        star <= feedbackData.rating
+                          ? "fill-amber-400 text-amber-400"
+                          : "text-slate-300"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-semibold text-slate-700">Comment (optional)</label>
+              <textarea
+                value={feedbackData.comment}
+                onChange={(e) => setFeedbackData({ ...feedbackData, comment: e.target.value })}
+                placeholder="Share your experience..."
+                className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-primary-500 focus:outline-none"
+                rows={3}
+              />
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                onClick={() => {
+                  setFeedbackModalOpen(false);
+                  setFeedbackBooking(null);
+                  setFeedbackData({ rating: 5, comment: "" });
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:from-amber-600 hover:to-orange-700 transition-all"
+                onClick={() => {
+                  localStorage.setItem("pendingFeedback", JSON.stringify({
+                    bookingId: feedbackBooking._id,
+                    feedback: feedbackData
+                  }));
+                  setFeedbackModalOpen(false);
+                  setFeedbackBooking(null);
+                  setFeedbackData({ rating: 5, comment: "" });
+                  navigate(`/customer/payment/${feedbackBooking._id}`);
+                }}
+              >
+                Continue to Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

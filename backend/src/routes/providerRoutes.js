@@ -10,6 +10,7 @@ import {
   getProviderDashboard,
   getProviderEarnings,
   getProviderProfile,
+  getProviderRemainingPayment,
   getProviderServiceCategories,
   getProviderServices,
   regenerateCompletionOtp,
@@ -22,6 +23,7 @@ import {
   uploadServiceImage,
   verifyBookingOtp,
   verifyCompletionOtp,
+  verifyProviderRemainingPayment,
 } from "../controllers/providerController.js";
 
 export const providerRoutes = Router();
@@ -41,6 +43,8 @@ providerRoutes.get("/profile", getProviderProfile);
 providerRoutes.put("/profile", updateProviderProfile);
 providerRoutes.post("/profile/portfolio", portfolioUpload.array("files", 6), uploadPortfolio);
 providerRoutes.get("/bookings", getProviderBookings);
+providerRoutes.get("/bookings/:bookingId/remaining-payment", getProviderRemainingPayment);
+providerRoutes.post("/bookings/:bookingId/payments/remaining/verify", verifyProviderRemainingPayment);
 providerRoutes.patch("/bookings/:bookingId/respond", respondToBooking);
 providerRoutes.patch("/bookings/:bookingId/start", startProviderJob);
 providerRoutes.patch("/bookings/:bookingId/verify-start-otp", verifyBookingOtp);

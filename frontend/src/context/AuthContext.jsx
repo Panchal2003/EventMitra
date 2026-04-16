@@ -54,7 +54,10 @@ export function AuthProvider({ children }) {
         setAuthToken(payload.token);
         setAuthState(payload);
       },
-      logout: () => setAuthState({ token: null, user: null }),
+      logout: () => {
+        setAuthToken(null);
+        setAuthState({ token: null, user: null });
+      },
       updateUser: (user) =>
         setAuthState((previous) => ({
           ...previous,

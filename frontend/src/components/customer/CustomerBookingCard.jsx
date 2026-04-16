@@ -130,7 +130,7 @@ function BookingStatusPanel({ booking, onVerifyOtp }) {
           <div className="flex-1">
             <p className="text-sm font-bold text-amber-800">Final step pending</p>
             <p className="mt-1 text-sm text-amber-700">
-              Enter your OTP and share feedback to close this booking.
+              Complete the remaining payment, then enter your OTP and share feedback to close this booking.
             </p>
             {booking.completionOtpCode ? (
               <div className="mt-4 rounded-xl border border-amber-200/60 bg-white px-5 py-4 shadow-sm">
@@ -140,13 +140,19 @@ function BookingStatusPanel({ booking, onVerifyOtp }) {
                 </p>
               </div>
             ) : null}
-            <Button
-              onClick={() => onVerifyOtp(booking)}
-              variant="success"
-              className="mt-4 w-full rounded-xl bg-gradient-to-r from-success-600 to-success-700 text-white shadow-lg shadow-success-500/20 hover:from-success-700 hover:to-success-800 hover:shadow-xl hover:shadow-success-500/30"
-            >
-              Verify OTP
-            </Button>
+            {booking.payment?.paymentStatus === "full_paid" ? (
+              <Button
+                onClick={() => onVerifyOtp(booking)}
+                variant="success"
+                className="mt-4 w-full rounded-xl bg-gradient-to-r from-success-600 to-success-700 text-white shadow-lg shadow-success-500/20 hover:from-success-700 hover:to-success-800 hover:shadow-xl hover:shadow-success-500/30"
+              >
+                Verify OTP
+              </Button>
+            ) : (
+              <p className="mt-4 rounded-xl border border-amber-200/70 bg-white px-4 py-3 text-sm text-amber-700">
+                Remaining payment is still pending. Use the payment action below before final OTP verification.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -228,7 +234,51 @@ function BookingStatusPanel({ booking, onVerifyOtp }) {
   return null;
 }
 
-export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel }) {
+function BookingPaymentPanel({ booking, onPayRemaining }) {
+  const payment = booking.payment || {};
+  const canPayRemaining =
+    (booking.status === "otp_pending" || booking.status === "completed") &&
+    payment.paymentStatus !== "full_paid" &&
+    Number(payment.remainingAmount || 0) > 0;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment Summary</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+              <p className="text-[11px] font-semibold uppercase text-slate-500">Advance Paid</p>
+              <p className="mt-1 text-sm font-bold text-emerald-700">
+                {formatCurrency(payment.advancePaid || 0)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+              <p className="text-[11px] font-semibold uppercase text-slate-500">Remaining Due</p>
+              <p className="mt-1 text-sm font-bold text-amber-700">
+                {formatCurrency(payment.remainingAmount || 0)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+              <p className="text-[11px] font-semibold uppercase text-slate-500">Status</p>
+              <p className="mt-1 text-sm font-bold capitalize text-slate-900">
+                {(payment.paymentStatus || "unpaid").replace(/_/g, " ")}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {canPayRemaining ? (
+          <Button onClick={() => onPayRemaining?.(booking)} className="rounded-xl">
+            Pay Remaining
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel, onPayRemaining }) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
@@ -248,9 +298,10 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel 
 
   const getRefundPolicy = () => {
     const hours = getHoursUntilEvent();
-    if (hours >= 48) return { policy: "Full Refund (100%)", refund: 100, className: "bg-emerald-50 border-emerald-200" };
-    if (hours >= 24) return { policy: "Partial Refund (50%)", refund: 50, className: "bg-amber-50 border-amber-200" };
-    return { policy: "No Refund (0%)", refund: 0, className: "bg-rose-50 border-rose-200" };
+    if (hours > 36) return { policy: "Refund 20% of total", refund: 20, className: "bg-emerald-50 border-emerald-200" };
+    if (hours >= 24) return { policy: "Refund 18% of total", refund: 18, className: "bg-blue-50 border-blue-200" };
+    if (hours >= 12) return { policy: "Refund 15% of total", refund: 15, className: "bg-amber-50 border-amber-200" };
+    return { policy: "Refund 10% of total", refund: 10, className: "bg-rose-50 border-rose-200" };
   };
 
   const handleCancelConfirm = async () => {
@@ -370,6 +421,10 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel 
 
           <div className="mt-5">
             <BookingStatusPanel booking={booking} onVerifyOtp={onVerifyOtp} />
+          </div>
+
+          <div className="mt-5">
+            <BookingPaymentPanel booking={booking} onPayRemaining={onPayRemaining} />
           </div>
 
           {canCancel && (

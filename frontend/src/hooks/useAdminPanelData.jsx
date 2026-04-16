@@ -90,7 +90,7 @@ export function useAdminPanelData() {
     assignProvider: (id, providerId) =>
       wrapAction(`assign-provider-${id}`, () => adminApi.assignProvider(id, providerId)),
     cancelBooking: (id) => wrapAction(`cancel-booking-${id}`, () => adminApi.cancelBooking(id)),
-    releasePayout: (id, transactionId) =>
-      wrapAction(`release-payment-${id}`, () => adminApi.releasePayout(id, transactionId)),
+    releasePayout: (id, payload) =>
+      wrapAction(`release-payment-${id}`, () => adminApi.releasePayout(id, payload)),
   };
 }

@@ -85,6 +85,20 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    providerBankAccount: {
+      bankName: { type: String, trim: true },
+      accountNumber: { type: String, trim: true },
+      ifscCode: { type: String, trim: true },
+      accountHolderName: { type: String, trim: true },
+    },
+    upiId: {
+      type: String,
+      trim: true,
+    },
+    paymentDetailsVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
