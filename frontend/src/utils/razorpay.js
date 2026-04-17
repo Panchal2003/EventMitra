@@ -26,9 +26,17 @@ export function loadRazorpayCheckout() {
 }
 
 export async function openRazorpayCheckout(options) {
-  console.log("Opening Razorpay checkout...");
+  console.log("Opening Razorpay checkout...", options);
   
-  const Razorpay = await loadRazorpayCheckout();
+  let Razorpay;
+  try {
+    Razorpay = await loadRazorpayCheckout();
+    console.log("Razorpay script loaded:", typeof Razorpay);
+  } catch (loadErr) {
+    console.error("Failed to load Razorpay:", loadErr);
+    throw new Error("Unable to load payment system. Please refresh and try again.");
+  }
+  
   const amount = Number(options.amount);
   const key = String(options.key || "").trim();
   const orderId = String(options.order_id || "").trim();
@@ -44,6 +52,15 @@ export async function openRazorpayCheckout(options) {
   }
 
   return new Promise((resolve, reject) => {
+    console.log("Creating Razorpay checkout with options:", {
+      key,
+      amount,
+      currency: options.currency || "INR",
+      order_id: orderId,
+      name: options.name,
+      description: options.description,
+    });
+    
     const razorpayOptions = {
       key,
       amount,
@@ -55,14 +72,8 @@ export async function openRazorpayCheckout(options) {
       theme: {
         color: options.theme?.color || "#0f766e"
       },
-      callback_url: window.location.origin + "/payment/success",
-      redirect: true,
-      retry: {
-        enabled: true,
-        max_count: 3
-      },
       handler: (response) => {
-        console.log("Payment completed:", response.razorpay_payment_id);
+        console.log("Payment completed:", response);
         resolve({
           razorpay_payment_id: response.razorpay_payment_id,
           razorpay_order_id: response.razorpay_order_id,
@@ -92,6 +103,12 @@ export async function openRazorpayCheckout(options) {
       reject(new Error(response.error?.description || response.error?.reason || "Payment failed"));
     });
 
-    razorpay.open();
+    // Open the checkout
+    try {
+      razorpay.open();
+    } catch (openError) {
+      console.error("Failed to open Razorpay:", openError);
+      reject(new Error(openError?.message || "Failed to open payment window"));
+    }
   });
 }

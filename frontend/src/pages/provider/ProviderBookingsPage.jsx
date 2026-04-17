@@ -70,6 +70,7 @@ export function ProviderBookingsPage() {
   const [qrCodeBooking, setQrCodeBooking] = useState(null);
   const [qrCodeData, setQrCodeData] = useState(null);
   const [qrCodeLoading, setQrCodeLoading] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const [remainingPaymentBookingId, setRemainingPaymentBookingId] = useState("");
   
   const requestBookings = useMemo(
@@ -270,9 +271,16 @@ export function ProviderBookingsPage() {
     
     try {
       setQrCodeLoading(true);
+      console.log("Starting payment with:", {
+        key: qrCodeData.key,
+        amount: qrCodeData.amount,
+        orderId: qrCodeData.orderId
+      });
 
-      if (!qrCodeData.orderId) {
-        throw new Error(qrCodeData.razorpayErrorMessage || "Razorpay popup is not available for this payment yet.");
+      if (!qrCodeData.orderId || !qrCodeData.key) {
+        setQrCodeLoading(false);
+        setNotice({ type: "error", message: "Razorpay not available. Use QR code instead." });
+        return;
       }
       
       const razorpayResponse = await openRazorpayCheckout({
@@ -287,8 +295,8 @@ export function ProviderBookingsPage() {
       
       console.log("Razorpay response:", razorpayResponse);
       
-      if (!razorpayResponse.razorpay_payment_id) {
-        console.log("Payment modal closed by user");
+      if (!razorpayResponse?.razorpay_payment_id) {
+        console.log("No payment ID returned");
         setQrCodeLoading(false);
         return;
       }
@@ -300,7 +308,8 @@ export function ProviderBookingsPage() {
       setQrCodeData(null);
       await refresh();
     } catch (err) {
-      console.error("Payment error:", err);
+      console.error("Payment error full:", err);
+      setQrCodeLoading(false);
       if (err.message?.includes("modal closed") || err.message?.includes("Payment modal")) {
         setNotice({ type: "info", message: "Payment cancelled. You can try again." });
       } else if (err.response?.data?.message) {
@@ -713,70 +722,47 @@ export function ProviderBookingsPage() {
                   <XCircle className="h-5 w-5" />
                 </button>
                 <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 sm:h-12 sm:w-12">
-                  <QrCode className="h-5 w-5 text-white sm:h-6 sm:w-6" />
+                  <CreditCard className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                 </div>
                 <h3 className="text-lg font-bold text-white sm:text-xl">Collect Payment</h3>
                 <p className="mt-1 text-sm text-white/80">
-                  Show this QR to customer for scanning
+                  Choose payment method
                 </p>
               </div>
 
               <div className="bg-white p-5 sm:p-6">
-                {qrCodeData.upiQrCodeUrl ? (
-                  <div className="text-center">
-                    <div className="relative rounded-2xl bg-white p-3 shadow-lg ring-1 ring-slate-900/5 sm:p-4">
-                      <img
-                        src={qrCodeData.upiQrCodeUrl}
-                        alt="UPI Payment QR Code"
-                        className="mx-auto h-48 w-48 sm:h-56 sm:w-56"
-                      />
-                    </div>
-                    
-                    <div className="mt-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 p-3 text-center sm:p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Amount to Collect</p>
-                      <p className="mt-1 text-2xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent sm:text-3xl">
-                        {formatCurrency(qrCodeData.upiAmount || qrCodeData.amountInRupees)}
-                      </p>
-                    </div>
-                    
-                    <div className="mt-3 text-center sm:mt-4">
-                      <p className="text-xs text-slate-500">UPI ID</p>
-                      <p className="font-mono text-sm font-medium text-slate-700">{qrCodeData.upiId}</p>
-                    </div>
-                    
-                    <div className="mt-2 flex items-center justify-center gap-2 text-xs text-slate-500 sm:mt-3">
-                      <Smartphone className="h-4 w-4" />
-                      <span>Google Pay, PhonePe, Paytm</span>
-                    </div>
-                  </div>
-                ) : qrCodeData.qrCodeDataUrl ? (
-                  <div className="text-center">
-                    <div className="relative rounded-2xl bg-white p-3 shadow-lg ring-1 ring-slate-900/5 sm:p-4">
-                      <img
-                        src={qrCodeData.qrCodeDataUrl}
-                        alt="Payment QR Code"
-                        className="mx-auto h-48 w-48 sm:h-56 sm:w-56"
-                      />
-                    </div>
-                    
-                    <div className="mt-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 p-3 text-center sm:p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">Amount Due</p>
-                      <p className="mt-1 text-2xl font-extrabold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent sm:text-3xl">
-                        {formatCurrency(qrCodeData.amountInRupees)}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-8 text-center text-slate-500">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary-600" />
-                  </div>
-                )}
+                <div className="rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 p-4 text-center">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Amount to Collect</p>
+                  <p className="mt-1 text-3xl font-extrabold text-emerald-600">
+                    {formatCurrency(qrCodeData.upiAmount || qrCodeData.amountInRupees)}
+                  </p>
+                </div>
               </div>
 
-              <div className="border-t border-slate-100 bg-slate-50 p-4">
+              <div className="border-t border-slate-100 bg-slate-50 p-4 space-y-3">
+                {qrCodeData.orderId && qrCodeData.key && (
+                  <Button
+                    className="w-full"
+                    onClick={handleProviderCollectPayment}
+                    isLoading={qrCodeLoading}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Pay with Razorpay
+                  </Button>
+                )}
+                {qrCodeData.upiQrCodeUrl && (
+                  <Button
+                    className="w-full"
+                    variant="secondary"
+                    onClick={() => setShowQrModal(true)}
+                  >
+                    <QrCode className="mr-2 h-4 w-4" />
+                    Show QR Code
+                  </Button>
+                )}
                 <Button
                   className="w-full"
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => {
                     setQrCodeBooking(null);
                     setQrCodeData(null);
@@ -853,6 +839,38 @@ export function ProviderBookingsPage() {
           </div>
         ) : null}
 
+        {showQrModal && qrCodeData && qrCodeData.upiQrCodeUrl && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden">
+              <div className="relative bg-gradient-to-r from-teal-600 to-emerald-600 p-5 text-center">
+                <button 
+                  onClick={() => setShowQrModal(false)} 
+                  className="absolute right-3 top-3 rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30"
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+                <QrCode className="mx-auto h-8 w-8 text-white" />
+                <h3 className="mt-2 text-lg font-bold text-white">Scan QR Code</h3>
+                <p className="mt-1 text-sm text-white/80">Customer can scan this to pay</p>
+              </div>
+              <div className="bg-white p-5 text-center">
+                <img src={qrCodeData.upiQrCodeUrl} alt="QR" className="mx-auto h-64 w-64" />
+                <div className="mt-4 rounded-2xl bg-emerald-50 p-3">
+                  <p className="text-xs font-semibold uppercase text-emerald-700">Amount</p>
+                  <p className="text-2xl font-bold text-emerald-600">
+                    {formatCurrency(qrCodeData.upiAmount || qrCodeData.amountInRupees)}
+                  </p>
+                </div>
+                <p className="mt-3 text-sm text-slate-500">UPI: {qrCodeData.upiId}</p>
+              </div>
+              <div className="border-t border-slate-100 bg-slate-50 p-4">
+                <Button className="w-full" variant="secondary" onClick={() => setShowQrModal(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

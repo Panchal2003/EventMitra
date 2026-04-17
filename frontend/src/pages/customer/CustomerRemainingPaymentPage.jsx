@@ -5,18 +5,15 @@ import {
   CheckCircle2,
   CreditCard,
   Loader2,
-  QrCode,
   ShieldCheck,
   Star,
   MessageSquare,
   KeyRound,
-  Smartphone,
   XCircle,
 } from "lucide-react";
 import { customerApi } from "../../services/api";
 import { Button } from "../../components/common/Button";
 import { formatCurrency } from "../../utils/currency";
-import { openRazorpayCheckout } from "../../utils/razorpay";
 import { useAuth } from "../../context/AuthContext";
 
 export function CustomerRemainingPaymentPage() {
@@ -34,7 +31,6 @@ export function CustomerRemainingPaymentPage() {
   const [isReadyToPay, setIsReadyToPay] = useState(false);
   const [otpValue, setOtpValue] = useState("");
   const [requiresOtp, setRequiresOtp] = useState(false);
-  const [showUpiQrModal, setShowUpiQrModal] = useState(false);
 
   const loadPayment = async () => {
     if (!bookingId) {
@@ -108,11 +104,6 @@ export function CustomerRemainingPaymentPage() {
     }
   };
 
-  const fetchLatestPaymentConfig = async () => {
-    const response = await customerApi.getRemainingPayment(bookingId);
-    return response.data?.data || {};
-  };
-
   useEffect(() => {
     loadPayment();
   }, [bookingId]);
@@ -157,7 +148,7 @@ export function CustomerRemainingPaymentPage() {
       return;
     }
 
-    // First submit feedback
+    // Submit feedback only - provider will collect payment
     try {
       setPaying(true);
       setError("");
@@ -168,73 +159,14 @@ export function CustomerRemainingPaymentPage() {
         feedback: feedbackData,
       });
       
-      console.log("Feedback submitted successfully");
+      console.log("Feedback submitted. Provider will collect payment.");
+      setShowFeedbackModal(false);
+      setSuccess("Thank you for your feedback! The provider will now collect the remaining payment.");
+      setFeedbackData({ rating: 5, comment: "" });
+      setOtpValue("");
     } catch (feedbackError) {
       console.error("Feedback submission error:", feedbackError);
-      // Continue with payment even if feedback fails
-    }
-
-    // Then open Razorpay for payment
-    try {
-      const latestPaymentData = await fetchLatestPaymentConfig();
-      const effectivePaymentData = latestPaymentData?.orderId ? latestPaymentData : paymentData;
-
-      setPaymentData(effectivePaymentData);
-
-      console.log("Customer paying remaining amount:", {
-        key: effectivePaymentData.key,
-        amount: effectivePaymentData.amount,
-        order_id: effectivePaymentData.orderId,
-      });
-
-      if (!effectivePaymentData.orderId) {
-        throw new Error(
-          effectivePaymentData.razorpayErrorMessage ||
-            "Razorpay popup is not available for this payment yet."
-        );
-      }
-
-      const razorpayResponse = await openRazorpayCheckout({
-        key: effectivePaymentData.key,
-        amount: Number(effectivePaymentData.amount),
-        currency: effectivePaymentData.currency || "INR",
-        order_id: effectivePaymentData.orderId,
-        name: "EventMitra",
-        description: `Remaining payment for ${effectivePaymentData.serviceNames || "booking"}`,
-        prefill: {
-          name: user?.name || "",
-          email: user?.email || "",
-          contact: user?.phone || "",
-        },
-        theme: { color: "#2563eb" },
-      });
-
-      console.log("Razorpay payment successful:", razorpayResponse);
-
-      if (!razorpayResponse.razorpay_payment_id) {
-        console.log("Payment modal closed by user");
-        setPaying(false);
-        setShowFeedbackModal(false);
-        return;
-      }
-
-      // Verify payment
-      await customerApi.verifyRemainingPayment(bookingId, razorpayResponse);
-
-      setShowFeedbackModal(false);
-      setSuccess("Payment completed successfully! Thank you for your feedback and payment.");
-      setPaymentData(null);
-      setFeedbackData({ rating: 5, comment: "" });
-      await loadPayment();
-    } catch (err) {
-      console.error("Payment error:", err);
-      if (err.message?.includes("modal closed") || err.message?.includes("Payment modal")) {
-        setError("Payment cancelled. You can try again.");
-      } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError(err.message || "Payment failed. Please try again.");
-      }
+      setError(feedbackError.response?.data?.message || "Failed to submit feedback. Please try again.");
     } finally {
       setPaying(false);
     }
@@ -266,14 +198,14 @@ export function CustomerRemainingPaymentPage() {
         <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-xl">
           <div className="bg-gradient-to-r from-slate-950 via-primary-900 to-cyan-700 px-6 py-6 text-white">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-100">
-              <QrCode className="h-3.5 w-3.5" />
+              <CreditCard className="h-3.5 w-3.5" />
               Remaining Payment
             </div>
             <h1 className="mt-4 text-2xl font-display font-black sm:text-3xl">
-              Complete Your Final Payment
+              Confirm Your Payment
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-cyan-100">
-              Pay the remaining amount securely through Razorpay. The QR code opens the same payment flow on another device if you want to scan it.
+              The provider will collect the remaining payment from you after you confirm.
             </p>
           </div>
 
@@ -340,40 +272,21 @@ export function CustomerRemainingPaymentPage() {
                   </div>
                   
                   <div className="space-y-3">
-                    {paymentData.upiQrCodeUrl && (
-                      <button
-                        onClick={() => setShowUpiQrModal(true)}
-                        disabled={paying}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold hover:from-emerald-600 hover:to-emerald-700 transition-all disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <span className="flex items-center gap-2">
-                          <Smartphone className="h-5 w-5" />
-                          Pay with UPI QR
-                        </span>
-                        <span>{formatCurrency(paymentData.upiAmount || paymentData.amountInRupees)}</span>
-                      </button>
-                    )}
-                    
                     <button
                       onClick={handlePayNow}
-                      disabled={paying || !paymentData.orderId}
+                      disabled={paying}
                       className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <span className="flex items-center gap-2">
                         <CreditCard className="h-5 w-5" />
-                        Pay with Razorpay
+                        Pay Now
                       </span>
                       <span>{formatCurrency(paymentData.amountInRupees)}</span>
                     </button>
                     
-                    <div className="text-center text-xs text-slate-500 mt-2">
-                      Secure payment via UPI QR or Razorpay (Cards, Wallets, NetBanking)
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm text-slate-600">
+                      Click "Pay Now" to confirm payment. The provider will collect payment from you.
                     </div>
-                    {!paymentData.orderId && !paymentData.upiQrCodeUrl && (
-                      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-xs text-amber-700">
-                        {paymentData.razorpayErrorMessage || "Payment options are temporarily unavailable. Please retry shortly."}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -393,9 +306,9 @@ export function CustomerRemainingPaymentPage() {
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 sm:h-16 sm:w-16">
                 <Star className="h-7 w-7 text-white sm:h-8 sm:w-8" />
               </div>
-              <h2 className="mt-4 text-lg font-bold text-slate-900 sm:text-xl">Rate & Pay</h2>
+              <h2 className="mt-4 text-lg font-bold text-slate-900 sm:text-xl">Rate & Confirm</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Please rate your experience and then complete your payment.
+                Please rate your experience. The provider will collect payment from you.
               </p>
             </div>
 
@@ -478,72 +391,13 @@ export function CustomerRemainingPaymentPage() {
                 disabled={!isReadyToPay}
               >
                 <CreditCard className="mr-2 h-4 w-4" />
-                Pay {formatCurrency(paymentData?.amountInRupees)} Now
+                Confirm Payment
               </Button>
               {!isReadyToPay && (
                 <p className="mt-2 text-center text-xs text-slate-500">
-                  Select rating, enter feedback & OTP to enable payment
+                  Select rating, enter feedback & OTP to confirm
                 </p>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showUpiQrModal && paymentData && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden animate-scaleIn sm:max-w-md">
-            <div className="relative bg-gradient-to-r from-teal-600 to-emerald-600 p-5 text-center sm:p-6">
-              <button 
-                onClick={() => setShowUpiQrModal(false)} 
-                className="absolute right-3 top-3 rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30 transition-colors"
-              >
-                <XCircle className="h-5 w-5" />
-              </button>
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 sm:h-12 sm:w-12">
-                <QrCode className="h-5 w-5 text-white sm:h-6 sm:w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white sm:text-xl">Scan & Pay</h3>
-              <p className="mt-1 text-sm text-white/80">
-                Use any UPI app to scan the QR code
-              </p>
-            </div>
-
-            <div className="bg-white p-5 sm:p-6">
-              <div className="relative rounded-2xl bg-white p-3 shadow-lg ring-1 ring-slate-900/5 sm:p-4">
-                <img
-                  src={paymentData.upiQrCodeUrl}
-                  alt="UPI Payment QR Code"
-                  className="mx-auto h-48 w-48 sm:h-56 sm:w-56"
-                />
-              </div>
-              
-              <div className="mt-5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 p-3 text-center sm:p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Pay Amount</p>
-                <p className="mt-1 text-2xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent sm:text-3xl">
-                  {formatCurrency(paymentData.upiAmount || paymentData.amountInRupees)}
-                </p>
-              </div>
-              
-              <div className="mt-4 text-center">
-                <p className="text-xs text-slate-500">UPI ID</p>
-                <p className="font-mono text-sm font-medium text-slate-700">{paymentData.upiId}</p>
-              </div>
-              
-              <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500 sm:mt-4">
-                <Smartphone className="h-4 w-4" />
-                <span>Google Pay, PhonePe, Paytm, etc.</span>
-              </div>
-            </div>
-
-            <div className="border-t border-slate-100 bg-slate-50 p-4">
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => setShowUpiQrModal(false)}
-              >
-                Close
-              </Button>
             </div>
           </div>
         </div>

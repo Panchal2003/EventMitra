@@ -845,7 +845,7 @@ export const getProviderRemainingPayment = asyncHandler(async (req, res) => {
     throw new AppError("Remaining payment can only be collected after the job is marked complete.", 400);
   }
 
-  const {
+const {
     payment,
     paymentLink,
     qrCodeDataUrl,
@@ -857,6 +857,12 @@ export const getProviderRemainingPayment = asyncHandler(async (req, res) => {
     razorpayErrorMessage,
   } = await ensureRemainingPaymentOrder(booking);
 
+  console.log("=== Provider Remaining Payment API ===");
+  console.log("payment.razorpay_order_id:", payment.razorpay_order_id);
+  console.log("razorpayOrder:", razorpayOrder);
+  console.log("razorpayReady:", razorpayReady);
+  console.log("razorpayErrorMessage:", razorpayErrorMessage);
+
   res.json({
     success: true,
     message: razorpayReady
@@ -864,7 +870,7 @@ export const getProviderRemainingPayment = asyncHandler(async (req, res) => {
       : "UPI QR is ready. Razorpay popup is temporarily unavailable.",
     data: {
       bookingId: booking._id,
-      orderId: payment.razorpay_order_id,
+      orderId: payment.razorpay_order_id || razorpayOrder?.id,
       paymentId: payment._id,
       amount: Number(razorpayOrder?.amount || payment.metadata?.razorpayOrder?.amount || toPaise(amount)),
       amountInRupees: amount,
