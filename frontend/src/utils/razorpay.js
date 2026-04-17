@@ -55,6 +55,12 @@ export async function openRazorpayCheckout(options) {
       theme: {
         color: options.theme?.color || "#0f766e"
       },
+      callback_url: window.location.origin + "/payment/success",
+      redirect: true,
+      retry: {
+        enabled: true,
+        max_count: 3
+      },
       handler: (response) => {
         console.log("Payment completed:", response.razorpay_payment_id);
         resolve({

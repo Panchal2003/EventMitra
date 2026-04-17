@@ -24,6 +24,8 @@ import {
   Calendar,
   Shield,
   CreditCard,
+  Smartphone,
+  QrCode,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { GlassCard } from "../../components/admin/GlassCard";
@@ -698,143 +700,80 @@ export function ProviderBookingsPage() {
         />
 
         {qrCodeBooking && qrCodeData && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
-            <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-              <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">Collect Remaining Payment</h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Show this QR to the customer to scan and complete payment.
-                  </p>
-                </div>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn">
+            <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden animate-scaleIn sm:max-w-md">
+              <div className="relative bg-gradient-to-r from-teal-600 to-emerald-600 p-5 text-center sm:p-6">
                 <button 
                   onClick={() => {
                     setQrCodeBooking(null);
                     setQrCodeData(null);
                   }} 
-                  className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                  className="absolute right-3 top-3 rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30 transition-colors"
                 >
                   <XCircle className="h-5 w-5" />
                 </button>
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 sm:h-12 sm:w-12">
+                  <QrCode className="h-5 w-5 text-white sm:h-6 sm:w-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white sm:text-xl">Collect Payment</h3>
+                <p className="mt-1 text-sm text-white/80">
+                  Show this QR to customer for scanning
+                </p>
               </div>
 
-              {qrCodeData.upiQrCodeUrl ? (
-                <div className="mt-4 text-center">
-                  <img
-                    src={qrCodeData.upiQrCodeUrl}
-                    alt="UPI Payment QR Code"
-                    className="mx-auto h-64 w-64 rounded-2xl border border-slate-200 object-contain"
-                  />
-                  <div className="mt-4 rounded-2xl bg-emerald-50 p-4">
-                    <p className="text-xs font-semibold uppercase text-emerald-700">UPI Amount</p>
-                    <p className="hidden mt-1 text-2xl font-bold text-emerald-900">
-                      ₹{qrCodeData.upiAmount}
-                    </p>
-                    <p className="mt-1 text-2xl font-bold text-emerald-900">
-                      {formatCurrency(qrCodeData.upiAmount || qrCodeData.amountInRupees)}
-                    </p>
-                  </div>
-                  <div className="mt-3 text-sm text-slate-600">
-                    <p className="font-medium">UPI ID: <span className="font-mono">{qrCodeData.upiId}</span></p>
-                    <p className="mt-1 text-xs text-slate-500">{qrCodeData.upiNote}</p>
-                  </div>
-                  <p className="mt-4 text-xs text-slate-500">
-                    Customer can scan this QR with any UPI app to pay.
-                  </p>
-                </div>
-              ) : qrCodeData.qrCodeDataUrl ? (
-                <div className="mt-4 text-center">
-                  <img
-                    src={qrCodeData.qrCodeDataUrl}
-                    alt="Payment QR Code"
-                    className="mx-auto h-64 w-64 rounded-2xl border border-slate-200 object-contain"
-                  />
-                  <div className="mt-4 rounded-2xl bg-amber-50 p-4">
-                    <p className="text-xs font-semibold uppercase text-amber-700">Amount Due</p>
-                    <p className="mt-1 text-2xl font-bold text-amber-900">
-                      {formatCurrency(qrCodeData.amountInRupees)}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-8 text-center text-slate-500">
-                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary-600" />
-                </div>
-              )}
-
-              <div className="mt-6 flex flex-col gap-3">
-                {/* QR Code is now primary - Razorpay popup hidden */}
-                {qrCodeData.showVerify && (
-                  <Button
-                    className="w-full"
-                    variant="primary"
-                    onClick={async () => {
-                      try {
-                        await providerApi.verifyRemainingPayment(qrCodeBooking._id, {
-                          manualVerification: true,
-                        });
-                        setNotice({ type: "success", message: "Payment verified successfully!" });
-                        setQrCodeBooking(null);
-                        setQrCodeData(null);
-                        await refresh();
-                      } catch (err) {
-                        setNotice({ type: "error", message: err.response?.data?.message || "Verification failed" });
-                      }
-                    }}
-                  >
-                    Verify Payment Received
-                  </Button>
-                )}
-                
-                {false && (
-                <>
-                {/* QR Code section */}
-                <div className="border-t border-slate-100 pt-4">
-                  <p className="text-center text-sm font-medium text-slate-700 mb-3">
-                    Or show this QR to customer to scan and pay
-                  </p>
-                </div>
-
+              <div className="bg-white p-5 sm:p-6">
                 {qrCodeData.upiQrCodeUrl ? (
                   <div className="text-center">
-                    <img
-                      src={qrCodeData.upiQrCodeUrl}
-                      alt="UPI Payment QR Code"
-                      className="mx-auto h-48 w-48 rounded-2xl border border-slate-200 object-contain"
-                    />
-                    <div className="mt-3 rounded-2xl bg-emerald-50 p-3">
-                      <p className="text-xs font-semibold uppercase text-emerald-700">UPI Amount</p>
-                      <p className="mt-1 text-xl font-bold text-emerald-900">
-                        ₹{qrCodeData.upiAmount}
+                    <div className="relative rounded-2xl bg-white p-3 shadow-lg ring-1 ring-slate-900/5 sm:p-4">
+                      <img
+                        src={qrCodeData.upiQrCodeUrl}
+                        alt="UPI Payment QR Code"
+                        className="mx-auto h-48 w-48 sm:h-56 sm:w-56"
+                      />
+                    </div>
+                    
+                    <div className="mt-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 p-3 text-center sm:p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Amount to Collect</p>
+                      <p className="mt-1 text-2xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent sm:text-3xl">
+                        {formatCurrency(qrCodeData.upiAmount || qrCodeData.amountInRupees)}
                       </p>
                     </div>
-                    <div className="mt-2 text-sm text-slate-600">
-                      <p className="font-medium">UPI ID: <span className="font-mono">{qrCodeData.upiId}</span></p>
+                    
+                    <div className="mt-3 text-center sm:mt-4">
+                      <p className="text-xs text-slate-500">UPI ID</p>
+                      <p className="font-mono text-sm font-medium text-slate-700">{qrCodeData.upiId}</p>
+                    </div>
+                    
+                    <div className="mt-2 flex items-center justify-center gap-2 text-xs text-slate-500 sm:mt-3">
+                      <Smartphone className="h-4 w-4" />
+                      <span>Google Pay, PhonePe, Paytm</span>
                     </div>
                   </div>
                 ) : qrCodeData.qrCodeDataUrl ? (
                   <div className="text-center">
-                    <img
-                      src={qrCodeData.qrCodeDataUrl}
-                      alt="Payment QR Code"
-                      className="mx-auto h-48 w-48 rounded-2xl border border-slate-200 object-contain"
-                    />
-                    <div className="mt-3 rounded-2xl bg-amber-50 p-3">
-                      <p className="text-xs font-semibold uppercase text-amber-700">Amount Due</p>
-                      <p className="mt-1 text-xl font-bold text-amber-900">
+                    <div className="relative rounded-2xl bg-white p-3 shadow-lg ring-1 ring-slate-900/5 sm:p-4">
+                      <img
+                        src={qrCodeData.qrCodeDataUrl}
+                        alt="Payment QR Code"
+                        className="mx-auto h-48 w-48 sm:h-56 sm:w-56"
+                      />
+                    </div>
+                    
+                    <div className="mt-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 p-3 text-center sm:p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">Amount Due</p>
+                      <p className="mt-1 text-2xl font-extrabold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent sm:text-3xl">
                         {formatCurrency(qrCodeData.amountInRupees)}
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center text-slate-500">
+                  <div className="mt-8 text-center text-slate-500">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary-600" />
                   </div>
                 )}
+              </div>
 
-                </>
-                )}
-
+              <div className="border-t border-slate-100 bg-slate-50 p-4">
                 <Button
                   className="w-full"
                   variant="secondary"

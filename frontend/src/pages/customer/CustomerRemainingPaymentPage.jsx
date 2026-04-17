@@ -387,13 +387,13 @@ export function CustomerRemainingPaymentPage() {
       </div>
 
       {showFeedbackModal && paymentData && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.95),rgba(241,245,249,0.9)_45%,rgba(226,232,240,0.84)_100%)] p-3 pt-4 pb-24 backdrop-blur-md sm:items-center sm:p-5">
+          <div className="w-full max-w-md rounded-[28px] border border-white/80 bg-white/95 p-5 shadow-[0_24px_70px_rgba(148,163,184,0.24)] sm:p-6">
             <div className="text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500">
-                <Star className="h-8 w-8 text-white" />
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 sm:h-16 sm:w-16">
+                <Star className="h-7 w-7 text-white sm:h-8 sm:w-8" />
               </div>
-              <h2 className="mt-4 text-xl font-bold text-slate-900">Rate & Pay</h2>
+              <h2 className="mt-4 text-lg font-bold text-slate-900 sm:text-xl">Rate & Pay</h2>
               <p className="mt-2 text-sm text-slate-600">
                 Please rate your experience and then complete your payment.
               </p>
@@ -412,7 +412,7 @@ export function CustomerRemainingPaymentPage() {
                     className="transition-transform hover:scale-110"
                   >
                     <Star
-                      className={`h-8 w-8 ${
+                      className={`h-7 w-7 sm:h-8 sm:w-8 ${
                         star <= feedbackData.rating
                           ? "fill-amber-400 text-amber-400"
                           : "text-slate-300"
@@ -459,7 +459,7 @@ export function CustomerRemainingPaymentPage() {
               </div>
             )}
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <Button
                 variant="secondary"
                 className="flex-1"
@@ -491,68 +491,55 @@ export function CustomerRemainingPaymentPage() {
       )}
 
       {showUpiQrModal && paymentData && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">Pay with UPI QR</h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Scan this QR with any UPI app to pay {formatCurrency(paymentData.upiAmount || paymentData.amountInRupees)}.
-                </p>
-              </div>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden animate-scaleIn sm:max-w-md">
+            <div className="relative bg-gradient-to-r from-teal-600 to-emerald-600 p-5 text-center sm:p-6">
               <button 
                 onClick={() => setShowUpiQrModal(false)} 
-                className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                className="absolute right-3 top-3 rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30 transition-colors"
               >
                 <XCircle className="h-5 w-5" />
               </button>
-            </div>
-
-            <div className="mt-4 text-center">
-              <img
-                src={paymentData.upiQrCodeUrl}
-                alt="UPI Payment QR Code"
-                className="mx-auto h-64 w-64 rounded-2xl border border-slate-200 object-contain"
-              />
-              <div className="mt-4 rounded-2xl bg-emerald-50 p-4">
-                <p className="text-xs font-semibold uppercase text-emerald-700">Pay Amount</p>
-                <p className="mt-1 text-2xl font-bold text-emerald-900">
-                  {formatCurrency(paymentData.upiAmount || paymentData.amountInRupees)}
-                </p>
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 sm:h-12 sm:w-12">
+                <QrCode className="h-5 w-5 text-white sm:h-6 sm:w-6" />
               </div>
-              <div className="mt-3 text-sm text-slate-600">
-                <p className="font-medium">UPI ID: <span className="font-mono">{paymentData.upiId}</span></p>
-              </div>
-              <p className="mt-4 text-xs text-slate-500">
-                Open any UPI app (Google Pay, PhonePe, Paytm, etc.) and scan to pay.
+              <h3 className="text-lg font-bold text-white sm:text-xl">Scan & Pay</h3>
+              <p className="mt-1 text-sm text-white/80">
+                Use any UPI app to scan the QR code
               </p>
             </div>
 
-            <div className="mt-6 flex flex-col gap-3">
-              <Button
-                onClick={async () => {
-                  try {
-                    setShowUpiQrModal(false);
-                    setPaying(true);
-                    await customerApi.verifyRemainingPayment(bookingId, {
-                      manualVerification: true,
-                    });
-                    setSuccess("Payment verified successfully! Thank you.");
-                    setPaymentData(null);
-                    await loadPayment();
-                  } catch (err) {
-                    setError(err.response?.data?.message || "Verification failed. Please try again.");
-                  } finally {
-                    setPaying(false);
-                  }
-                }}
-                isLoading={paying}
-              >
-                I've Paid
-              </Button>
+            <div className="bg-white p-5 sm:p-6">
+              <div className="relative rounded-2xl bg-white p-3 shadow-lg ring-1 ring-slate-900/5 sm:p-4">
+                <img
+                  src={paymentData.upiQrCodeUrl}
+                  alt="UPI Payment QR Code"
+                  className="mx-auto h-48 w-48 sm:h-56 sm:w-56"
+                />
+              </div>
               
+              <div className="mt-5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 p-3 text-center sm:p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Pay Amount</p>
+                <p className="mt-1 text-2xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent sm:text-3xl">
+                  {formatCurrency(paymentData.upiAmount || paymentData.amountInRupees)}
+                </p>
+              </div>
+              
+              <div className="mt-4 text-center">
+                <p className="text-xs text-slate-500">UPI ID</p>
+                <p className="font-mono text-sm font-medium text-slate-700">{paymentData.upiId}</p>
+              </div>
+              
+              <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500 sm:mt-4">
+                <Smartphone className="h-4 w-4" />
+                <span>Google Pay, PhonePe, Paytm, etc.</span>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 bg-slate-50 p-4">
               <Button
                 variant="secondary"
+                className="w-full"
                 onClick={() => setShowUpiQrModal(false)}
               >
                 Close

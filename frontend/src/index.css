@@ -1070,6 +1070,15 @@ img {
 
 /* Mobile app shell safe area support */
 @layer utilities {
+  /* Modal animations */
+  .animate-fadeIn {
+    animation: fadeIn 0.2s ease-out forwards;
+  }
+  
+  .animate-scaleIn {
+    animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
   /* Custom shadow elevations */
   .shadow-elevation-1 {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
