@@ -1,15 +1,19 @@
 let razorpayScriptPromise;
 
-export function loadRazorpayCheckout() {
+export async function loadRazorpayCheckout() {
+  console.log("Loading Razorpay checkout script...");
+  
   if (typeof window === "undefined") {
-    return Promise.reject(new Error("Razorpay checkout is only available in the browser."));
+    throw new Error("Razorpay only works in browser");
   }
 
   if (window.Razorpay) {
-    return Promise.resolve(window.Razorpay);
+    console.log("Razorpay already loaded in window");
+    return window.Razorpay;
   }
 
   if (razorpayScriptPromise) {
+    console.log("Returning existing script promise");
     return razorpayScriptPromise;
   }
 
@@ -17,24 +21,51 @@ export function loadRazorpayCheckout() {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
-    script.onload = () => resolve(window.Razorpay);
-    script.onerror = () => reject(new Error("Unable to load Razorpay checkout."));
+    
+    script.onload = () => {
+      console.log("Razorpay script loaded, window.Razorpay:", typeof window.Razorpay);
+      if (window.Razorpay) {
+        resolve(window.Razorpay);
+      } else {
+        reject(new Error("Razorpay not found after load"));
+      }
+    };
+    
+    script.onerror = (e) => {
+      console.error("Failed to load Razorpay script:", e);
+      razorpayScriptPromise = null;
+      reject(new Error("Could not load payment system. Check your connection."));
+    };
+    
     document.body.appendChild(script);
+    
+    // Timeout fallback
+    setTimeout(() => {
+      if (window.Razorpay && !razorpayScriptPromise?.promiseSettled) {
+        resolve(window.Razorpay);
+      }
+    }, 5000);
   });
 
   return razorpayScriptPromise;
 }
 
 export async function openRazorpayCheckout(options) {
-  console.log("Opening Razorpay checkout...", options);
+  console.log("1. Starting Razorpay checkout", new Date().toISOString());
   
   let Razorpay;
   try {
+    console.log("2. Loading Razorpay script...");
     Razorpay = await loadRazorpayCheckout();
-    console.log("Razorpay script loaded:", typeof Razorpay);
+    console.log("3. Razorpay loaded:", typeof Razorpay, window.Razorpay ? "available" : "NOT available");
   } catch (loadErr) {
-    console.error("Failed to load Razorpay:", loadErr);
+    console.error("FAILED to load Razorpay:", loadErr);
     throw new Error("Unable to load payment system. Please refresh and try again.");
+  }
+  
+  if (!Razorpay) {
+    console.error("Razorpay is undefined after loading");
+    throw new Error("Payment system not ready. Please refresh the page.");
   }
   
   const amount = Number(options.amount);

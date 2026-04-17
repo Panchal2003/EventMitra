@@ -4,15 +4,16 @@ import { User } from "../../models/User.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const getDashboardMetrics = asyncHandler(async (req, res) => {
+  // Only count bookings that have paid advance
+  const totalBookingsAll = await Booking.countDocuments({ 
+    paymentStatus: { $ne: "advance_pending" } 
+  });
   const [
-    totalBookings,
     totalRevenueAgg,
     activeServiceProviders,
     pendingApprovals,
     pendingPayouts,
-    adminProfitAgg,
   ] = await Promise.all([
-    Booking.countDocuments(),
     Payment.aggregate([
       {
         $match: {
@@ -39,27 +40,18 @@ export const getDashboardMetrics = asyncHandler(async (req, res) => {
       paymentType: "provider_payout",
       status: "pending",
     }),
-    Payment.aggregate([
-      {
-        $match: {
-          paymentType: "provider_payout",
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalProfit: { $sum: "$adminProfit" },
-        },
-      },
-    ]),
   ]);
+
+  // Calculate admin profit as 11% of total revenue
+  const totalRevenue = totalRevenueAgg[0]?.totalRevenue || 0;
+  const calculatedAdminProfit = Math.round(totalRevenue * 0.11);
 
   res.json({
     success: true,
     data: {
-      totalBookings,
-      totalRevenue: totalRevenueAgg[0]?.totalRevenue || 0,
-      totalAdminProfit: adminProfitAgg[0]?.totalProfit || 0,
+      totalBookings: totalBookingsAll,
+      totalRevenue,
+      totalAdminProfit: calculatedAdminProfit,
       activeServiceProviders,
       pendingApprovals,
       pendingPayouts,

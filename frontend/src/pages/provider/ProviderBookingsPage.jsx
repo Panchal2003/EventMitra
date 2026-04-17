@@ -851,17 +851,22 @@ export function ProviderBookingsPage() {
                 </button>
                 <QrCode className="mx-auto h-8 w-8 text-white" />
                 <h3 className="mt-2 text-lg font-bold text-white">Scan QR Code</h3>
-                <p className="mt-1 text-sm text-white/80">Customer can scan this to pay</p>
+                <p className="mt-1 text-sm text-white/80">Scan with any UPI app</p>
               </div>
               <div className="bg-white p-5 text-center">
-                <img src={qrCodeData.upiQrCodeUrl} alt="QR" className="mx-auto h-64 w-64" />
-                <div className="mt-4 rounded-2xl bg-emerald-50 p-3">
-                  <p className="text-xs font-semibold uppercase text-emerald-700">Amount</p>
-                  <p className="text-2xl font-bold text-emerald-600">
+                <img src={qrCodeData.upiQrCodeUrl} alt="QR" className="mx-auto h-64 w-64 object-contain" />
+                <div className="mt-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 p-4">
+                  <p className="text-xs font-bold uppercase text-white/80">Amount to Pay</p>
+                  <p className="text-3xl font-extrabold text-white">
                     {formatCurrency(qrCodeData.upiAmount || qrCodeData.amountInRupees)}
                   </p>
                 </div>
-                <p className="mt-3 text-sm text-slate-500">UPI: {qrCodeData.upiId}</p>
+                <p className="mt-3 text-sm text-slate-600">
+                  Pay exactly this amount
+                </p>
+                <p className="mt-2 text-sm text-slate-500 font-mono">
+                  {qrCodeData.upiId}
+                </p>
               </div>
               <div className="border-t border-slate-100 bg-slate-50 p-4">
                 <Button className="w-full" variant="secondary" onClick={() => setShowQrModal(false)}>

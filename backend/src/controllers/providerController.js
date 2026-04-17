@@ -883,7 +883,7 @@ const {
       providerName: booking.provider?.businessName || booking.provider?.name || "EventMitra",
       serviceNames: booking.services?.map((service) => service.name).join(", ") || booking.service?.name || "Service",
       upiId: upiPayment?.upiId || "",
-      upiAmount: upiPayment?.amount || amount,
+upiAmount: upiPayment?.amount || amount,
       upiNote: upiPayment?.note || `Remaining payment for booking ${booking._id}`,
       upiQrCodeUrl: upiQrCodeUrl || "",
       razorpayReady,
