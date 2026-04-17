@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
+import { useUI } from "../../context/UIContext";
 import { 
   Plus, 
   Package, 
@@ -62,6 +63,10 @@ export function ProviderServicesPage() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const { hideBottomNav, showBottomNav } = useUI();
+  
+  const handleSearchFocus = () => hideBottomNav();
+  const handleSearchBlur = () => showBottomNav();
 
   const fetchData = useCallback(async () => {
     try {
@@ -637,6 +642,8 @@ export function ProviderServicesPage() {
                 placeholder="Search services..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={handleSearchFocus}
+                onBlur={handleSearchBlur}
                 className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
               />
             </div>

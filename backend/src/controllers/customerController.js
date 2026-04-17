@@ -175,6 +175,7 @@ export const getCustomerDashboard = asyncHandler(async (req, res) => {
     {
       $match: {
         customer: customerId,
+        paymentStatus: { $ne: "advance_pending" }
       },
     },
     {

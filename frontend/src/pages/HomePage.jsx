@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { publicApi } from "../services/api";
-import { ArrowRight, ChevronRight, Sparkles, Star, TrendingUp, Users, Globe, Heart, Quote, Zap, Award, CheckCircle2, Shield, Clock, CreditCard, Search } from "lucide-react";
+import { ArrowRight, ChevronRight, ChevronLeft, Sparkles, Star, TrendingUp, Users, Globe, Heart, Quote, Zap, Award, CheckCircle2, Shield, Clock, CreditCard, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/common/Button";
@@ -437,9 +437,9 @@ export function HomePage() {
               onClick={() => document.getElementById('testimonials-scroll').scrollBy({ left: -320, behavior: 'smooth' })}
               className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors hidden sm:flex"
             >
-              <ChevronRight className="h-5 w-5 rotate-180" />
+              <ChevronLeft className="h-5 w-5 text-slate-700" />
             </button>
-            <div id="testimonials-scroll" className="flex gap-0 sm:gap-5 overflow-x-auto pb-4 scrollbar-hide pl-4 pr-4 sm:px-8 snap-x snap-mandatory">
+            <div id="testimonials-scroll" className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 scrollbar-hide pl-8 pr-8 sm:px-8 snap-x snap-mandatory">
               {testimonials.map((testimonial, index) => (
                 <motion.div
                   key={testimonial._id || index}
@@ -488,7 +488,7 @@ export function HomePage() {
               onClick={() => document.getElementById('testimonials-scroll').scrollBy({ left: 320, behavior: 'smooth' })}
               className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors hidden sm:flex"
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-5 w-5 text-slate-700" />
             </button>
           </div>
         </div>

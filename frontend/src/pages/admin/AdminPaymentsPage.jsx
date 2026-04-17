@@ -13,7 +13,8 @@ import {
   Users,
   ArrowRight,
   CreditCard,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { GlassCard } from "../../components/admin/GlassCard";
@@ -49,6 +50,7 @@ export function AdminPaymentsPage() {
     loading,
     payments = [],
     releasePayout,
+    refresh,
   } = useAdminPanelData();
 
   const [notice, setNotice] = useState(null);
@@ -85,9 +87,10 @@ export function AdminPaymentsPage() {
     }
   };
 
-  const totalPayouts = payments.length;
-  const pendingPayouts = payments.filter(p => p.status === "pending").length;
-  const releasedPayouts = payments.filter(p => p.status === "released").length;
+  // Count payouts - if no payout record exists, it's pending (not released yet)
+  const totalPayouts = payments.filter(p => p.payout || (p.status === "pending" && p.paymentStatus === "full_paid")).length;
+  const pendingPayouts = payments.filter(p => !p.payout?.status || p.payout.status !== "released").length;
+  const releasedPayouts = payments.filter(p => p.payout?.status === "released").length;
   const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const totalProviderAmount = payments.reduce((sum, p) => sum + (p.providerAmount || 0), 0);
   const totalAdminProfit = payments.reduce((sum, p) => sum + (p.adminProfit || 0), 0);
@@ -134,7 +137,17 @@ export function AdminPaymentsPage() {
                 <WalletCards className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 Payments
               </div>
-              <h1 className="mt-3 sm:mt-4 font-display text-2xl sm:text-3xl lg:text-4xl font-bold">Payments & Payouts</h1>
+              <div className="flex items-center gap-3 mt-3 sm:mt-4">
+                <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold">Payments & Payouts</h1>
+                <button
+                  onClick={refresh}
+                  disabled={loading}
+                  className="p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white disabled:opacity-50 transition-colors"
+                  title="Refresh payments"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                </button>
+              </div>
               <p className="mt-2 sm:mt-3 max-w-xl text-xs sm:text-sm text-blue-100">
                 Manage provider payouts and track all payment transactions.
               </p>

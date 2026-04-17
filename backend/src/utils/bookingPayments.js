@@ -84,50 +84,42 @@ export const ensureRemainingPaymentOrder = async (booking) => {
   const paymentLink =
     booking.paymentMeta?.remainingPaymentLink ||
     (payment?._id ? buildRemainingPaymentLink(booking._id, payment._id) : "");
-  const storedRazorpayOrder = getStoredRazorpayOrder(payment);
-  const storedUpiPayment = payment?.metadata?.upiPayment || null;
 
-  if (payment && storedRazorpayOrder) {
-    let upiPayment = storedUpiPayment;
-    let upiQrCodeUrl = upiPayment?.qrContent ? await createQrCodeDataUrl(upiPayment.qrContent) : null;
+  let storedRazorpayOrder = null;
+  let storedUpiPayment = null;
 
-    if (!upiPayment && providerUpiId) {
-      try {
-        upiPayment = await createUpiQrPayment({
-          amountInPaise: Number(storedRazorpayOrder.amount),
-          description: `Remaining payment for ${booking.services?.[0]?.name || booking.service?.name || "booking"}`,
-          bookingId: String(booking._id),
-          upiId: providerUpiId,
-          payeeName,
-        });
-        upiQrCodeUrl = await createQrCodeDataUrl(upiPayment.qrContent);
-        payment.metadata = {
-          ...(payment.metadata || {}),
-          upiPayment,
-          providerUpiId,
-        };
-        await payment.save();
-      } catch (upiError) {
-        console.error("Failed to create UPI QR:", upiError.message);
-      }
-    }
+  if (payment) {
+    storedRazorpayOrder = getStoredRazorpayOrder(payment);
+    storedUpiPayment = payment?.metadata?.upiPayment || null;
+  }
 
-    return {
-      payment,
-      paymentLink,
-      qrCodeDataUrl: upiQrCodeUrl || await createQrCodeDataUrl(paymentLink),
-      amount: remainingAmount,
-      upiPayment,
-      upiQrCodeUrl,
-      upiId: upiPayment?.upiId || providerUpiId,
-      upiAmount: upiPayment?.amount,
-      upiNote: upiPayment?.note,
-      amountInRupees: remainingAmount,
-      razorpayOrder: storedRazorpayOrder,
-      razorpayReady: true,
-      razorpayErrorMessage: payment.metadata?.razorpayErrorMessage || "",
-      providerUpiId,
-    };
+  let forcedNewRazorpayOrder = null;
+  let forcedNewRazorpayErrorMessage = "";
+  let forcedNewOrderId = null;
+  const forcedReceipt = buildPaymentReceipt(booking._id, "remaining");
+
+  try {
+    console.log("Creating FRESH Razorpay order for remaining payment...");
+    const newOrder = await createRazorpayOrder({
+      amountInPaise: toPaise(remainingAmount),
+      receipt: forcedReceipt,
+      notes: {
+        bookingId: String(booking._id),
+        paymentType: "remaining",
+        customerId: String(booking.customer),
+        providerId: String(providerId || ""),
+      },
+    });
+    forcedNewRazorpayOrder = newOrder;
+    forcedNewOrderId = newOrder.id;
+    console.log("Created NEW Razorpay order:", forcedNewOrderId);
+  } catch (orderError) {
+    console.error("Failed to create NEW Razorpay order:", orderError.message);
+    forcedNewRazorpayErrorMessage = orderError.message || "Unable to create Razorpay order.";
+  }
+
+  if (storedRazorpayOrder && forcedNewRazorpayOrder) {
+    console.log("Using NEW order:", forcedNewOrderId, "(not stored:", storedRazorpayOrder.id, ")");
   }
 
   // Create UPI QR code for payment (works on any domain)
@@ -212,6 +204,14 @@ export const ensureRemainingPaymentOrder = async (booking) => {
   booking.paymentStatus = getPaymentStatusFromBooking(booking);
   await booking.save();
 
+  const finalRazorpayOrder = forcedNewRazorpayOrder || razorpayOrder;
+  const finalOrderId = forcedNewOrderId || orderId;
+  const finalErrorMessage = forcedNewRazorpayErrorMessage || razorpayErrorMessage;
+
+  console.log("=== FINAL RAZORPAY ORDER ===");
+  console.log("Using order:", finalOrderId);
+  console.log("razorpayReady:", Boolean(finalOrderId));
+
   return {
     payment,
     paymentLink: refreshedPaymentLink,
@@ -223,9 +223,9 @@ export const ensureRemainingPaymentOrder = async (booking) => {
     upiAmount: upiPayment?.amount,
     upiNote: upiPayment?.note,
     amountInRupees: remainingAmount,
-    razorpayOrder,
-    razorpayReady: Boolean(orderId),
-    razorpayErrorMessage,
+    razorpayOrder: finalRazorpayOrder,
+    razorpayReady: Boolean(finalOrderId),
+    razorpayErrorMessage: finalErrorMessage,
     providerUpiId,
   };
 };

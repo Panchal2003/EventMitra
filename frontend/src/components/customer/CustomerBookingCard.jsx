@@ -160,23 +160,38 @@ function BookingStatusPanel({ booking, onVerifyOtp }) {
   }
 
   if (booking.status === "completed" && booking.feedback) {
+    const payment = booking.payment || {};
     return (
       <div className="rounded-2xl border border-primary-200/60 bg-gradient-to-br from-primary-50 to-emerald-50 p-5">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-emerald-600 text-white shadow-lg shadow-primary-500/20">
-            <Star className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-primary-800">Booking completed with your feedback</p>
-            <div className="mt-2 flex items-center gap-1 text-amber-500">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Star
-                  key={`rating-${booking._id}-${index}`}
-                  className={`h-5 w-5 ${index < Number(booking.feedback.rating || 0) ? "fill-current" : ""}`}
-                />
-              ))}
+        <div className="grid gap-4 sm:grid-cols-2">
+          {/* Left side - Feedback */}
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-emerald-600 text-white shadow-lg shadow-primary-500/20">
+              <Star className="h-5 w-5" />
             </div>
-            <p className="mt-2 text-sm text-primary-700">{booking.feedback.comment}</p>
+            <div>
+              <p className="text-sm font-bold text-primary-800">Booking completed with your feedback</p>
+              <div className="mt-2 flex items-center gap-1 text-amber-500">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Star
+                    key={`rating-${booking._id}-${index}`}
+                    className={`h-5 w-5 ${index < Number(booking.feedback.rating || 0) ? "fill-current" : ""}`}
+                  />
+                ))}
+              </div>
+              <p className="mt-2 text-sm text-primary-700">{booking.feedback.comment}</p>
+            </div>
+          </div>
+          
+          {/* Right side - Payment Summary */}
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3">
+            <p className="text-[11px] font-semibold uppercase text-emerald-700">Complete Payment</p>
+            <p className="mt-1 text-sm font-bold text-emerald-700">
+              {formatCurrency(booking.totalAmount || 0)}
+            </p>
+            <p className="mt-1 text-xs font-medium text-emerald-600">
+              ✓ Fully paid
+            </p>
           </div>
         </div>
       </div>
@@ -243,37 +258,41 @@ function BookingPaymentPanel({ booking, onPayRemaining }) {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="grid gap-3 sm:grid-cols-2">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment Summary</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-              <p className="text-[11px] font-semibold uppercase text-slate-500">Advance Paid</p>
+          {payment.paymentStatus === "full_paid" ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3">
+              <p className="text-[11px] font-semibold uppercase text-emerald-700">Complete Payment</p>
               <p className="mt-1 text-sm font-bold text-emerald-700">
-                {formatCurrency(payment.advancePaid || 0)}
+                {formatCurrency(booking.totalAmount || 0)}
+              </p>
+              <p className="mt-1 text-xs font-medium text-emerald-600">
+                ✓ Fully paid
               </p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-              <p className="text-[11px] font-semibold uppercase text-slate-500">Remaining Due</p>
-              <p className="mt-1 text-sm font-bold text-amber-700">
-                {formatCurrency(payment.remainingAmount || 0)}
-              </p>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                <p className="text-[11px] font-semibold uppercase text-slate-500">Advance Paid</p>
+                <p className="mt-1 text-sm font-bold text-emerald-700">
+                  {formatCurrency(payment.advancePaid || 0)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                <p className="text-[11px] font-semibold uppercase text-slate-500">Remaining Due</p>
+                <p className="mt-1 text-sm font-bold text-amber-700">
+                  {formatCurrency(payment.remainingAmount || 0)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                <p className="text-[11px] font-semibold uppercase text-slate-500">Status</p>
+                <p className="mt-1 text-sm font-bold capitalize text-slate-900">
+                  {(payment.paymentStatus || "unpaid").replace(/_/g, " ")}
+                </p>
+              </div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-              <p className="text-[11px] font-semibold uppercase text-slate-500">Status</p>
-              <p className="mt-1 text-sm font-bold capitalize text-slate-900">
-                {(payment.paymentStatus || "unpaid").replace(/_/g, " ")}
-              </p>
-            </div>
-          </div>
+          )}
         </div>
-
-        {canPayRemaining ? (
-          <Button onClick={() => onPayRemaining?.(booking)} className="rounded-xl">
-            Pay Remaining
-          </Button>
-        ) : null}
-      </div>
     </div>
   );
 }
@@ -424,7 +443,9 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel,
           </div>
 
           <div className="mt-5">
-            <BookingPaymentPanel booking={booking} onPayRemaining={onPayRemaining} />
+            {!(booking.status === "completed" && booking.feedback) && (
+              <BookingPaymentPanel booking={booking} onPayRemaining={onPayRemaining} />
+            )}
           </div>
 
           {canCancel && (

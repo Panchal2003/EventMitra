@@ -225,8 +225,8 @@ export function AdminProvidersPage() {
               <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-200">
                 <IndianRupee className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <p className="mt-3 sm:mt-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Revenue</p>
-              <p className="text-xl sm:text-2xl font-display font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
+              <p className="mt-3 sm:mt-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Provider Revenue</p>
+              <p className="text-xl sm:text-2xl font-display font-bold text-slate-900">{formatCurrency(Math.round(totalRevenue * 0.89))}</p>
               <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" /> All time
               </p>
@@ -370,7 +370,7 @@ export function AdminProvidersPage() {
                           <div className="h-8 w-px bg-slate-200"></div>
                           <div className="text-center">
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Revenue</p>
-                            <p className="text-sm font-bold text-emerald-600">{formatCurrency(provider.totalRevenue || 0)}</p>
+                            <p className="text-sm font-bold text-emerald-600">{formatCurrency(Math.round((provider.totalRevenue || 0) * 0.89))}</p>
                           </div>
                         </div>
                         
@@ -441,7 +441,7 @@ export function AdminProvidersPage() {
                         
                         <div className="sm:col-span-2">
                           <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 sm:hidden">Revenue</p>
-                          <p className="text-base font-bold text-emerald-600 sm:text-center">{formatCurrency(provider.totalRevenue || 0)}</p>
+                          <p className="text-base font-bold text-emerald-600 sm:text-center">{formatCurrency(Math.round((provider.totalRevenue || 0) * 0.89))}</p>
                         </div>
                         
                         <div className="sm:col-span-2">
@@ -551,7 +551,7 @@ export function AdminProvidersPage() {
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <div className="rounded-xl bg-emerald-50/80 p-3 sm:p-4 text-center">
                 <IndianRupee className="mx-auto h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
-                <p className="mt-1.5 sm:mt-2 text-lg sm:text-2xl font-bold text-slate-900">{formatCurrency(selectedProvider.totalRevenue || 0)}</p>
+                <p className="mt-1.5 sm:mt-2 text-lg sm:text-2xl font-bold text-slate-900">{formatCurrency(Math.round((selectedProvider.totalRevenue || 0) * 0.89))}</p>
                 <p className="text-[10px] sm:text-xs font-medium text-emerald-600">Total Revenue</p>
               </div>
               <div className="rounded-xl bg-blue-50/80 p-3 sm:p-4 text-center">

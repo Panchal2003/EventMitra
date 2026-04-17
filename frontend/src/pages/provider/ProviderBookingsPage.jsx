@@ -25,10 +25,10 @@ import {
   Shield,
   CreditCard,
   Smartphone,
-  QrCode,
-} from "lucide-react";
+  } from "lucide-react";
 import { useMemo, useState } from "react";
 import { GlassCard } from "../../components/admin/GlassCard";
+import { useUI } from "../../context/UIContext";
 import { Button } from "../../components/common/Button";
 import { StatusBadge } from "../../components/common/StatusBadge";
 import { ProviderBookingDetailsModal } from "../../components/provider/ProviderBookingDetailsModal";
@@ -67,11 +67,9 @@ export function ProviderBookingsPage() {
   const [startOtpValue, setStartOtpValue] = useState("");
   const [startOtpError, setStartOtpError] = useState("");
   const [activeTab, setActiveTab] = useState("requests");
-  const [qrCodeBooking, setQrCodeBooking] = useState(null);
-  const [qrCodeData, setQrCodeData] = useState(null);
   const [qrCodeLoading, setQrCodeLoading] = useState(false);
-  const [showQrModal, setShowQrModal] = useState(false);
   const [remainingPaymentBookingId, setRemainingPaymentBookingId] = useState("");
+  const { hideBottomNav, showBottomNav } = useUI();
   
   const requestBookings = useMemo(
     () => bookings.filter((booking) => booking.status === "provider_assigned"),
@@ -110,6 +108,7 @@ export function ProviderBookingsPage() {
 
   const handleStartJob = async (booking) => {
     if (booking.startOtpRequested) {
+      hideBottomNav();
       setStartOtpBooking(booking);
       setStartOtpValue("");
       setStartOtpError("");
@@ -141,6 +140,7 @@ export function ProviderBookingsPage() {
       setStartOtpValue("");
       setStartOtpError("");
       setNotice({ type: "success", message: "Start OTP verified. Job is now in progress." });
+      showBottomNav();
     } catch (requestError) {
       setStartOtpError(getErrorMessage(requestError, "Unable to verify the start OTP."));
     }
@@ -163,6 +163,7 @@ export function ProviderBookingsPage() {
         message: "Final OTP generated. The customer can now complete the booking from their side and submit feedback.",
       });
       setCompletionBooking(null);
+      showBottomNav();
     } catch (requestError) {
       setNotice({
         type: "error",
@@ -171,28 +172,26 @@ export function ProviderBookingsPage() {
     }
   };
 
-  const handleProviderRemainingPayment = async (booking) => {
+  const handleProviderCollectPaymentDirect = async (booking) => {
     if (!booking.payment?.remainingAmount || booking.payment?.paymentStatus === "full_paid") {
       setNotice({ type: "error", message: "No remaining payment due for this booking." });
       return;
     }
 
     try {
+      setQrCodeLoading(true);
       setRemainingPaymentBookingId(booking._id);
-
+      
       const response = await providerApi.getRemainingPayment(booking._id);
       const data = response.data?.data || {};
-
-      if (!data.key) {
-        throw new Error("Payment key not available. Please contact support.");
+      
+      if (!data.orderId || !data.key) {
+        setQrCodeLoading(false);
+        setRemainingPaymentBookingId("");
+        setNotice({ type: "error", message: "Payment not available. Try again later." });
+        return;
       }
-      if (!data.amount || data.amount <= 0) {
-        throw new Error("Invalid payment amount.");
-      }
-      if (!data.orderId) {
-        throw new Error(data.razorpayErrorMessage || "Failed to create remaining payment order.");
-      }
-
+      
       const razorpayResponse = await openRazorpayCheckout({
         key: data.key,
         amount: Number(data.amount),
@@ -202,125 +201,30 @@ export function ProviderBookingsPage() {
         description: `Remaining payment for ${data.serviceNames || "booking"}`,
         theme: { color: "#0f766e" },
       });
-
-      if (!razorpayResponse.razorpay_payment_id) {
+      
+      if (!razorpayResponse?.razorpay_payment_id) {
+        setQrCodeLoading(false);
+        setRemainingPaymentBookingId("");
         return;
       }
-
+      
       await providerApi.verifyRemainingPayment(booking._id, razorpayResponse);
       setNotice({ type: "success", message: "Payment collected successfully!" });
       await refresh();
     } catch (err) {
       console.error("Payment error:", err);
       if (err.message?.includes("modal closed") || err.message?.includes("Payment modal")) {
-        setNotice({ type: "info", message: "Payment cancelled. You can try again." });
-      } else if (err.response?.data?.message) {
-        setNotice({ type: "error", message: err.response.data.message });
+        setNotice({ type: "info", message: "Payment cancelled." });
       } else {
-        setNotice({ type: "error", message: err.message || "Failed to process payment." });
+        setNotice({ type: "error", message: err.response?.data?.message || err.message || "Payment failed." });
       }
     } finally {
+      setQrCodeLoading(false);
       setRemainingPaymentBookingId("");
     }
   };
 
-  const handleShowPaymentQR = async (booking) => {
-    if (!booking.payment?.remainingAmount || booking.payment?.paymentStatus === "full_paid") {
-      setNotice({ type: "error", message: "No remaining payment due for this booking." });
-      return;
-    }
-
-    try {
-      setQrCodeLoading(true);
-      setQrCodeBooking(booking);
-      
-      const response = await providerApi.getRemainingPayment(booking._id);
-      const data = response.data?.data || {};
-      
-      console.log("=== Provider Remaining Payment ===");
-      console.log("Full response data:", JSON.stringify(data, null, 2));
-      console.log("orderId value:", data.orderId);
-      console.log("amount value:", data.amount);
-      console.log("key value:", data.key);
-      
-      if (!data.key) {
-        throw new Error("Payment key not available. Please contact support.");
-      }
-      if (!data.amount || data.amount <= 0) {
-        throw new Error("Invalid payment amount.");
-      }
-      if (!data.orderId && !data.upiQrCodeUrl && !data.qrCodeDataUrl) {
-        throw new Error(data.razorpayErrorMessage || "Failed to load payment QR.");
-      }
-      
-      // Store payment data for later use
-      setQrCodeData(data);
-      
-      // Don't auto-open Razorpay - show QR modal first
-      // User can choose to either show QR or open Razorpay
-    } catch (err) {
-      console.error("Payment error:", err);
-      setNotice({ type: "error", message: err.response?.data?.message || err.message || "Failed to load payment." });
-      setQrCodeLoading(false);
-      setQrCodeBooking(null);
-    }
-  };
-
-  const handleProviderCollectPayment = async () => {
-    if (!qrCodeData) return;
-    
-    try {
-      setQrCodeLoading(true);
-      console.log("Starting payment with:", {
-        key: qrCodeData.key,
-        amount: qrCodeData.amount,
-        orderId: qrCodeData.orderId
-      });
-
-      if (!qrCodeData.orderId || !qrCodeData.key) {
-        setQrCodeLoading(false);
-        setNotice({ type: "error", message: "Razorpay not available. Use QR code instead." });
-        return;
-      }
-      
-      const razorpayResponse = await openRazorpayCheckout({
-        key: qrCodeData.key,
-        amount: Number(qrCodeData.amount),
-        currency: qrCodeData.currency || "INR",
-        order_id: qrCodeData.orderId,
-        name: "EventMitra",
-        description: `Remaining payment for ${qrCodeData.serviceNames || "booking"}`,
-        theme: { color: "#0f766e" },
-      });
-      
-      console.log("Razorpay response:", razorpayResponse);
-      
-      if (!razorpayResponse?.razorpay_payment_id) {
-        console.log("No payment ID returned");
-        setQrCodeLoading(false);
-        return;
-      }
-      
-      await providerApi.verifyRemainingPayment(qrCodeBooking._id, razorpayResponse);
-      
-      setNotice({ type: "success", message: "Payment collected successfully!" });
-      setQrCodeBooking(null);
-      setQrCodeData(null);
-      await refresh();
-    } catch (err) {
-      console.error("Payment error full:", err);
-      setQrCodeLoading(false);
-      if (err.message?.includes("modal closed") || err.message?.includes("Payment modal")) {
-        setNotice({ type: "info", message: "Payment cancelled. You can try again." });
-      } else if (err.response?.data?.message) {
-        setNotice({ type: "error", message: err.response.data.message });
-      } else {
-        setNotice({ type: "error", message: err.message || "Failed to process payment." });
-      }
-    } finally {
-      setQrCodeLoading(false);
-    }
-  };
+  
 
   const tabs = [
     { id: "requests", label: "Requests", count: requestBookings.length, icon: CalendarCheck2, gradient: "from-amber-500 to-orange-500" },
@@ -372,7 +276,7 @@ export function ProviderBookingsPage() {
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" onClick={() => setDetailsBooking(booking)}>
+          <Button variant="secondary" size="sm" onClick={() => { hideBottomNav(); setDetailsBooking(booking); }}>
             <Eye className="h-4 w-4" />
             Details
           </Button>
@@ -412,7 +316,7 @@ export function ProviderBookingsPage() {
             <Button
               variant="success"
               size="sm"
-              onClick={() => setCompletionBooking(booking)}
+              onClick={() => { hideBottomNav(); setCompletionBooking(booking); }}
               isLoading={actionInFlight === `complete-job-${booking._id}`}
             >
               <CheckCircle2 className="h-4 w-4" />
@@ -433,8 +337,8 @@ export function ProviderBookingsPage() {
             <Button
               size="sm"
               variant="success"
-              onClick={() => handleShowPaymentQR(booking)}
-              isLoading={qrCodeLoading && qrCodeBooking?._id === booking._id}
+              onClick={() => handleProviderCollectPaymentDirect(booking)}
+              isLoading={qrCodeLoading && remainingPaymentBookingId === booking._id}
             >
               <CreditCard className="mr-1 h-4 w-4" />
               Collect Payment
@@ -697,83 +601,18 @@ export function ProviderBookingsPage() {
         <ProviderBookingDetailsModal
           open={Boolean(detailsBooking)}
           booking={detailsBooking}
-          onClose={() => setDetailsBooking(null)}
+          onClose={() => { setDetailsBooking(null); showBottomNav(); }}
         />
 
         <ProviderCompleteJobModal
           open={Boolean(completionBooking)}
           booking={completionBooking}
-          onClose={() => setCompletionBooking(null)}
+          onClose={() => { setCompletionBooking(null); showBottomNav(); }}
           onSubmit={handleCompleteJob}
           busy={actionInFlight === `complete-job-${completionBooking?._id}`}
         />
 
-        {qrCodeBooking && qrCodeData && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn">
-            <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden animate-scaleIn sm:max-w-md">
-              <div className="relative bg-gradient-to-r from-teal-600 to-emerald-600 p-5 text-center sm:p-6">
-                <button 
-                  onClick={() => {
-                    setQrCodeBooking(null);
-                    setQrCodeData(null);
-                  }} 
-                  className="absolute right-3 top-3 rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30 transition-colors"
-                >
-                  <XCircle className="h-5 w-5" />
-                </button>
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 sm:h-12 sm:w-12">
-                  <CreditCard className="h-5 w-5 text-white sm:h-6 sm:w-6" />
-                </div>
-                <h3 className="text-lg font-bold text-white sm:text-xl">Collect Payment</h3>
-                <p className="mt-1 text-sm text-white/80">
-                  Choose payment method
-                </p>
-              </div>
-
-              <div className="bg-white p-5 sm:p-6">
-                <div className="rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 p-4 text-center">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Amount to Collect</p>
-                  <p className="mt-1 text-3xl font-extrabold text-emerald-600">
-                    {formatCurrency(qrCodeData.upiAmount || qrCodeData.amountInRupees)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-slate-100 bg-slate-50 p-4 space-y-3">
-                {qrCodeData.orderId && qrCodeData.key && (
-                  <Button
-                    className="w-full"
-                    onClick={handleProviderCollectPayment}
-                    isLoading={qrCodeLoading}
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Pay with Razorpay
-                  </Button>
-                )}
-                {qrCodeData.upiQrCodeUrl && (
-                  <Button
-                    className="w-full"
-                    variant="secondary"
-                    onClick={() => setShowQrModal(true)}
-                  >
-                    <QrCode className="mr-2 h-4 w-4" />
-                    Show QR Code
-                  </Button>
-                )}
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => {
-                    setQrCodeBooking(null);
-                    setQrCodeData(null);
-                  }}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        
 
         {startOtpBooking ? (
           <div className="fixed inset-0 z-[999] flex items-start justify-center overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.95),rgba(241,245,249,0.9)_45%,rgba(226,232,240,0.84)_100%)] p-3 pt-4 pb-24 backdrop-blur-md sm:items-center sm:p-5">
@@ -789,7 +628,7 @@ export function ProviderBookingsPage() {
                     Enter the OTP shared by the customer to start this job.
                   </p>
                 </div>
-                <button onClick={() => setStartOtpBooking(null)} className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600">
+                <button onClick={() => { setStartOtpBooking(null); showBottomNav(); }} className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600">
                   <XCircle className="h-5 w-5" />
                 </button>
               </div>
@@ -818,7 +657,7 @@ export function ProviderBookingsPage() {
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
-                  onClick={() => setStartOtpBooking(null)}
+                  onClick={() => { setStartOtpBooking(null); showBottomNav(); }}
                   className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
@@ -838,44 +677,6 @@ export function ProviderBookingsPage() {
             </motion.div>
           </div>
         ) : null}
-
-        {showQrModal && qrCodeData && qrCodeData.upiQrCodeUrl && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden">
-              <div className="relative bg-gradient-to-r from-teal-600 to-emerald-600 p-5 text-center">
-                <button 
-                  onClick={() => setShowQrModal(false)} 
-                  className="absolute right-3 top-3 rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30"
-                >
-                  <XCircle className="h-5 w-5" />
-                </button>
-                <QrCode className="mx-auto h-8 w-8 text-white" />
-                <h3 className="mt-2 text-lg font-bold text-white">Scan QR Code</h3>
-                <p className="mt-1 text-sm text-white/80">Scan with any UPI app</p>
-              </div>
-              <div className="bg-white p-5 text-center">
-                <img src={qrCodeData.upiQrCodeUrl} alt="QR" className="mx-auto h-64 w-64 object-contain" />
-                <div className="mt-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 p-4">
-                  <p className="text-xs font-bold uppercase text-white/80">Amount to Pay</p>
-                  <p className="text-3xl font-extrabold text-white">
-                    {formatCurrency(qrCodeData.upiAmount || qrCodeData.amountInRupees)}
-                  </p>
-                </div>
-                <p className="mt-3 text-sm text-slate-600">
-                  Pay exactly this amount
-                </p>
-                <p className="mt-2 text-sm text-slate-500 font-mono">
-                  {qrCodeData.upiId}
-                </p>
-              </div>
-              <div className="border-t border-slate-100 bg-slate-50 p-4">
-                <Button className="w-full" variant="secondary" onClick={() => setShowQrModal(false)}>
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

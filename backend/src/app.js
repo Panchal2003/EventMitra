@@ -69,12 +69,14 @@ const adminRoutes = (await import("./routes/adminRoutes.js")).adminRoutes;
 const providerRoutes = (await import("./routes/providerRoutes.js")).providerRoutes;
 const customerRoutes = (await import("./routes/customerRoutes.js")).customerRoutes;
 const publicRoutes = (await import("./routes/publicRoutes.js")).publicRoutes;
+const contactRoutes = (await import("./routes/contactRoutes.js")).default;
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/provider", providerRoutes);
 app.use("/api/customer", customerRoutes);
 app.use("/api/public", publicRoutes);
+app.use("/api/contact", contactRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

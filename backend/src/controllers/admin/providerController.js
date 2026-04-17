@@ -10,21 +10,26 @@ export const getProviders = asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 })
     .lean();
 
-  const payments = await Payment.aggregate([
-    {
-      $match: {
-        provider: { $in: providers.map((provider) => provider._id) },
-        paymentType: { $in: ["advance", "remaining"] },
-        status: "paid",
-      },
-    },
-    {
-      $group: {
-        _id: "$provider",
-        totalRevenue: { $sum: "$amount" },
-      },
-    },
-  ]);
+  const advanceAndRemainingPayments = await Payment.find({
+    provider: { $in: providers.map((provider) => provider._id) },
+    paymentType: { $in: ["advance", "remaining"] },
+    status: "paid",
+  }).populate("booking", "totalAmount");
+
+  const revenueByProvider = {};
+  for (const payment of advanceAndRemainingPayments) {
+    const providerIdStr = payment.provider.toString();
+    const amount = Number(payment.booking?.totalAmount || 0);
+    if (!revenueByProvider[providerIdStr]) {
+      revenueByProvider[providerIdStr] = 0;
+    }
+    revenueByProvider[providerIdStr] += amount;
+  }
+
+  const payments = Object.entries(revenueByProvider).map(([providerId, totalRevenue]) => ({
+    _id: providerId,
+    totalRevenue,
+  }));
 
   const paymentMap = payments.reduce((accumulator, payment) => {
     accumulator[payment._id.toString()] = payment.totalRevenue;

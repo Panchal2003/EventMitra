@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Home, 
@@ -17,47 +17,50 @@ import {
   IndianRupee,
   MoreHorizontal,
   Menu,
-  X
+  X,
+  Mail
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useUI } from "../../context/UIContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Helper function to get colorful icon class based on icon type
 const getIconColor = (icon, isActive) => {
   const iconName = icon?.displayName || icon?.name || "";
   const activeColors = {
     Home: "text-orange-500 drop-shadow-sm",
-    Sparkles: "text-violet-500 drop-shadow-sm",
+    Sparkles: "text-pink-500 drop-shadow-sm",
     Info: "text-blue-500 drop-shadow-sm",
     Phone: "text-emerald-500 drop-shadow-sm",
-    Image: "text-cyan-500 drop-shadow-sm",
-    User: "text-indigo-500 drop-shadow-sm",
-    LayoutDashboard: "text-blue-500 drop-shadow-sm",
-    Users: "text-green-500 drop-shadow-sm",
-    UserCircle: "text-purple-500 drop-shadow-sm",
-   IndianRupee: "text-amber-500 drop-shadow-sm", // Changed to yellow/amber
-    BriefcaseBusiness: "text-amber-500 drop-shadow-sm",
+    Image: "text-violet-500 drop-shadow-sm",
+    User: "text-cyan-500 drop-shadow-sm",
+    LayoutDashboard: "text-violet-500 drop-shadow-sm",
+    Users: "text-cyan-500 drop-shadow-sm",
+    UserCircle: "text-emerald-500 drop-shadow-sm",
+    Mail: "text-orange-500 drop-shadow-sm",
+    IndianRupee: "text-rose-500 drop-shadow-sm",
+    BriefcaseBusiness: "text-indigo-500 drop-shadow-sm",
     Wallet: "text-cyan-500 drop-shadow-sm",
-    Package: "text-fuchsia-500 drop-shadow-sm",
-    CalendarCheck2: "text-rose-500 drop-shadow-sm",
+    Package: "text-pink-500 drop-shadow-sm",
+    CalendarCheck2: "text-amber-500 drop-shadow-sm",
   };
   
   const inactiveColors = {
     Home: "text-orange-400",
-    Sparkles: "text-violet-400",
+    Sparkles: "text-pink-400",
     Info: "text-blue-400",
     Phone: "text-emerald-400",
-    Image: "text-cyan-400",
-    User: "text-indigo-400",
-    LayoutDashboard: "text-blue-400",
-    Users: "text-green-400",
-    UserCircle: "text-purple-400",
-   IndianRupee: "text-amber-400", // Changed to yellow/amber
-    BriefcaseBusiness: "text-amber-400",
+    Image: "text-violet-400",
+    User: "text-cyan-400",
+    LayoutDashboard: "text-violet-400",
+    Users: "text-cyan-400",
+    UserCircle: "text-emerald-400",
+    Mail: "text-orange-400",
+    IndianRupee: "text-rose-400",
+    BriefcaseBusiness: "text-indigo-400",
     Wallet: "text-cyan-400",
-    Package: "text-fuchsia-400",
-    CalendarCheck2: "text-rose-400",
+    Package: "text-pink-400",
+    CalendarCheck2: "text-amber-400",
   };
   
   const activeClass = activeColors[iconName] || "text-primary-600";
@@ -99,43 +102,43 @@ const publicNavItems = [
 
 // Customer navigation items
 const customerNavItems = [
-  { to: "/", icon: Home, label: "Home", end: true },
-  { to: "/services", icon: Sparkles, label: "Services" },
-  { to: "/about", icon: Info, label: "About" },
-  { to: "/contact", icon: Phone, label: "Contact" },
-  { to: "/gallery", icon: Image, label: "Gallery" },
-  { to: "/customer/profile", icon: User, label: "Profile" },
+  { to: "/", icon: Home, label: "Home", end: true, color: "text-orange-500" },
+  { to: "/services", icon: Sparkles, label: "Services", color: "text-pink-500" },
+  { to: "/about", icon: Info, label: "About", color: "text-blue-500" },
+  { to: "/contact", icon: Phone, label: "Contact", color: "text-emerald-500" },
+  { to: "/gallery", icon: Image, label: "Gallery", color: "text-violet-500" },
+  { to: "/customer/profile", icon: User, label: "Profile", color: "text-cyan-500" },
 ];
 
 // Admin navigation items - special order for mobile
 const adminNavItems = [
-  { to: "/admin/services", icon: Sparkles, label: "Services", order: 1 },
-  { to: "/admin/providers", icon: Users, label: "Providers", order: 2 },
-  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", order: 3, isCenter: true },
-  { to: "/admin/bookings", icon: CalendarCheck2, label: "Bookings", order: 4 },
+  { to: "/admin/services", icon: Sparkles, label: "Services", order: 1, color: "text-fuchsia-500" },
+  { to: "/admin/providers", icon: Users, label: "Providers", order: 2, color: "text-cyan-500" },
+  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", order: 3, isCenter: true, color: "text-violet-500" },
+  { to: "/admin/bookings", icon: CalendarCheck2, label: "Bookings", order: 4, color: "text-amber-500" },
 ];
 
 // More menu items for admin
 const adminMoreItems = [
-  { to: "/admin/customers", icon: UserCircle, label: "Customers" },
-  { to: "/admin/payments", icon: IndianRupee, label: "Payments" },
-  { to: "/admin/gallery", icon: Image, label: "Gallery" },
+  { to: "/admin/customers", icon: UserCircle, label: "Customers", color: "text-emerald-500" },
+  { to: "/admin/contacts", icon: Mail, label: "Contacts", color: "text-orange-500" },
+  { to: "/admin/payments", icon: IndianRupee, label: "Payments", color: "text-rose-500" },
+  { to: "/admin/gallery", icon: Image, label: "Gallery", color: "text-blue-500" },
 ];
 
 // Provider navigation items
 const providerNavItems = [
-  { to: "/provider", icon: BriefcaseBusiness, label: "Dashboard", end: true },
-  { to: "/provider/bookings", icon: CalendarCheck2, label: "Bookings" },
-  { to: "/provider/services", icon: Package, label: "Services" },
-  { to: "/provider/earnings", icon:IndianRupee, label: "Earnings" }, // Changed Wallet toIndianRupee
-  { to: "/provider/profile", icon: User, label: "Profile" },
+  { to: "/provider", icon: BriefcaseBusiness, label: "Dashboard", end: true, color: "text-indigo-500" },
+  { to: "/provider/bookings", icon: CalendarCheck2, label: "Bookings", color: "text-amber-500" },
+  { to: "/provider/services", icon: Package, label: "Services", color: "text-pink-500" },
+  { to: "/provider/earnings", icon:IndianRupee, label: "Earnings", color: "text-emerald-500" },
+  { to: "/provider/profile", icon: User, label: "Profile", color: "text-cyan-500" },
 ];
 
 export function BottomNav() {
   const { isAuthenticated, user } = useAuth();
   const { isBottomNavHidden } = useUI();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const navigate = useNavigate();
   
   // Sort admin items by order
   const sortedAdminItems = [
@@ -184,7 +187,7 @@ export function BottomNav() {
         }}
       >
         <div className="mx-2 mb-2 rounded-[1.65rem] border border-white/70 bg-white/88 shadow-2xl shadow-slate-900/10 backdrop-blur-xl">
-          <div className="flex items-center justify-between px-1 py-1.5">
+<div className="flex items-center justify-between px-1 py-1.5">
             {sortedAdminItems.map((item) => (
               <NavLink
                 key={item.to}

@@ -6,6 +6,7 @@ import {
   UserCircle,
   Users,
   Image,
+  Mail,
 } from "lucide-react";
 
 export const adminNavigation = [
@@ -51,6 +52,13 @@ export const adminNavigation = [
     icon: IndianRupee,
     path: "/admin/payments",
     color: "text-rose-500",
+  },
+  {
+    id: "contacts",
+    label: "Contacts",
+    icon: Mail,
+    path: "/admin/contacts",
+    color: "text-orange-500",
   },
   {
     id: "gallery",

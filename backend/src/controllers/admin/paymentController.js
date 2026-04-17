@@ -25,13 +25,10 @@ const adminPaymentPopulate = [
 
 const buildAdminPaymentRow = (booking, paymentSummary) => {
   const payout = paymentSummary?.payout || null;
-  const commissionRate = Number(payout?.commissionRate ?? DEFAULT_COMMISSION_PERCENT);
-  const providerAmount = Number(
-    payout?.providerAmount ?? calculateProviderPayout(booking.totalAmount, commissionRate)
-  );
-  const adminProfit = Number(
-    payout?.adminProfit ?? calculateCommissionAmount(booking.totalAmount, commissionRate)
-  );
+  const commissionRate = Number(DEFAULT_COMMISSION_PERCENT);
+  const totalAmount = Number(booking.totalAmount || 0);
+  const providerAmount = calculateProviderPayout(totalAmount, commissionRate);
+  const adminProfit = calculateCommissionAmount(totalAmount, commissionRate);
   const advancePayment = paymentSummary?.advance || null;
   const remainingPayment = paymentSummary?.remaining || null;
   const refundPayment = paymentSummary?.refund || null;
@@ -42,28 +39,26 @@ const buildAdminPaymentRow = (booking, paymentSummary) => {
     booking,
     provider: booking.provider,
     customer: booking.customer,
-    totalAmount: Number(booking.totalAmount || 0),
+    totalAmount,
     advancePaid: Number(booking.advancePaid || 0),
     remainingPaid:
       remainingPayment?.status === "paid"
         ? Number(remainingPayment.amount || 0)
-        : Number(booking.totalAmount || 0) - Number(booking.advancePaid || 0) - Number(booking.remainingAmount || 0),
+        : Number(booking.remainingAmount || 0),
     remainingDue: Number(booking.remainingAmount || 0),
     paymentStatus: booking.paymentStatus,
     advancePayment,
     remainingPayment,
     refundPayment,
     payout,
-    amount: Number(payout?.amount || booking.totalAmount || 0),
+    amount: totalAmount,
     providerAmount,
     adminProfit,
     commissionRate,
     providerBankAccount: booking.provider?.providerBankAccount || null,
     providerUpiId: booking.provider?.upiId || null,
     paymentDetailsVerified: booking.provider?.paymentDetailsVerified || false,
-    status:
-      payout?.status ||
-      (booking.paymentStatus === "full_paid" && booking.status === "completed" ? "pending" : "collection_pending"),
+    status: payout?.status || "pending",
     method: payout?.method || "bank_transfer",
     transactionId: payout?.transactionId || "",
     releasedAt: payout?.releasedAt || null,

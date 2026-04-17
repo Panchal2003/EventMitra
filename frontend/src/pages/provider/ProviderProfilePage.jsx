@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useUI } from "../../context/UIContext";
 import { useProviderDashboardData } from "../../hooks/useProviderDashboardData";
 import { GlassCard } from "../../components/admin/GlassCard";
 import { AvatarCropModal } from "../../components/customer/AvatarCropModal";
@@ -188,7 +189,10 @@ export function ProviderProfilePage() {
     });
   };
 
+  const { hideBottomNav, showBottomNav } = useUI();
+  
   const openEditModal = () => {
+    hideBottomNav();
     syncFormWithUser();
     setSaveState({
       saving: false,
@@ -199,6 +203,7 @@ export function ProviderProfilePage() {
   };
 
   const openPaymentModal = () => {
+    hideBottomNav();
     setPaymentFormData({
       providerBankAccount: {
         bankName: user?.providerBankAccount?.bankName || "",
@@ -234,7 +239,7 @@ export function ProviderProfilePage() {
       if (response.data?.success) {
         updateUser(response.data.data);
         setPaymentSaveState({ saving: false, error: "", success: "Payment details saved successfully!" });
-        setPaymentModalOpen(false);
+        closePaymentModal();
       }
     } catch (err) {
       setPaymentSaveState({ saving: false, error: err.response?.data?.message || "Failed to save payment details", success: "" });
@@ -248,6 +253,12 @@ export function ProviderProfilePage() {
       error: "",
     }));
     setEditModalOpen(false);
+    showBottomNav();
+  };
+
+  const closePaymentModal = () => {
+    setPaymentModalOpen(false);
+    showBottomNav();
   };
 
   const handleAvatarFile = (event) => {
@@ -848,12 +859,12 @@ export function ProviderProfilePage() {
 
       <Modal
         open={paymentModalOpen}
-        onClose={() => setPaymentModalOpen(false)}
+        onClose={closePaymentModal}
         title="Payment Settings"
         description="Add your bank details to receive payouts"
         footer={
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Button variant="ghost" onClick={() => setPaymentModalOpen(false)}>
+            <Button variant="ghost" onClick={closePaymentModal}>
               Cancel
             </Button>
             <Button onClick={handleSavePayment} isLoading={paymentSaveState.saving}>

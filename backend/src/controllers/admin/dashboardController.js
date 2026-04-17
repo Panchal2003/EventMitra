@@ -9,25 +9,10 @@ export const getDashboardMetrics = asyncHandler(async (req, res) => {
     paymentStatus: { $ne: "advance_pending" } 
   });
   const [
-    totalRevenueAgg,
     activeServiceProviders,
     pendingApprovals,
     pendingPayouts,
   ] = await Promise.all([
-    Payment.aggregate([
-      {
-        $match: {
-          paymentType: { $in: ["advance", "remaining"] },
-          status: "paid",
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: "$amount" },
-        },
-      },
-    ]),
     User.countDocuments({
       role: "serviceProvider",
       providerStatus: "approved",
@@ -42,9 +27,14 @@ export const getDashboardMetrics = asyncHandler(async (req, res) => {
     }),
   ]);
 
-  // Calculate admin profit as 11% of total revenue
-  const totalRevenue = totalRevenueAgg[0]?.totalRevenue || 0;
+  // Get total revenue from paid bookings (using booking totalAmount)
+  const paidBookings = await Booking.find({
+    paymentStatus: { $in: ["advance_paid", "full_paid"] },
+  }).select("totalAmount");
+
+  const totalRevenue = paidBookings.reduce((sum, booking) => sum + Number(booking.totalAmount || 0), 0);
   const calculatedAdminProfit = Math.round(totalRevenue * 0.11);
+  const providerRevenue = Math.round(totalRevenue * 0.89);
 
   res.json({
     success: true,
@@ -52,6 +42,7 @@ export const getDashboardMetrics = asyncHandler(async (req, res) => {
       totalBookings: totalBookingsAll,
       totalRevenue,
       totalAdminProfit: calculatedAdminProfit,
+      providerRevenue,
       activeServiceProviders,
       pendingApprovals,
       pendingPayouts,

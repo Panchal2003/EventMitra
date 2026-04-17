@@ -23,16 +23,16 @@ export function CustomerSidebar() {
 
   // Navigation items for everyone
   const publicNavItems = [
-    { to: "/", icon: Home, label: "Home", end: true },
-    { to: "/services", icon: CalendarCheck2, label: "Services" },
-    { to: "/about", icon: Info, label: "About Us" },
-    { to: "/contact", icon: Phone, label: "Contact" },
-    { to: "/gallery", icon: Image, label: "Gallery" },
+    { to: "/", icon: Home, label: "Home", end: true, color: "text-orange-500" },
+    { to: "/services", icon: CalendarCheck2, label: "Services", color: "text-pink-500" },
+    { to: "/about", icon: Info, label: "About Us", color: "text-blue-500" },
+    { to: "/contact", icon: Phone, label: "Contact", color: "text-emerald-500" },
+    { to: "/gallery", icon: Image, label: "Gallery", color: "text-violet-500" },
   ];
 
   // Navigation items for logged-in customers only
   const privateNavItems = [
-    { to: "/customer/profile", icon: User, label: "Profile" },
+    { to: "/customer/profile", icon: User, label: "Profile", color: "text-cyan-500" },
   ];
 
   return (
@@ -124,7 +124,7 @@ export function CustomerSidebar() {
                       >
                         {({ isActive }) => (
                           <>
-                            <item.icon className={`h-5 w-5 transition-transform group-hover:scale-110 ${isActive ? "text-white" : ""}`} />
+<item.icon className={`h-5 w-5 transition-transform group-hover:scale-110 ${isActive ? "text-white" : item.color || "text-slate-500"}`} />
                             {item.label}
                             {isActive && (
                               <motion.div

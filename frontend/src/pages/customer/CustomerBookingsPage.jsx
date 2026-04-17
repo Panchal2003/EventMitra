@@ -16,9 +16,11 @@ import { GlassCard } from "../../components/admin/GlassCard";
 import { CustomerOtpModal } from "../../components/customer/CustomerOtpModal";
 import { CustomerBookingCard } from "../../components/customer/CustomerBookingCard";
 import { customerApi } from "../../services/api";
+import { useUI } from "../../context/UIContext";
 
 export function CustomerBookingsPage({ embedded = false }) {
   const navigate = useNavigate();
+  const { hideBottomNav, showBottomNav } = useUI();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -29,6 +31,9 @@ export function CustomerBookingsPage({ embedded = false }) {
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [feedbackBooking, setFeedbackBooking] = useState(null);
   const [feedbackData, setFeedbackData] = useState({ rating: 5, comment: "" });
+
+  const handleSearchFocus = () => hideBottomNav();
+  const handleSearchBlur = () => showBottomNav();
 
   const fetchBookings = async () => {
     try {
@@ -224,7 +229,9 @@ export function CustomerBookingsPage({ embedded = false }) {
                 placeholder="Search by service, provider, or location..."
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white/90 py-3 pl-12 pr-4 text-sm shadow-lg shadow-slate-200/20 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+                onFocus={handleSearchFocus}
+                onBlur={handleSearchBlur}
+                className="w-full rounded-2xl border border-slate-200 bg-white/90 py-3 pl-12 pr-4 text-sm text-slate-900 shadow-lg shadow-slate-200/20 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
               />
             </div>
           </motion.div>

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { publicApi } from "../../services/api";
 import { Clock, Mail, MapPin, MessageCircle, Phone, Send, Sparkles, Zap, Globe, CheckCircle2 } from "lucide-react";
 import { Footer } from "../../components/common/Footer";
+import { useUI } from "../../context/UIContext";
 
 const contactItems = [
   {
@@ -33,15 +34,22 @@ const contactItems = [
 ];
 
 export function ContactPage() {
+  const { hideBottomNav, showBottomNav } = useUI();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
+    city: "",
+    serviceInterest: "",
     subject: "",
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [statsData, setStatsData] = useState(null);
+
+  const handleInputFocus = () => hideBottomNav();
+  const handleInputBlur = () => showBottomNav();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -60,10 +68,15 @@ export function ContactPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSubmitting(false);
-    setSubmitted(true);
-    setFormData({ name: "", email: "", subject: "", message: "" });
+    try {
+      await publicApi.submitContact(formData);
+      setIsSubmitting(false);
+      setSubmitted(true);
+      setFormData({ name: "", email: "", phone: "", city: "", serviceInterest: "", subject: "", message: "" });
+    } catch (error) {
+      setIsSubmitting(false);
+      alert("Failed to send message. Please try again.");
+    }
   };
 
   return (
@@ -234,14 +247,14 @@ export function ContactPage() {
             </p>
           </motion.div>
 
-          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
             {/* Contact Details */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="space-y-6"
+              className="space-y-6 self-start"
             >
               <div className="space-y-4">
                 {contactItems.map((item, index) => {
@@ -298,6 +311,25 @@ export function ContactPage() {
                       Reach EventMitra for booking help, provider support, or account issues by phone or email. We are available for event planning questions across major Indian cities.
                     </p>
                   </div>
+                  
+                  {/* Location Map */}
+                  <div className="rounded-2xl overflow-hidden border border-slate-200">
+                    <iframe 
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3782.0599497639943!2d73.82878766488628!3d18.5648139804696!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2bf71e3d7d45b%3A0x3c4e6e4f8e5f5b5c!2sPune%2C%20Maharashtra%2C%20India!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin" 
+                      width="100%" 
+                      height="200" 
+                      style={{ border: 0 }} 
+                      allowFullScreen="" 
+                      loading="lazy" 
+                      referrerPolicy="no-referrer-when-downgrade"
+                      className="w-full"
+                      title="EventMitra Location"
+                    />
+                    <div className="bg-slate-100 px-4 py-2">
+                      <p className="text-xs font-semibold text-slate-600">Pune, Maharashtra, India</p>
+                    </div>
+                  </div>
+                  
                   <div className="grid gap-3 sm:grid-cols-2">
                     <a
                       href="tel:+919876543210"
@@ -372,6 +404,8 @@ export function ContactPage() {
                         required
                         value={formData.name}
                         onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+                        onFocus={handleInputFocus}
+                        onBlur={handleInputBlur}
                         className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 transition focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
                         placeholder="Sarah Johnson"
                       />
@@ -383,10 +417,58 @@ export function ContactPage() {
                         required
                         value={formData.email}
                         onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+                        onFocus={handleInputFocus}
+                        onBlur={handleInputBlur}
                         className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 transition focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
                         placeholder="sarah@example.com"
                       />
                     </div>
+                  </div>
+
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+                        onFocus={handleInputFocus}
+                        onBlur={handleInputBlur}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 transition focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700">City</label>
+                      <input
+                        type="text"
+                        value={formData.city}
+                        onChange={(event) => setFormData({ ...formData, city: event.target.value })}
+                        onFocus={handleInputFocus}
+                        onBlur={handleInputBlur}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 transition focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
+                        placeholder="Mumbai"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700">Service Interested In</label>
+                    <select
+                      value={formData.serviceInterest}
+                      onChange={(event) => setFormData({ ...formData, serviceInterest: event.target.value })}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
+                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 transition focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
+                    >
+                      <option value="">Select a service</option>
+                      <option value="Mehndi Design">Mehndi Design</option>
+                      <option value="DJ">DJ</option>
+                      <option value="Photographer">Photographer</option>
+                      <option value="Catering">Catering</option>
+                      <option value="Decoration">Decoration</option>
+                      <option value="Other">Other</option>
+                    </select>
                   </div>
 
                   <div>
@@ -396,6 +478,8 @@ export function ContactPage() {
                       required
                       value={formData.subject}
                       onChange={(event) => setFormData({ ...formData, subject: event.target.value })}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 transition focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
                       placeholder="How can we help?"
                     />
@@ -408,6 +492,8 @@ export function ContactPage() {
                       rows={6}
                       value={formData.message}
                       onChange={(event) => setFormData({ ...formData, message: event.target.value })}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 transition focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
                       placeholder="Tell us more about your query, event, or support need..."
                     />

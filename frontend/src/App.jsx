@@ -46,6 +46,7 @@ import { AdminProvidersPage } from "./pages/admin/AdminProvidersPage";
 import { AdminCustomersPage } from "./pages/admin/AdminCustomersPage";
 import { AdminBookingsPage } from "./pages/admin/AdminBookingsPage";
 import { AdminPaymentsPage } from "./pages/admin/AdminPaymentsPage";
+import { AdminContactsPage } from "./pages/admin/AdminContactsPage";
 import { AdminGalleryPage } from "./pages/admin/AdminGalleryPage";
 
 // Customer Pages
@@ -175,6 +176,7 @@ export default function App() {
           <Route path="customers" element={<AdminCustomersPage />} />
           <Route path="bookings" element={<AdminBookingsPage />} />
           <Route path="payments" element={<AdminPaymentsPage />} />
+          <Route path="contacts" element={<AdminContactsPage />} />
           <Route path="gallery" element={<AdminGalleryPage />} />
         </Route>
 

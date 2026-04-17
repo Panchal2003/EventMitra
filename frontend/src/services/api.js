@@ -89,6 +89,7 @@ export const adminApi = {
   getGallery: () => api.get("/admin/gallery"),
   addGalleryImage: (payload) => api.post("/admin/gallery", payload),
   deleteGalleryImage: (id) => api.delete(`/admin/gallery/${id}`),
+  getContacts: () => api.get("/admin/contacts"),
 };
 
 export const providerApi = {
@@ -158,4 +159,5 @@ export const publicApi = {
   getGallery: (params) => api.get("/public/gallery", { params }),
   getTestimonials: () => api.get("/public/testimonials"),
   getStats: () => api.get("/public/stats"),
+  submitContact: (data) => api.post("/contact", data),
 };

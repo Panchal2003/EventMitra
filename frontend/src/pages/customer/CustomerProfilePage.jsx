@@ -45,6 +45,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useUI } from "../../context/UIContext";
 import { Button } from "../../components/common/Button";
 import { Modal } from "../../components/common/Modal";
 import { authApi, customerApi } from "../../services/api";
@@ -69,6 +70,7 @@ function getInitial(name) {
 
 export function CustomerProfilePage() {
   const { user, updateUser, isBootstrapping } = useAuth();
+  const { hideBottomNav, showBottomNav } = useUI();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -83,6 +85,9 @@ export function CustomerProfilePage() {
     error: "",
     success: "",
   });
+  const handleSearchFocus = () => hideBottomNav();
+  const handleSearchBlur = () => showBottomNav();
+  const handleInputBlur = () => showBottomNav();
   const [cropSource, setCropSource] = useState("");
   const [cropOpen, setCropOpen] = useState(false);
   const [cropSaving, setCropSaving] = useState(false);
@@ -421,7 +426,9 @@ export function CustomerProfilePage() {
                         placeholder="Search by service, provider, or location..."
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-white/90 backdrop-blur-2xl py-3 pl-12 pr-4 text-sm shadow-lg shadow-slate-200/20 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+                        onFocus={handleSearchFocus}
+                        onBlur={handleSearchBlur}
+                        className="w-full rounded-xl border border-slate-200 bg-white/90 backdrop-blur-2xl py-3 pl-12 pr-4 text-sm text-slate-900 shadow-lg shadow-slate-200/20 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
                       />
                     </div>
                   </motion.div>
@@ -619,11 +626,16 @@ export function CustomerProfilePage() {
 
                                 <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/80 p-4">
                                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                                    Total Amount
+                                    {booking.payment?.paymentStatus === "full_paid" ? "Complete Payment" : "Total Amount"}
                                   </p>
                                   <p className="mt-2 text-sm font-bold text-emerald-800">
                                     {formatCurrency(booking.totalAmount)}
                                   </p>
+                                  {booking.payment?.paymentStatus === "full_paid" && (
+                                    <p className="mt-2 text-xs font-medium text-emerald-600">
+                                      ✓ Fully paid
+                                    </p>
+                                  )}
                                 </div>
                               </div>
 
@@ -813,7 +825,16 @@ export function CustomerProfilePage() {
                                     </div>
                                   </div>
                                   
-                                  {booking.payment?.remainingAmount > 0 && booking.payment?.paymentStatus !== "full_paid" && (
+                                  {booking.payment?.paymentStatus === "full_paid" ? (
+                                    <div className="mt-4 pt-4 border-t border-emerald-200">
+                                      <p className="text-sm font-bold text-emerald-700 mb-2">
+                                        ✓ Complete Payment
+                                      </p>
+                                      <p className="text-xs text-emerald-600">
+                                        Thank you! Your booking is fully paid.
+                                      </p>
+                                    </div>
+                                  ) : booking.payment?.remainingAmount > 0 && (
                                     <div className="mt-4 pt-4 border-t border-amber-200">
                                       <p className="text-sm font-bold text-amber-800 mb-2">
                                         Remaining payment pending
@@ -1506,6 +1527,8 @@ export function CustomerProfilePage() {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
+                onFocus={handleSearchFocus}
+                onBlur={handleInputBlur}
                 placeholder="Enter your full name"
                 className={inputClassName}
               />
@@ -1517,6 +1540,8 @@ export function CustomerProfilePage() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
+                onFocus={handleSearchFocus}
+                onBlur={handleInputBlur}
                 placeholder="Enter your phone number"
                 className={inputClassName}
               />
@@ -1527,6 +1552,8 @@ export function CustomerProfilePage() {
                 name="address"
                 value={formData.address}
                 onChange={handleInputChange}
+                onFocus={handleSearchFocus}
+                onBlur={handleInputBlur}
                 placeholder="Enter your address"
                 rows={3}
                 className={inputClassName}

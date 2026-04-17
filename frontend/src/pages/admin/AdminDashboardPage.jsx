@@ -81,6 +81,14 @@ export function AdminDashboardPage() {
       trendUp: true,
     },
     {
+      title: "Provider Revenue",
+      value: formatCurrency(metrics?.providerRevenue || 0),
+      description: "89% to providers",
+      icon: Wallet,
+      trend: "+10%",
+      trendUp: true,
+    },
+    {
       title: "Admin Profit",
       value: formatCurrency(metrics?.totalAdminProfit || 0),
       description: "11% commission",
@@ -99,7 +107,7 @@ export function AdminDashboardPage() {
     {
       title: "Pending Approvals",
       value: formatCount(metrics?.pendingApprovals),
-      description: "Awaiting review",
+      description: "Providers awaiting review",
       icon: Clock3,
       trend: null,
       trendUp: null,

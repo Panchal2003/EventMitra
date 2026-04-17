@@ -16,6 +16,17 @@
     /* Prevent overscroll bounce on mobile */
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
+    /* Prevent white flash during navigation */
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+    min-height: 100vh;
+  }
+  
+  /* Ensure no white flash on mobile */
+  @media (max-width: 1024px) {
+    html, body, #root {
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%) !important;
+      min-height: 100vh;
+    }
   }
 
   :root {

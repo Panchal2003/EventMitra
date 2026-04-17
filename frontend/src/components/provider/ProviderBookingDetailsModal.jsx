@@ -111,22 +111,29 @@ export function ProviderBookingDetailsModal({ booking, onClose, open }) {
                 )}
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white p-4">
-                  <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Advance Paid</p>
-                  <p className="font-medium text-emerald-700">{formatCurrency(booking.payment?.advancePaid || 0)}</p>
+              {booking.payment?.paymentStatus === "full_paid" ? (
+                <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4">
+                  <p className="text-xs font-semibold uppercase text-emerald-600 mb-1">Payment Status</p>
+                  <p className="font-bold text-emerald-700 text-lg">Full Paid</p>
                 </div>
-                <div className="rounded-2xl bg-white p-4">
-                  <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Remaining Due</p>
-                  <p className="font-medium text-amber-700">{formatCurrency(booking.payment?.remainingAmount || 0)}</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-white p-4">
+                    <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Advance Paid</p>
+                    <p className="font-medium text-emerald-700">{formatCurrency(booking.payment?.advancePaid || 0)}</p>
+                  </div>
+                  <div className="rounded-2xl bg-white p-4">
+                    <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Remaining Due</p>
+                    <p className="font-medium text-amber-700">{formatCurrency(booking.payment?.remainingAmount || 0)}</p>
+                  </div>
+                  <div className="rounded-2xl bg-white p-4">
+                    <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Payment Status</p>
+                    <p className="font-medium capitalize text-slate-900">
+                      {(booking.payment?.paymentStatus || "unpaid").replace(/_/g, " ")}
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-2xl bg-white p-4">
-                  <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Payment Status</p>
-                  <p className="font-medium capitalize text-slate-900">
-                    {(booking.payment?.paymentStatus || "unpaid").replace(/_/g, " ")}
-                  </p>
-                </div>
-              </div>
+              )}
             </>
           )}
         </div>

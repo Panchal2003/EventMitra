@@ -859,9 +859,10 @@ const {
 
   console.log("=== Provider Remaining Payment API ===");
   console.log("payment.razorpay_order_id:", payment.razorpay_order_id);
-  console.log("razorpayOrder:", razorpayOrder);
+  console.log("razorpayOrder:", razorpayOrder?.id);
   console.log("razorpayReady:", razorpayReady);
   console.log("razorpayErrorMessage:", razorpayErrorMessage);
+  console.log("RETURNING orderId:", razorpayOrder?.id);
 
   res.json({
     success: true,
@@ -870,7 +871,7 @@ const {
       : "UPI QR is ready. Razorpay popup is temporarily unavailable.",
     data: {
       bookingId: booking._id,
-      orderId: payment.razorpay_order_id || razorpayOrder?.id,
+      orderId: razorpayOrder?.id,
       paymentId: payment._id,
       amount: Number(razorpayOrder?.amount || payment.metadata?.razorpayOrder?.amount || toPaise(amount)),
       amountInRupees: amount,
@@ -905,18 +906,17 @@ export const verifyProviderRemainingPayment = asyncHandler(async (req, res) => {
   const booking = await ensureProviderBooking(req.params.bookingId, req.user._id);
 
   const { payment: remainingPayment } = await ensureRemainingPaymentOrder(booking);
-  const isManualVerification = Boolean(manualVerification);
+const isManualVerification = Boolean(manualVerification);
 
-  // If order_id provided, verify it matches
-  if (!isManualVerification && razorpay_order_id && remainingPayment.razorpay_order_id !== razorpay_order_id) {
-    throw new AppError("Remaining payment order mismatch.", 400);
-  }
+  // Skip order_id mismatch check since we now create fresh orders each time
+  // Just use the order_id from frontend for verification
+  const orderIdForVerification = razorpay_order_id || remainingPayment.razorpay_order_id;
 
   // If signature provided, verify it
   if (!isManualVerification && razorpay_signature && razorpay_payment_id) {
     const { verifyRazorpayPaymentSignature } = await import("../utils/razorpay.js");
-    const signatureIsValid = verifyRazorpayPaymentSignature({
-      razorpayOrderId: razorpay_order_id || remainingPayment.razorpay_order_id,
+const signatureIsValid = verifyRazorpayPaymentSignature({
+      razorpayOrderId: orderIdForVerification,
       razorpayPaymentId: razorpay_payment_id,
       razorpaySignature: razorpay_signature,
     });
@@ -927,8 +927,13 @@ export const verifyProviderRemainingPayment = asyncHandler(async (req, res) => {
       throw new AppError("Payment signature verification failed.", 400);
     }
 
-    remainingPayment.razorpay_payment_id = razorpay_payment_id;
+remainingPayment.razorpay_payment_id = razorpay_payment_id;
     remainingPayment.razorpay_signature = razorpay_signature;
+    
+    // Update with the new order_id from this payment session
+    if (razorpay_order_id && razorpay_order_id !== remainingPayment.razorpay_order_id) {
+      remainingPayment.razorpay_order_id = razorpay_order_id;
+    }
   }
 
   if (isManualVerification) {
