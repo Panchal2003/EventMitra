@@ -606,7 +606,7 @@ export const uploadServiceImage = asyncHandler(async (req, res) => {
 export const getProviderBookings = asyncHandler(async (req, res) => {
   const bookings = await Booking.find({ 
     provider: req.user._id,
-    paymentStatus: { $ne: "advance_pending" }
+    status: { $nin: ["cancelled"] }
   })
     .populate(bookingPopulate)
     .sort({ createdAt: -1, eventDate: -1 });

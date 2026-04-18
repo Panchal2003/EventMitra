@@ -5,6 +5,7 @@ import {
   AlertCircle,
   CalendarCheck2,
   Loader2,
+  RefreshCw,
   Search,
   Sparkles,
   Shield,
@@ -23,6 +24,7 @@ export function CustomerBookingsPage({ embedded = false }) {
   const { hideBottomNav, showBottomNav } = useUI();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [verifyOtpBooking, setVerifyOtpBooking] = useState(null);
@@ -90,6 +92,20 @@ export function CustomerBookingsPage({ embedded = false }) {
   const handlePayRemaining = (booking) => {
     // Navigate directly to payment page - feedback will be collected there
     navigate(`/customer/payment/${booking._id}`);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      const response = await customerApi.getBookings();
+      if (response.data?.success) {
+        setBookings(response.data.data || []);
+      }
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Failed to refresh bookings");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const filteredBookings = useMemo(() => {
@@ -222,17 +238,26 @@ export function CustomerBookingsPage({ embedded = false }) {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search by service, provider, or location..."
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                onFocus={handleSearchFocus}
-                onBlur={handleSearchBlur}
-                className="w-full rounded-2xl border border-slate-200 bg-white/90 py-3 pl-12 pr-4 text-sm text-slate-900 shadow-lg shadow-slate-200/20 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
-              />
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search by service, provider, or location..."
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
+                  className="w-full rounded-2xl border border-slate-200 bg-white/90 py-3 pl-12 pr-4 text-sm text-slate-900 shadow-lg shadow-slate-200/20 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+                />
+              </div>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-200/20 transition hover:border-primary-200 hover:text-primary-700 disabled:opacity-50"
+              >
+                <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
+              </button>
             </div>
           </motion.div>
         ) : null}

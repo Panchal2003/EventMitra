@@ -5,6 +5,7 @@ import {
   AlertCircle,
   ArrowRight,
   Clock3,
+  CreditCard,
   MapPin,
   ShieldCheck,
   Sparkles,
@@ -293,6 +294,17 @@ function BookingPaymentPanel({ booking, onPayRemaining }) {
             </div>
           )}
         </div>
+        {canPayRemaining && onPayRemaining && (
+          <div className="mt-4">
+            <button
+              onClick={() => onPayRemaining(booking)}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold rounded-xl transition-all duration-300"
+            >
+              <CreditCard className="h-4 w-4" />
+              Pay Remaining {payment.remainingAmount ? `(${formatCurrency(payment.remainingAmount)})` : ""}
+            </button>
+          </div>
+        )}
     </div>
   );
 }

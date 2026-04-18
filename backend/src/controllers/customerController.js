@@ -246,7 +246,7 @@ export const createCustomerBooking = asyncHandler(async (req, res) => {
       remainingPercentage: 80,
     },
     notes,
-    status: BOOKING_STATUS.PENDING,
+    status: BOOKING_STATUS.PROVIDER_ASSIGNED,
     providerAssignedAt: new Date(),
   });
 
@@ -381,7 +381,7 @@ export const verifyAdvancePayment = asyncHandler(async (req, res) => {
 export const getCustomerBookings = asyncHandler(async (req, res) => {
   const bookings = await Booking.find({ 
     customer: req.user._id,
-    paymentStatus: { $ne: "advance_pending" }
+    status: { $nin: ["cancelled"] }
   })
     .populate(customerBookingPopulate)
     .sort({ createdAt: -1 });
