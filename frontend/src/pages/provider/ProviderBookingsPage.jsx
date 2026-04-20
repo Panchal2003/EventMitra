@@ -25,7 +25,8 @@ import {
   Shield,
   CreditCard,
   Smartphone,
-  } from "lucide-react";
+  Ban,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { GlassCard } from "../../components/admin/GlassCard";
 import { useUI } from "../../context/UIContext";
@@ -69,25 +70,48 @@ export function ProviderBookingsPage() {
   const [activeTab, setActiveTab] = useState("requests");
   const [qrCodeLoading, setQrCodeLoading] = useState(false);
   const [remainingPaymentBookingId, setRemainingPaymentBookingId] = useState("");
+  const [cancelModalBooking, setCancelModalBooking] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+const [cancelReasonError, setCancelReasonError] = useState("");
+  const [cancellingBooking, setCancellingBooking] = useState(false);
   const { hideBottomNav, showBottomNav } = useUI();
   
-  const requestBookings = useMemo(
-    () => bookings.filter((booking) => booking.status === "provider_assigned"),
+const requestBookings = useMemo(
+    () => bookings.filter((booking) => 
+      (booking.status === "provider_assigned" || booking.status === "cancelled") && 
+      booking.paymentStatus === "advance_paid"
+    ),
     [bookings]
   );
-  const activeBookings = useMemo(
+
+const activeBookings = useMemo(
     () =>
       bookings.filter((booking) =>
-        ["confirmed", "in_progress", "otp_pending"].includes(booking.status)
+        (["confirmed", "in_progress", "otp_pending"].includes(booking.status) ||
+        booking.status === "cancelled") &&
+        ["advance_paid", "full_paid"].includes(booking.paymentStatus)
       ),
     [bookings]
   );
   const completedBookings = useMemo(
-    () => bookings.filter((booking) => ["completed", "rejected"].includes(booking.status)),
+    () => bookings.filter((booking) => 
+      booking.status === "completed" && 
+      ["advance_paid", "full_paid"].includes(booking.paymentStatus)
+    ),
     [bookings]
   );
   const cancelledBookings = useMemo(
-    () => bookings.filter((booking) => booking.status === "cancelled"),
+    () => bookings.filter((booking) => 
+      booking.status === "cancelled" && 
+      ["advance_paid", "full_paid", "partially_refunded", "refunded"].includes(booking.paymentStatus)
+    ),
+    [bookings]
+  );
+  const rejectedBookings = useMemo(
+    () => bookings.filter((booking) => 
+      booking.status === "rejected" &&
+      ["advance_paid", "full_paid"].includes(booking.paymentStatus)
+    ),
     [bookings]
   );
 
@@ -103,6 +127,44 @@ export function ProviderBookingsPage() {
         type: "error",
         message: getErrorMessage(requestError, "Unable to update this booking request."),
       });
+    }
+  };
+
+  const handleOpenCancelModal = (booking) => {
+    hideBottomNav();
+    setCancelModalBooking(booking);
+    setCancelReason("");
+    setCancelReasonError("");
+  };
+
+  const handleCloseCancelModal = () => {
+    setCancelModalBooking(null);
+    setCancelReason("");
+    setCancelReasonError("");
+    showBottomNav();
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelReason.trim()) {
+      setCancelReasonError("Please provide a reason for cancellation");
+      return;
+    }
+
+    try {
+      setCancellingBooking(true);
+      await respondToBooking(cancelModalBooking._id, "reject", cancelReason.trim());
+      setNotice({
+        type: "success",
+        message: "Booking cancelled successfully.",
+      });
+      handleCloseCancelModal();
+    } catch (requestError) {
+      setNotice({
+        type: "error",
+        message: getErrorMessage(requestError, "Unable to cancel this booking."),
+      });
+    } finally {
+      setCancellingBooking(false);
     }
   };
 
@@ -226,14 +288,16 @@ export function ProviderBookingsPage() {
 
   
 
-  const tabs = [
+const tabs = [
     { id: "requests", label: "Requests", count: requestBookings.length, icon: CalendarCheck2, gradient: "from-amber-500 to-orange-500" },
     { id: "active", label: "Active", count: activeBookings.length, icon: Clock, gradient: "from-blue-500 to-indigo-500" },
     { id: "completed", label: "Completed", count: completedBookings.length, icon: CheckCircle, gradient: "from-primary-500 to-blue-500" },
-    { id: "cancelled", label: "Cancelled", count: cancelledBookings.length, icon: XCircle, gradient: "from-rose-500 to-red-500" },
+    { id: "cancelled", label: "Cancel", count: cancelledBookings.length, icon: XCircle, gradient: "from-rose-500 to-red-500" },
+    { id: "rejected", label: "Rejected", count: rejectedBookings.length, icon: Ban, gradient: "from-slate-500 to-slate-600" },
   ];
 
-  // Render booking card for mobile
+const currentBookings = activeTab === "requests" ? requestBookings : activeTab === "active" ? activeBookings : activeTab === "cancelled" ? cancelledBookings : activeTab === "rejected" ? rejectedBookings : completedBookings;
+
   const renderBookingCard = (booking, type) => (
     <motion.div
       key={booking._id}
@@ -261,6 +325,14 @@ export function ProviderBookingsPage() {
           </div>
           <StatusBadge status={booking.status} />
         </div>
+        {booking.status === "cancelled" && booking.cancellation && (
+          <div className="mt-2 rounded-lg bg-rose-50 border border-rose-200 px-3 py-2">
+            <p className="text-xs font-semibold text-rose-700 flex items-center gap-1">
+              <XCircle className="h-3 w-3" />
+              Cancelled by Customer
+            </p>
+          </div>
+        )}
         <div className="mt-3 flex items-center justify-between">
           <div>
             <p className="font-semibold text-slate-900">{formatCurrency(booking.totalAmount)}</p>
@@ -280,7 +352,7 @@ export function ProviderBookingsPage() {
             <Eye className="h-4 w-4" />
             Details
           </Button>
-          {type === "requests" && (
+          {type === "requests" && booking.status !== "cancelled" && (
             <>
               <Button
                 variant="success"
@@ -294,7 +366,7 @@ export function ProviderBookingsPage() {
               <Button
                 variant="danger"
                 size="sm"
-                onClick={() => handleBookingResponse(booking._id, "reject")}
+                onClick={() => handleOpenCancelModal(booking)}
                 isLoading={actionInFlight === `respond-booking-${booking._id}-reject`}
               >
                 <XCircle className="h-4 w-4" />
@@ -333,7 +405,9 @@ export function ProviderBookingsPage() {
               Regenerate OTP
             </Button>
           )}
-          {type === "active" && booking.status === "otp_pending" && booking.payment?.remainingAmount > 0 && booking.payment?.paymentStatus !== "full_paid" && (
+          {type === "active" && booking.status === "otp_pending" && 
+           (booking.payment?.remainingAmount > 0 || booking.remainingAmount > 0) && 
+           booking.paymentStatus !== "full_paid" && (
             <Button
               size="sm"
               variant="success"
@@ -378,8 +452,19 @@ export function ProviderBookingsPage() {
         ) : null}
         {booking.status === "cancelled" && booking.cancellation ? (
           <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50/80 p-3">
-            <p className="text-xs font-semibold text-rose-700 mb-2">Cancellation Details</p>
-            <div className="flex items-center gap-4 text-xs text-rose-600">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-rose-700">Cancellation Details</p>
+              {booking.cancellation.refundAmount > 0 && (
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  booking.cancellation.refundStatus === "completed" 
+                    ? "bg-emerald-100 text-emerald-700" 
+                    : "bg-amber-100 text-amber-700"
+                }`}>
+                  {booking.cancellation.refundStatus === "completed" ? "Refund Completed" : "Refund Processing"}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-4 text-xs text-rose-600 mb-2">
               <div>
                 <span className="font-medium">Booked:</span> {formatDate(booking.eventDate)}
               </div>
@@ -387,21 +472,70 @@ export function ProviderBookingsPage() {
                 <span className="font-medium">Cancelled:</span> {booking.cancellation.cancelledAt ? formatDate(booking.cancellation.cancelledAt, true) : "-"}
               </div>
             </div>
-            {booking.cancellation.cancelReason && (
-              <p className="mt-2 text-xs text-rose-600">Reason: {booking.cancellation.cancelReason}</p>
+            
+            {booking.customer && (
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-8 w-8 rounded-full bg-rose-200 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-rose-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{booking.customer?.name || "Customer"}</p>
+                  {booking.customer?.phone && (
+                    <p className="text-xs text-slate-500">{booking.customer.phone}</p>
+                  )}
+                </div>
+              </div>
             )}
-            {booking.cancellation.refundAmount > 0 && (
-              <p className="mt-2 text-xs font-semibold text-emerald-600">
-                Refund: {formatCurrency(booking.cancellation.refundAmount)} ({booking.cancellation.cancellationPolicy?.replace('_', ' ')})
+            
+            {booking.cancellation.cancelReason && (
+              <p className="mt-1 text-xs text-rose-600">
+                <span className="font-medium">Reason:</span> {booking.cancellation.cancelReason}
               </p>
             )}
+            {booking.cancellation.refundAmount > 0 && (
+              <div className="mt-2 rounded-lg bg-white/80 px-3 py-2">
+                <p className="text-xs font-semibold text-emerald-700">
+                  Refund Amount: {formatCurrency(booking.cancellation.refundAmount)}
+                </p>
+                {booking.cancellation.refundStatus === "pending" && (
+                  <p className="text-[10px] text-emerald-600 mt-1">
+                    Customer will receive refund within 2 business days
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        ) : null}
+        {booking.status === "rejected" && booking.cancellation ? (
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+            <p className="text-xs font-semibold text-slate-700 mb-2">Rejection Details</p>
+            <div className="flex items-center gap-4 text-xs text-slate-600">
+              <div>
+                <span className="font-medium">Booked:</span> {formatDate(booking.eventDate)}
+              </div>
+              <div>
+                <span className="font-medium">Rejected:</span> {booking.cancellation.cancelledAt ? formatDate(booking.cancellation.cancelledAt, true) : "-"}
+              </div>
+            </div>
+            {booking.cancellation.cancelReason && (
+              <p className="mt-2 text-xs text-slate-600">Reason: {booking.cancellation.cancelReason}</p>
+            )}
+            <div className="mt-3 flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center">
+                <Users className="h-4 w-4 text-slate-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{booking.customer?.name || "Customer"}</p>
+                {booking.customer?.phone && (
+                  <p className="text-xs text-slate-500">{booking.customer.phone}</p>
+                )}
+              </div>
+            </div>
           </div>
         ) : null}
       </div>
     </motion.div>
   );
-
-  const currentBookings = activeTab === "requests" ? requestBookings : activeTab === "active" ? activeBookings : activeTab === "cancelled" ? cancelledBookings : completedBookings;
 
   return (
     <div className="bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -459,7 +593,7 @@ export function ProviderBookingsPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 }}
-                className="hidden lg:grid lg:grid-cols-4 lg:gap-3"
+                className="hidden lg:grid lg:grid-cols-5 lg:gap-3"
               >
                 <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
                   <div className="flex items-center gap-3">
@@ -500,8 +634,19 @@ export function ProviderBookingsPage() {
                       <XCircle className="h-5 w-5 text-rose-300" />
                     </div>
                     <div>
-                      <p className="text-xs text-purple-200">Cancelled</p>
+                      <p className="text-xs text-purple-200">Cancel</p>
                       <p className="text-lg font-bold">{cancelledBookings.length}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-400/20">
+                      <Ban className="h-5 w-5 text-slate-300" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-purple-200">Rejected</p>
+                      <p className="text-lg font-bold">{rejectedBookings.length}</p>
                     </div>
                   </div>
                 </div>
@@ -587,12 +732,14 @@ export function ProviderBookingsPage() {
                 {activeTab === "active" && "No active bookings"}
                 {activeTab === "completed" && "No completed bookings"}
                 {activeTab === "cancelled" && "No cancelled bookings"}
+                {activeTab === "rejected" && "No rejected bookings"}
               </p>
               <p className="mt-1 text-sm text-slate-400">
                 {activeTab === "requests" && "New requests will appear here"}
                 {activeTab === "active" && "Accepted bookings will appear here"}
                 {activeTab === "completed" && "Completed jobs will appear here"}
                 {activeTab === "cancelled" && "Cancelled bookings will appear here"}
+                {activeTab === "rejected" && "Rejected bookings will appear here"}
               </p>
             </div>
           )}
@@ -677,6 +824,80 @@ export function ProviderBookingsPage() {
             </motion.div>
           </div>
         ) : null}
+
+        {/* Cancel Booking Modal */}
+        {cancelModalBooking && (
+          <div className="fixed inset-0 z-[999] flex items-start justify-center overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.95),rgba(241,245,249,0.9)_45%,rgba(226,232,240,0.84)_100%)] p-3 pt-4 pb-24 backdrop-blur-md sm:items-center sm:p-5">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-lg rounded-[28px] border border-white/80 bg-white/95 p-5 shadow-[0_24px_70px_rgba(148,163,184,0.24)] sm:p-6"
+            >
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-950">Cancel Booking</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Please provide a reason for cancelling this booking.
+                  </p>
+                </div>
+                <button onClick={handleCloseCancelModal} className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600">
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/90 p-4">
+                <p className="font-semibold text-slate-900">{cancelModalBooking.service?.name}</p>
+                <p className="mt-1 text-sm text-slate-500">{cancelModalBooking.customer?.name}</p>
+                <p className="mt-1 text-sm text-slate-400">
+                  {formatDate(cancelModalBooking.eventDate)} | {cancelModalBooking.location}
+                </p>
+              </div>
+
+              {cancelReasonError ? (
+                <div className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                  {cancelReasonError}
+                </div>
+              ) : null}
+
+              <div className="mt-4">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Cancellation Reason <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(event) => {
+                    setCancelReason(event.target.value);
+                    setCancelReasonError("");
+                  }}
+                  placeholder="Please provide a reason for cancelling this booking..."
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-100"
+                  rows={4}
+                />
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={handleCloseCancelModal}
+                  className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-600 hover:bg-slate-50"
+                  disabled={cancellingBooking}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleConfirmCancel}
+                  disabled={cancellingBooking}
+                  className="flex-1 rounded-2xl bg-rose-600 px-4 py-3 font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                >
+                  {cancellingBooking ? (
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+                  ) : (
+                    "Confirm Cancellation"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -99,6 +99,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    razorpayXContactId: {
+      type: String,
+      default: null,
+    },
+    razorpayXFundAccountId: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

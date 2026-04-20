@@ -192,9 +192,29 @@ const bookingSchema = new mongoose.Schema(
       },
       cancellationPolicy: {
         type: String,
-        enum: ["none", "full_refund", "partial_refund", "no_refund"],
+        enum: ["none", "full_refund", "partial_refund", "no_refund", "more_than_36_hours", "between_24_and_36_hours", "between_18_and_24_hours", "between_12_and_18_hours", "less_than_12_hours"],
         default: "none",
       },
+    },
+    payoutStatus: {
+      type: String,
+      enum: ["pending", "processing", "paid", "failed"],
+      default: "pending",
+    },
+    payoutAmount: {
+      type: Number,
+      default: 0,
+    },
+    commission: {
+      type: Number,
+      default: 0,
+    },
+    payoutDate: {
+      type: Date,
+    },
+    payoutId: {
+      type: String,
+      trim: true,
     },
   },
   {

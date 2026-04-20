@@ -4,17 +4,21 @@ import {
   Search,
   IndianRupee,
   CheckCircle,
+  CheckCircle2,
   Clock,
   ArrowUpRight,
   Calendar,
   User,
   X,
+  XCircle,
   TrendingUp,
   Users,
   ArrowRight,
   CreditCard,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Wallet,
+  Loader2
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { GlassCard } from "../../components/admin/GlassCard";
@@ -24,6 +28,7 @@ import { useAdminPanelData } from "../../hooks/useAdminPanelData";
 import { useUI } from "../../context/UIContext";
 import { formatCurrency } from "../../utils/currency";
 import { formatDate } from "../../utils/date";
+import { adminApi } from "../../services/api";
 
 const sectionAnimation = {
   hidden: { opacity: 0, y: 22 },
@@ -32,13 +37,18 @@ const sectionAnimation = {
 
 const getErrorMessage = (error, fallback) => error.response?.data?.message || fallback;
 
-const getStatusConfig = (status) => {
+const getStatusConfig = (status, payoutStatus) => {
   const configs = {
     released: { bg: "bg-blue-100", text: "text-blue-700", icon: CheckCircle, label: "Released" },
     pending: { bg: "bg-amber-100", text: "text-amber-700", icon: Clock, label: "Pending" },
     processing: { bg: "bg-purple-100", text: "text-purple-700", icon: Clock, label: "Processing" },
     collection_pending: { bg: "bg-slate-100", text: "text-slate-700", icon: Clock, label: "Awaiting Collection" },
+    paid: { bg: "bg-blue-100", text: "text-blue-700", icon: CheckCircle, label: "Released" },
+    failed: { bg: "bg-red-100", text: "text-red-700", icon: X, label: "Failed" },
   };
+  if (payoutStatus === "paid") return configs.paid;
+  if (payoutStatus === "failed") return configs.failed;
+  if (payoutStatus === "processing") return configs.processing;
   return configs[status] || configs.pending;
 };
 
@@ -59,6 +69,7 @@ export function AdminPaymentsPage() {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [commissionRateDraft, setCommissionRateDraft] = useState("11");
   const [transactionIdDraft, setTransactionIdDraft] = useState("");
+  const [releasingPayment, setReleasingPayment] = useState(false);
 
   useEffect(() => {
     if (searchQuery.length > 0) {
@@ -101,21 +112,33 @@ export function AdminPaymentsPage() {
         payment.booking?.service?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         payment.provider?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         payment.provider?.businessName?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = filterStatus === "all" || payment.status === filterStatus;
+      
+      let matchesStatus = filterStatus === "all";
+      if (!matchesStatus) {
+        if (filterStatus === "full_paid") {
+          matchesStatus = payment.paymentStatus === "full_paid";
+        } else if (filterStatus === "cancelled") {
+          matchesStatus = payment.booking?.status === "cancelled";
+        } else {
+          matchesStatus = payment.status === filterStatus;
+        }
+      }
       return matchesSearch && matchesStatus;
     });
   }, [payments, searchQuery, filterStatus]);
 
   const handleReleasePayout = async (payment) => {
+    if (!window.confirm("Release payment to provider? 11% commission will be deducted.")) return;
+    
+    setReleasingPayment(true);
     try {
-      await releasePayout(payment._id, {
-        transactionId: transactionIdDraft.trim(),
-        commissionRate: commissionRateDraft === "" ? undefined : Number(commissionRateDraft),
-      });
-      setNotice({ type: "success", message: "Payout released successfully." });
+      const response = await adminApi.releaseProviderPayment(payment.bookingId);
+      setNotice({ type: "success", message: response.data?.message || "Payment released successfully." });
       setSelectedPayment(null);
     } catch (requestError) {
-      setNotice({ type: "error", message: getErrorMessage(requestError, "Unable to release payout.") });
+      setNotice({ type: "error", message: getErrorMessage(requestError, "Unable to release payment.") });
+    } finally {
+      setReleasingPayment(false);
     }
   };
 
@@ -266,6 +289,8 @@ export function AdminPaymentsPage() {
                 <option value="all">All Status</option>
                 <option value="collection_pending">Awaiting Collection</option>
                 <option value="pending">Pending</option>
+                <option value="full_paid">Payment Completed</option>
+                <option value="cancelled">Cancelled</option>
                 <option value="released">Released</option>
               </select>
               {filterStatus !== "all" && (
@@ -290,9 +315,9 @@ export function AdminPaymentsPage() {
         ) : filteredPayments.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filteredPayments.map((payment, index) => {
-              const statusConfig = getStatusConfig(payment.status);
+              const statusConfig = getStatusConfig(payment.status, payment.payoutStatus);
               const StatusIcon = statusConfig.icon;
-              const canRelease = payment.status !== "released";
+              const canRelease = payment.payoutStatus !== "paid" && payment.paymentStatus === "full_paid";
 
               return (
                 <motion.div
@@ -314,10 +339,19 @@ export function AdminPaymentsPage() {
                             <p className="text-xs text-slate-500 truncate">{payment.provider?.businessName || payment.provider?.name}</p>
                           </div>
                         </div>
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusConfig.bg} ${statusConfig.text}`}>
-                          <StatusIcon className="h-3 w-3" />
-                          {statusConfig.label}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          {payment.booking?.status === "cancelled" ? (
+                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-rose-100 text-rose-700">
+                              <XCircle className="h-3 w-3" />
+                              Cancelled
+                            </span>
+                          ) : (
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusConfig.bg} ${statusConfig.text}`}>
+                              <StatusIcon className="h-3 w-3" />
+                              {statusConfig.label}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Info */}
@@ -330,22 +364,33 @@ export function AdminPaymentsPage() {
                           <Calendar className="h-3 w-3 text-amber-500" />
                           <span>Booked {formatDate(payment.booking?.createdAt)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400">Method:</span>
-                          <span className="capitalize">{payment.method?.replace(/_/g, " ") || "N/A"}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400">Advance:</span>
-                          <span>{formatCurrency(payment.advancePaid || 0)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400">Remaining:</span>
-                          <span>
-                            {payment.paymentStatus === "full_paid"
-                              ? formatCurrency(payment.remainingPaid || 0)
-                              : `${formatCurrency(payment.remainingDue || 0)} due`}
-                          </span>
-                        </div>
+                        
+                        {/* Show refund info for cancelled bookings */}
+                        {payment.paymentStatus === "full_paid" ? (
+                          <div className="flex items-center gap-2 text-emerald-600 font-medium">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>Payment Completed</span>
+                          </div>
+                        ) : payment.paymentStatus !== "full_paid" && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-400">Method:</span>
+                              <span className="capitalize">{payment.method?.replace(/_/g, " ") || "N/A"}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-400">Advance:</span>
+                              <span>{formatCurrency(payment.advancePaid || 0)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-400">Remaining:</span>
+                              <span>
+                                {payment.paymentStatus === "full_paid"
+                                  ? formatCurrency(payment.remainingPaid || 0)
+                                  : `${formatCurrency(payment.remainingDue || 0)} due`}
+                              </span>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       {/* Price & Actions */}
@@ -369,9 +414,18 @@ export function AdminPaymentsPage() {
                             View
                           </Button>
                           {canRelease && (
-                            <Button variant="success" size="sm" className="text-xs" onClick={() => setSelectedPayment(payment)} isLoading={actionInFlight === `release-payment-${payment._id}`}>
-                              <ArrowUpRight className="h-3 w-3 mr-1" />
-                              Release
+                            <Button variant="success" size="sm" className="text-xs" onClick={() => setSelectedPayment(payment)}>
+                              {payment.payoutStatus === "paid" ? (
+                                <>
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Released
+                                </>
+                              ) : (
+                                <>
+                                  <ArrowUpRight className="h-3 w-3 mr-1" />
+                                  Release
+                                </>
+                              )}
                             </Button>
                           )}
                         </div>
@@ -408,10 +462,23 @@ export function AdminPaymentsPage() {
                 <WalletCards className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900">{formatCurrency(selectedPayment.amount)}</h3>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${getStatusConfig(selectedPayment.status).bg} ${getStatusConfig(selectedPayment.status).text}`}>
-                  {getStatusConfig(selectedPayment.status).label}
-                </span>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900">{formatCurrency(selectedPayment.totalAmount)}</h3>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${getStatusConfig(selectedPayment.status, selectedPayment.payoutStatus).bg} ${getStatusConfig(selectedPayment.status, selectedPayment.payoutStatus).text}`}>
+                    {getStatusConfig(selectedPayment.status, selectedPayment.payoutStatus).label}
+                  </span>
+                  {selectedPayment.paymentStatus === "full_paid" && (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-emerald-100 text-emerald-700">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Full Paid
+                    </span>
+                  )}
+                  {selectedPayment.paymentStatus !== "full_paid" && (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-amber-100 text-amber-700">
+                      Partial Paid
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -439,35 +506,85 @@ export function AdminPaymentsPage() {
             </div>
 
             {/* Payment Breakdown */}
-            <div className="rounded-xl bg-emerald-50 p-4">
-              <p className="text-[10px] font-semibold uppercase text-emerald-600 mb-3">Payment Received</p>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div>
-                  <p className="text-[10px] text-emerald-600">Total Amount</p>
-                  <p className="text-lg font-bold text-slate-900">{formatCurrency(selectedPayment.totalAmount)}</p>
+            {selectedPayment.paymentStatus === "full_paid" ? (
+              <div className="rounded-xl bg-emerald-50 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <p className="text-[10px] font-semibold uppercase text-emerald-600">Payment Completed</p>
                 </div>
-                <div>
-                  <p className="text-[10px] text-emerald-600">Advance Paid</p>
-                  <p className="text-base font-semibold text-slate-900">{formatCurrency(selectedPayment.advancePaid || 0)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-emerald-600">Remaining Paid</p>
-                  <p className="text-base font-semibold text-slate-900">{formatCurrency(selectedPayment.remainingPaid || 0)}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] text-emerald-600">Total Amount</p>
+                    <p className="text-lg font-bold text-slate-900">{formatCurrency(selectedPayment.totalAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-emerald-600">Total Paid</p>
+                    <p className="text-lg font-bold text-emerald-600">{formatCurrency((selectedPayment.advancePaid || 0) + (selectedPayment.remainingPaid || 0))}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-xl bg-emerald-50 p-4">
+                <p className="text-[10px] font-semibold uppercase text-emerald-600 mb-3">Payment Received</p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div>
+                    <p className="text-[10px] text-emerald-600">Total Amount</p>
+                    <p className="text-lg font-bold text-slate-900">{formatCurrency(selectedPayment.totalAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-emerald-600">Advance Paid</p>
+                    <p className="text-base font-semibold text-slate-900">{formatCurrency(selectedPayment.advancePaid || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-emerald-600">Remaining Due</p>
+                    <p className="text-base font-semibold text-amber-600">{formatCurrency(selectedPayment.remainingDue || 0)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-            {/* Payout Calculation */}
-            <div className="rounded-xl bg-amber-50 p-4">
-              <p className="text-[10px] font-semibold uppercase text-amber-600 mb-3">Payout Calculation (11% Commission)</p>
+            {/* Refund Details (if cancelled) */}
+            {selectedPayment.booking?.cancellation && selectedPayment.booking.cancellation.refundAmount > 0 && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-rose-600" />
+                    <p className="text-sm font-semibold text-rose-700">Refund Details</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                    selectedPayment.booking.cancellation.refundStatus === "completed" 
+                      ? "bg-emerald-100 text-emerald-700" 
+                      : "bg-amber-100 text-amber-700"
+                  }`}>
+                    {selectedPayment.booking.cancellation.refundStatus === "completed" ? "Completed" : "Processing"}
+                  </span>
+                </div>
+                <p className="text-lg font-bold text-rose-700">
+                  {formatCurrency(selectedPayment.booking.cancellation.refundAmount)}
+                  <span className="ml-2 text-xs font-normal text-rose-600">
+                    ({selectedPayment.booking.cancellation.cancellationPolicy?.replace(/_/g, " ")})
+                  </span>
+                </p>
+                {selectedPayment.booking.cancellation.refundStatus === "completed" && (
+                  <p className="text-xs text-emerald-600">Refund has been processed successfully</p>
+                )}
+                {selectedPayment.booking.cancellation.refundStatus === "pending" && (
+                  <p className="text-xs text-amber-600">Refund initiated - processing within 2 business days</p>
+                )}
+              </div>
+            )}
+
+            {/* Payout Status */}
+            <div className="rounded-xl bg-slate-50 p-4">
+              <p className="text-[10px] font-semibold uppercase text-slate-500 mb-3">Payout Status</p>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-amber-600">Provider Gets</p>
-                  <p className="text-2xl font-bold text-emerald-600">{formatCurrency(selectedPayment.providerAmount)}</p>
+                  <p className="text-[10px] text-slate-400">Provider Amount</p>
+                  <p className="text-lg font-bold text-emerald-600">{formatCurrency(selectedPayment.providerAmount)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-amber-600">Admin Profit</p>
-                  <p className="text-xl font-bold text-slate-900">{formatCurrency(selectedPayment.adminProfit)}</p>
+                  <p className="text-[10px] text-slate-400">Admin Commission</p>
+                  <p className="text-lg font-bold text-slate-900">{formatCurrency(selectedPayment.adminProfit)}</p>
                 </div>
               </div>
             </div>
@@ -516,48 +633,50 @@ export function AdminPaymentsPage() {
             )}
 
             {/* Release Form */}
-            {selectedPayment.status !== "released" && (
-              <div className="rounded-xl border border-slate-200 p-4 space-y-3">
-                <p className="text-[10px] font-semibold uppercase text-slate-500">Release Payout</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <label className="text-[10px] font-semibold uppercase text-slate-500">Commission %</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={commissionRateDraft}
-                      onChange={(event) => setCommissionRateDraft(event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-100"
-                    />
+            {selectedPayment.payoutStatus !== "paid" && selectedPayment.paymentStatus === "full_paid" && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-emerald-600" />
+                    <p className="text-sm font-semibold text-emerald-700">Release Payment</p>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <label className="text-[10px] font-semibold uppercase text-slate-500">Transaction ID</label>
-                    <input
-                      type="text"
-                      value={transactionIdDraft}
-                      onChange={(event) => setTransactionIdDraft(event.target.value)}
-                      placeholder="Enter reference"
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-100"
-                    />
-                  </div>
+                  <span className="text-sm font-bold text-emerald-600">{formatCurrency(selectedPayment.providerAmount)}</span>
                 </div>
-                <Button variant="success" className="w-full text-sm" onClick={() => handleReleasePayout(selectedPayment)} isLoading={actionInFlight === `release-payment-${selectedPayment._id}`}>
-                  <ArrowUpRight className="h-4 w-4 mr-1.5" />
-                  Release {formatCurrency(selectedPayment.providerAmount)} to Provider
+                <Button variant="success" className="w-full text-sm" onClick={() => handleReleasePayout(selectedPayment)} disabled={releasingPayment}>
+                  {releasingPayment ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowUpRight className="h-4 w-4 mr-1.5" />
+                      Release Now
+                    </>
+                  )}
                 </Button>
               </div>
             )}
 
             {/* Released Info */}
-            {selectedPayment.status === "released" && selectedPayment.releasedAt && (
+            {selectedPayment.payoutStatus === "paid" && (
               <div className="rounded-xl bg-emerald-50 p-4">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-emerald-600" />
-                  <p className="font-semibold text-emerald-700">Payout Released on {formatDate(selectedPayment.releasedAt)}</p>
+                  <p className="font-semibold text-emerald-700">Payment Released on {formatDate(selectedPayment.releasedAt)}</p>
                 </div>
-                {selectedPayment.transactionId && (
-                  <p className="mt-2 text-sm text-emerald-600">Transaction ID: {selectedPayment.transactionId}</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] text-emerald-600">Provider Amount</p>
+                    <p className="text-sm font-semibold text-slate-900">{formatCurrency(selectedPayment.payoutAmount || selectedPayment.providerAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-emerald-600">Commission (11%)</p>
+                    <p className="text-sm font-semibold text-slate-900">{formatCurrency(selectedPayment.commission || selectedPayment.adminProfit)}</p>
+                  </div>
+                </div>
+                {selectedPayment.payoutId && (
+                  <p className="mt-2 text-xs text-emerald-600">Razorpay Payout ID: {selectedPayment.payoutId}</p>
                 )}
               </div>
             )}

@@ -10,6 +10,7 @@ import { BOOKING_STATUS, assertBookingStatus } from "../utils/bookingLifecycle.j
 import { DEFAULT_COMMISSION_PERCENT, calculateCommissionAmount, calculateProviderPayout, toPaise } from "../utils/paymentLifecycle.js";
 import { generateOtp } from "../utils/otp.js";
 import { getProviderRatingSummary } from "../utils/providerRatings.js";
+import { createRazorpayXContact, createRazorpayXFundAccount, isRazorpayXConfigured } from "../utils/razorpayX.js";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -404,6 +405,34 @@ export const updateProviderProfile = asyncHandler(async (req, res) => {
       ifscCode: providerBankAccount.ifscCode?.trim().toUpperCase(),
       accountHolderName: providerBankAccount.accountHolderName?.trim(),
     };
+
+    if (isRazorpayXConfigured()) {
+      try {
+        console.log("Creating RazorpayX contact for provider...");
+        const contact = await createRazorpayXContact({
+          name: providerBankAccount.accountHolderName?.trim() || req.body.name,
+          contact: phone,
+          referenceId: req.user._id?.toString(),
+        });
+        console.log("RazorpayX Contact created:", contact.id);
+
+        console.log("Creating RazorpayX fund account...");
+        const fundAccount = await createRazorpayXFundAccount({
+          contactId: contact.id,
+          bankAccount: {
+            name: providerBankAccount.accountHolderName?.trim(),
+            ifscCode: providerBankAccount.ifscCode?.trim().toUpperCase(),
+            account_number: providerBankAccount.accountNumber?.trim(),
+          },
+        });
+        console.log("RazorpayX Fund Account created:", fundAccount.id);
+
+        updateData.razorpayXContactId = contact.id;
+        updateData.razorpayXFundAccountId = fundAccount.id;
+      } catch (rzError) {
+        console.error("RazorpayX setup error:", rzError.message);
+      }
+    }
   }
 
   if (upiId) {
@@ -606,10 +635,12 @@ export const uploadServiceImage = asyncHandler(async (req, res) => {
 export const getProviderBookings = asyncHandler(async (req, res) => {
   const bookings = await Booking.find({ 
     provider: req.user._id,
-    status: { $nin: ["cancelled"] }
+    paymentStatus: { $in: ["advance_paid", "full_paid", "partially_refunded", "refunded"] }
   })
     .populate(bookingPopulate)
     .sort({ createdAt: -1, eventDate: -1 });
+
+  console.log("[getProviderBookings] Found bookings:", bookings.length);
 
   const paymentMap = await groupPaymentsByBookingId(bookings.map((booking) => booking._id));
 
@@ -622,7 +653,7 @@ export const getProviderBookings = asyncHandler(async (req, res) => {
 });
 
 export const respondToBooking = asyncHandler(async (req, res) => {
-  const { action } = req.body;
+  const { action, reason } = req.body;
   const booking = await ensureProviderBooking(req.params.bookingId, req.user._id);
 
   assertBookingStatus(
@@ -636,7 +667,20 @@ export const respondToBooking = asyncHandler(async (req, res) => {
   }
 
   booking.providerRespondedAt = new Date();
-  booking.status = action === "accept" ? BOOKING_STATUS.CONFIRMED : BOOKING_STATUS.REJECTED;
+  
+  if (action === "accept") {
+    booking.status = BOOKING_STATUS.CONFIRMED;
+  } else {
+    booking.status = BOOKING_STATUS.REJECTED;
+    booking.cancellation = {
+      cancelledAt: new Date(),
+      cancelledBy: req.user._id,
+      cancelReason: reason || "No reason provided",
+      cancellationPolicy: "full_refund",
+      refundAmount: booking.advancePaid || 0,
+      refundStatus: "pending",
+    };
+  }
 
   await booking.save();
   await booking.populate(bookingPopulate);

@@ -12,12 +12,15 @@ import {
   XCircle,
   CreditCard,
   Star,
+  Ban,
+  Zap,
 } from "lucide-react";
 import { GlassCard } from "../../components/admin/GlassCard";
 import { CustomerOtpModal } from "../../components/customer/CustomerOtpModal";
 import { CustomerBookingCard } from "../../components/customer/CustomerBookingCard";
 import { customerApi } from "../../services/api";
 import { useUI } from "../../context/UIContext";
+import { formatCurrency } from "../../utils/currency";
 
 export function CustomerBookingsPage({ embedded = false }) {
   const navigate = useNavigate();
@@ -27,12 +30,14 @@ export function CustomerBookingsPage({ embedded = false }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCurrentBookings, setShowCurrentBookings] = useState(true);
   const [verifyOtpBooking, setVerifyOtpBooking] = useState(null);
   const [verifyOtpBusy, setVerifyOtpBusy] = useState(false);
   const [cancelSuccess, setCancelSuccess] = useState(null);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [feedbackBooking, setFeedbackBooking] = useState(null);
   const [feedbackData, setFeedbackData] = useState({ rating: 5, comment: "" });
+  const [showCompletedInHistory, setShowCompletedInHistory] = useState(true);
 
   const handleSearchFocus = () => hideBottomNav();
   const handleSearchBlur = () => showBottomNav();
@@ -81,6 +86,7 @@ export function CustomerBookingsPage({ embedded = false }) {
       if (response.data?.success) {
         setCancelSuccess(response.data.message);
         await fetchBookings();
+        setShowCurrentBookings(false);
         setTimeout(() => setCancelSuccess(null), 5000);
       }
     } catch (requestError) {
@@ -128,6 +134,20 @@ export function CustomerBookingsPage({ embedded = false }) {
       );
     });
   }, [bookings, searchQuery]);
+
+  const advancePaymentBookings = useMemo(() => {
+    return filteredBookings.filter((booking) => booking.paymentStatus === "advance_paid");
+  }, [filteredBookings]);
+
+  const completedBookings = useMemo(() => {
+    return filteredBookings.filter((booking) => booking.status === "completed");
+  }, [filteredBookings]);
+
+  const cancelledBookings = useMemo(() => {
+    return filteredBookings.filter((booking) => booking.status === "cancelled");
+  }, [filteredBookings]);
+
+  const historyBookings = showCompletedInHistory ? completedBookings : cancelledBookings;
 
   if (loading) {
     return (
@@ -198,15 +218,15 @@ export function CustomerBookingsPage({ embedded = false }) {
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 {[
-                  { label: "Total", value: bookings.length, icon: CalendarCheck2 },
+                  { label: "Advance Payment", value: advancePaymentBookings.length, icon: CreditCard },
                   {
                     label: "Active",
-                    value: bookings.filter((booking) => ["confirmed", "in_progress", "otp_pending"].includes(booking.status)).length,
+                    value: advancePaymentBookings.filter((booking) => ["confirmed", "in_progress", "otp_pending"].includes(booking.status)).length,
                     icon: Zap,
                   },
                   {
                     label: "Completed",
-                    value: bookings.filter((booking) => booking.status === "completed").length,
+                    value: completedCancelledBookings.filter((booking) => booking.status === "completed").length,
                     icon: Shield,
                   },
                 ].map((item) => (
@@ -232,13 +252,87 @@ export function CustomerBookingsPage({ embedded = false }) {
           </motion.div>
         ) : null}
 
-        {bookings.length > 0 ? (
+        {filteredBookings.length > 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <div className="flex gap-3">
+            {/* Mobile: Toggle + Refresh in row, Search below */}
+            <div className="flex flex-col gap-3 sm:hidden">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-2xl bg-white p-1.5 shadow-lg border border-slate-200 flex-1">
+                  <button
+                    onClick={() => setShowCurrentBookings(true)}
+                    className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all flex-1 ${
+                      showCurrentBookings
+                        ? "bg-gradient-to-r from-primary-600 to-blue-600 text-white shadow-md"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <CreditCard className="h-3.5 w-3.5" />
+                    Current
+                  </button>
+                  <button
+                    onClick={() => setShowCurrentBookings(false)}
+                    className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all flex-1 ${
+                      !showCurrentBookings
+                        ? "bg-gradient-to-r from-primary-600 to-blue-600 text-white shadow-md"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Shield className="h-3.5 w-3.5" />
+                    History
+                  </button>
+                </div>
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-200/20 transition hover:border-primary-200 hover:text-primary-700 disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search by service, provider, or location..."
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
+                  className="w-full rounded-2xl border border-slate-200 bg-white/90 py-3 pl-12 pr-4 text-sm text-slate-900 shadow-lg shadow-slate-200/20 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+                />
+              </div>
+            </div>
+
+            {/* Desktop: Toggle + Search + Refresh in row */}
+            <div className="hidden sm:flex gap-3">
+              <div className="flex items-center gap-2 rounded-2xl bg-white p-1.5 shadow-lg border border-slate-200">
+                <button
+                  onClick={() => setShowCurrentBookings(true)}
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+                    showCurrentBookings
+                      ? "bg-gradient-to-r from-primary-600 to-blue-600 text-white shadow-md"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <CreditCard className="h-3.5 w-3.5" />
+                  Current
+                </button>
+                <button
+                  onClick={() => setShowCurrentBookings(false)}
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+                    !showCurrentBookings
+                      ? "bg-gradient-to-r from-primary-600 to-blue-600 text-white shadow-md"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  History
+                </button>
+              </div>
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
@@ -312,18 +406,122 @@ export function CustomerBookingsPage({ embedded = false }) {
             </div>
           </motion.div>
         ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-            {filteredBookings.map((booking, index) => (
-              <CustomerBookingCard
-                key={booking._id}
-                booking={booking}
-                index={index}
-                onVerifyOtp={setVerifyOtpBooking}
-                onCancel={handleCancelBooking}
-                onPayRemaining={handlePayRemaining}
-              />
-            ))}
-          </motion.div>
+          <div className="space-y-6">
+            {showCurrentBookings ? (
+              /* Advance Payment Bookings Section */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-500">
+                    <CreditCard className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Current Bookings</h3>
+                    <p className="text-sm text-slate-500">Your active bookings with advance payment</p>
+                  </div>
+                  <span className="ml-auto rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                    {advancePaymentBookings.length}
+                  </span>
+                </div>
+                
+                {advancePaymentBookings.length > 0 ? (
+                  <div className="space-y-4">
+                    {advancePaymentBookings.map((booking, index) => (
+                      <CustomerBookingCard
+                        key={booking._id}
+                        booking={booking}
+                        index={index}
+                        onVerifyOtp={setVerifyOtpBooking}
+                        onCancel={handleCancelBooking}
+                        onPayRemaining={handlePayRemaining}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-6 text-center">
+                    <CreditCard className="mx-auto h-8 w-8 text-amber-400" />
+                    <p className="mt-2 text-sm text-amber-700">No current bookings</p>
+                  </div>
+                )}
+              </motion.div>
+            ) : (
+              /* Completed & Cancelled Bookings Section */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-primary-500 to-blue-500">
+                    <Shield className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Booking History</h3>
+                    <p className="text-sm text-slate-500">Your completed and cancelled bookings</p>
+                  </div>
+                  <span className="ml-auto rounded-full bg-primary-100 px-3 py-1 text-xs font-bold text-primary-700">
+                    {completedBookings.length + cancelledBookings.length}
+                  </span>
+                </div>
+
+                {/* Toggle for Completed/Cancelled */}
+                <div className="flex items-center gap-2 mb-4 p-1 bg-white rounded-xl border border-slate-200 w-fit">
+                  <button
+                    onClick={() => setShowCompletedInHistory(true)}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                      showCompletedInHistory
+                        ? "bg-primary-600 text-white"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Shield className="h-3.5 w-3.5" />
+                    Completed ({completedBookings.length})
+                  </button>
+                  <button
+                    onClick={() => setShowCompletedInHistory(false)}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                      !showCompletedInHistory
+                        ? "bg-rose-600 text-white"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    Cancelled ({cancelledBookings.length})
+                  </button>
+                </div>
+                
+                {historyBookings.length > 0 ? (
+                  <div className="space-y-4">
+                    {historyBookings.map((booking, index) => (
+                      <CustomerBookingCard
+                        key={booking._id}
+                        booking={booking}
+                        index={index}
+                        onVerifyOtp={setVerifyOtpBooking}
+                        onCancel={handleCancelBooking}
+                        onPayRemaining={handlePayRemaining}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6 text-center">
+                    {showCompletedInHistory ? (
+                      <>
+                        <Shield className="mx-auto h-8 w-8 text-slate-400" />
+                        <p className="mt-2 text-sm text-slate-500">No completed bookings</p>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="mx-auto h-8 w-8 text-rose-400" />
+                        <p className="mt-2 text-sm text-slate-500">No cancelled bookings</p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </div>
         )}
       </div>
 

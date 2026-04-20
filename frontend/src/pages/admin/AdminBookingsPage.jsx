@@ -497,9 +497,26 @@ export function AdminBookingsPage() {
 
             {selectedBooking.status === "cancelled" && selectedBooking.cancellation && (
               <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-3 sm:p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <XCircle className="h-4 w-4 text-rose-600" />
-                  <p className="text-xs font-semibold uppercase text-rose-700">Cancellation Details</p>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-rose-600" />
+                    <p className="text-xs font-semibold uppercase text-rose-700">Cancellation Details</p>
+                  </div>
+                  {selectedBooking.cancellation.refundAmount > 0 && (
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                      selectedBooking.cancellation.refundStatus === "completed" 
+                        ? "bg-emerald-100 text-emerald-700" 
+                        : selectedBooking.cancellation.refundStatus === "pending"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-slate-100 text-slate-600"
+                    }`}>
+                      {selectedBooking.cancellation.refundStatus === "completed" 
+                        ? "Refund Completed" 
+                        : selectedBooking.cancellation.refundStatus === "pending"
+                          ? "Refund Processing"
+                          : "No Refund"}
+                    </span>
+                  )}
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <div>
@@ -522,14 +539,55 @@ export function AdminBookingsPage() {
                   )}
                   {selectedBooking.cancellation.refundAmount > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase text-rose-600">Refund</p>
-                      <p className="text-sm font-semibold text-emerald-600">{formatCurrency(selectedBooking.cancellation.refundAmount)} ({selectedBooking.cancellation.cancellationPolicy?.replace('_', ' ')})</p>
+                      <p className="text-[10px] font-semibold uppercase text-rose-600">Refund Amount</p>
+                      <p className="text-sm font-semibold text-emerald-600">{formatCurrency(selectedBooking.cancellation.refundAmount)}</p>
+                      {selectedBooking.cancellation.refundStatus === "pending" && (
+                        <p className="text-[10px] text-amber-600 mt-1">Customer refund has been initiated</p>
+                      )}
+                      {selectedBooking.cancellation.refundStatus === "completed" && (
+                        <p className="text-[10px] text-emerald-600 mt-1">Customer refund has been processed</p>
+                      )}
                     </div>
                   )}
                   {selectedBooking.cancellation.cancellationPolicy === "no_refund" && (
                     <div>
                       <p className="text-[10px] font-semibold uppercase text-rose-600">Refund</p>
                       <p className="text-sm text-slate-500">No refund (cancelled within 24 hours)</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {selectedBooking.status === "rejected" && selectedBooking.cancellation && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <XCircle className="h-4 w-4 text-slate-600" />
+                  <p className="text-xs font-semibold uppercase text-slate-700">Rejection Details</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase text-slate-600">Event Date</p>
+                    <p className="text-sm text-slate-800">{formatDate(selectedBooking.eventDate)}{selectedBooking.eventTime ? ` | ${selectedBooking.eventTime}` : ""}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase text-slate-600">Rejected At</p>
+                    <p className="text-sm text-slate-800">{selectedBooking.cancellation.cancelledAt ? formatDate(selectedBooking.cancellation.cancelledAt, true) : "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase text-slate-600">Rejected By</p>
+                    <p className="text-sm text-slate-800">{selectedBooking.cancellation.cancelledBy?.name || "Unknown"}</p>
+                  </div>
+                  {selectedBooking.cancellation.cancelReason && (
+                    <div className="sm:col-span-2">
+                      <p className="text-[10px] font-semibold uppercase text-slate-600">Reason</p>
+                      <p className="text-sm text-slate-800">{selectedBooking.cancellation.cancelReason}</p>
+                    </div>
+                  )}
+                  {selectedBooking.cancellation.refundAmount > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase text-slate-600">Refund</p>
+                      <p className="text-sm font-semibold text-emerald-600">{formatCurrency(selectedBooking.cancellation.refundAmount)} ({selectedBooking.cancellation.cancellationPolicy?.replace('_', ' ')})</p>
                     </div>
                   )}
                 </div>

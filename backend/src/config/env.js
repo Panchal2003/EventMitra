@@ -24,6 +24,7 @@ export const env = {
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || "",
   razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || "",
+  razorpayAccountNumber: process.env.RAZORPAY_ACCOUNT_NUMBER || "",
   platformUpiId: process.env.PLATFORM_UPI_ID || "eventmitra312405.rzp@rxairtel",
   platformUpiName: process.env.PLATFORM_UPI_NAME || "EventMitra",
 };

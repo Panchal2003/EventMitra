@@ -215,6 +215,10 @@ function BookingStatusPanel({ booking, onVerifyOtp }) {
   }
 
   if (booking.status === "cancelled" && booking.cancellation) {
+    const cancelledByProvider = booking.cancellation.cancelledBy?.toString() === booking.provider?._id?.toString();
+    const isRefundInProcess = booking.cancellation.refundStatus === "pending" && booking.cancellation.refundAmount > 0;
+    const isRefundCompleted = booking.cancellation.refundStatus === "completed" && booking.cancellation.refundAmount > 0;
+    
     return (
       <div className="rounded-2xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-slate-100 p-5">
         <div className="flex items-start gap-3">
@@ -222,22 +226,80 @@ function BookingStatusPanel({ booking, onVerifyOtp }) {
             <XCircle className="h-5 w-5" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-bold text-slate-800">Booking Cancelled</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm font-bold text-slate-800">Booking Cancelled</p>
+              {isRefundInProcess && (
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
+                  Refund in Process
+                </span>
+              )}
+              {isRefundCompleted && (
+                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                  Refund Completed
+                </span>
+              )}
+            </div>
             <div className="mt-1 text-sm text-slate-600">
               <span className="font-medium">Booked:</span> {formatDate(booking.eventDate)}
               <span className="mx-2">|</span>
               <span className="font-medium">Cancelled:</span> {booking.cancellation.cancelledAt ? formatDate(booking.cancellation.cancelledAt, true) : "-"}
             </div>
-            {booking.cancellation.cancelReason && (
-              <p className="mt-1 text-sm text-slate-600">Reason: {booking.cancellation.cancelReason}</p>
-            )}
-            {booking.cancellation.refundAmount > 0 && (
-              <div className="mt-3 rounded-lg bg-emerald-50 px-4 py-2">
-                <p className="text-sm font-semibold text-emerald-700">
-                  Refund: {formatCurrency(booking.cancellation.refundAmount)} ({booking.cancellation.cancellationPolicy?.replace('_', ' ')})
-                </p>
+            
+            {cancelledByProvider && (
+              <div className="mt-2 rounded-lg bg-rose-50 px-4 py-3 border border-rose-200">
+                <p className="text-xs font-semibold text-rose-700 uppercase tracking-wide">Cancelled by Provider</p>
+                {booking.provider && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-rose-200 flex items-center justify-center">
+                      <User className="h-4 w-4 text-rose-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{booking.provider.name || "Provider"}</p>
+                      {booking.provider.phone && (
+                        <p className="text-xs text-slate-500">{booking.provider.phone}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+            
+            {booking.cancellation.cancelReason && (
+              <p className="mt-2 text-sm text-slate-600">
+                <span className="font-medium">Reason:</span> {booking.cancellation.cancelReason}
+              </p>
+            )}
+            
+            {booking.cancellation.refundAmount > 0 && (
+              <div className="mt-3 rounded-lg bg-emerald-50 px-4 py-3 border border-emerald-200">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-emerald-700">
+                    Refund Amount: {formatCurrency(booking.cancellation.refundAmount)}
+                  </p>
+                  {isRefundInProcess && (
+                    <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                      Processing
+                    </span>
+                  )}
+                  {isRefundCompleted && (
+                    <span className="rounded-full bg-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                      Credited
+                    </span>
+                  )}
+                </div>
+                {isRefundInProcess && (
+                  <p className="mt-1 text-xs text-emerald-600">
+                    Your refund has been successfully initiated. The amount will be credited to your account within 2 business days.
+                  </p>
+                )}
+                {isRefundCompleted && (
+                  <p className="mt-1 text-xs text-emerald-600">
+                    Refund has been credited to your account. Thank you for using EventMitra!
+                  </p>
+                )}
+              </div>
+            )}
+            
             {booking.cancellation.cancellationPolicy === "no_refund" && (
               <p className="mt-2 text-xs text-slate-500">No refund applicable (cancelled within 24 hours)</p>
             )}
@@ -313,13 +375,18 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel,
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [cancelSuccess, setCancelSuccess] = useState(null);
 
   const services = getBookingServices(booking);
   const primaryService = services[0];
   const providerDisplayName = getProviderDisplayName(booking);
   const totalMembers = Math.max(Number(booking?.guestCount) || 1, 1);
 
-  const canCancel = ["pending", "provider_assigned", "confirmed", "in_progress"].includes(booking.status);
+  const canCancel = 
+    booking.status === "cancelled" ? false :
+    ["pending", "provider_assigned"].includes(booking.status) ||
+    (booking.status === "confirmed" && !booking.startOtpRequested) ||
+    booking.status === "in_progress";
 
   const getHoursUntilEvent = () => {
     const eventTime = new Date(booking.eventDate);
@@ -329,10 +396,11 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel,
 
   const getRefundPolicy = () => {
     const hours = getHoursUntilEvent();
-    if (hours > 36) return { policy: "Refund 20% of total", refund: 20, className: "bg-emerald-50 border-emerald-200" };
-    if (hours >= 24) return { policy: "Refund 18% of total", refund: 18, className: "bg-blue-50 border-blue-200" };
-    if (hours >= 12) return { policy: "Refund 15% of total", refund: 15, className: "bg-amber-50 border-amber-200" };
-    return { policy: "Refund 10% of total", refund: 10, className: "bg-rose-50 border-rose-200" };
+    if (hours > 36) return { policy: "100% advance refund", refund: 100, className: "bg-emerald-50 border-emerald-200" };
+    if (hours >= 24) return { policy: "80% advance refund", refund: 80, className: "bg-blue-50 border-blue-200" };
+    if (hours >= 18) return { policy: "75% advance refund", refund: 75, className: "bg-indigo-50 border-indigo-200" };
+    if (hours >= 12) return { policy: "65% advance refund", refund: 65, className: "bg-amber-50 border-amber-200" };
+    return { policy: "50% advance refund", refund: 50, className: "bg-rose-50 border-rose-200" };
   };
 
   const handleCancelConfirm = async () => {
@@ -455,7 +523,7 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel,
           </div>
 
           <div className="mt-5">
-            {!(booking.status === "completed" && booking.feedback) && (
+            {!((booking.status === "completed" && booking.feedback) || booking.status === "cancelled") && (
               <BookingPaymentPanel booking={booking} onPayRemaining={onPayRemaining} />
             )}
           </div>
@@ -542,6 +610,43 @@ export function CustomerBookingCard({ booking, index = 0, onVerifyOtp, onCancel,
                 {cancelling ? "Cancelling..." : "Confirm Cancel"}
               </Button>
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {cancelSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl text-center"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100"
+            >
+              <svg className="h-10 w-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <motion.path
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={3}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </motion.div>
+            <h3 className="text-lg font-bold text-slate-900">Booking Cancelled!</h3>
+            <p className="mt-2 text-sm text-slate-600">{cancelSuccess}</p>
+            <button
+              onClick={() => setCancelSuccess(null)}
+              className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700"
+            >
+              OK
+            </button>
           </motion.div>
         </div>
       )}

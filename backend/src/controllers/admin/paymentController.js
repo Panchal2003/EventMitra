@@ -58,12 +58,16 @@ const buildAdminPaymentRow = (booking, paymentSummary) => {
     providerBankAccount: booking.provider?.providerBankAccount || null,
     providerUpiId: booking.provider?.upiId || null,
     paymentDetailsVerified: booking.provider?.paymentDetailsVerified || false,
-    status: payout?.status || "pending",
+    status: payout?.status || (booking.payoutStatus === "paid" ? "released" : "pending"),
     method: payout?.method || "bank_transfer",
     transactionId: payout?.transactionId || "",
-    releasedAt: payout?.releasedAt || null,
+    releasedAt: payout?.releasedAt || booking.payoutDate || null,
     payoutDueDate: payout?.payoutDueDate || null,
     createdAt: payout?.createdAt || booking.createdAt,
+    payoutStatus: booking.payoutStatus || "pending",
+    payoutAmount: booking.payoutAmount || 0,
+    commission: booking.commission || 0,
+    payoutId: booking.payoutId || null,
   };
 };
 

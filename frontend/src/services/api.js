@@ -83,6 +83,7 @@ export const adminApi = {
   assignProvider: (id, providerId) =>
     api.patch(`/admin/bookings/${id}/provider`, { providerId }),
   cancelBooking: (id, payload) => api.patch(`/admin/bookings/${id}/cancel`, payload),
+  releaseProviderPayment: (bookingId) => api.post(`/admin/bookings/${bookingId}/release-payment`),
   getPayments: () => api.get("/admin/payments"),
   releasePayout: (id, payload) =>
     api.patch(`/admin/payments/${id}/release`, payload),

@@ -12,6 +12,12 @@ import {
 import { toPaise, upsertPaymentRecord } from "../../utils/paymentLifecycle.js";
 import { calculateRefundDetails } from "../../utils/refundPolicy.js";
 import { createRazorpayRefund } from "../../utils/razorpay.js";
+import { 
+  createRazorpayXContact, 
+  createRazorpayXFundAccount, 
+  createRazorpayXPayout,
+  isRazorpayXConfigured 
+} from "../../utils/razorpayX.js";
 
 const adminBookingPopulate = [
   {
@@ -246,4 +252,163 @@ export const cancelBooking = asyncHandler(async (req, res) => {
     message,
     data: booking,
   });
+});
+
+export const releaseProviderPayment = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+
+  const booking = await Booking.findById(bookingId).populate("provider", "name email phone businessName providerBankAccount razorpayXContactId razorpayXFundAccountId");
+
+  if (!booking) {
+    throw new AppError("Booking not found.", 404);
+  }
+
+  console.log("Booking paymentStatus:", booking.paymentStatus);
+  console.log("Booking payoutStatus:", booking.payoutStatus);
+  console.log("Booking status:", booking.status);
+
+  if (booking.paymentStatus !== "full_paid") {
+    throw new AppError(`Payment is not fully completed (${booking.paymentStatus}). Cannot release payout.`, 400);
+  }
+
+  if (booking.payoutStatus === "paid") {
+    throw new AppError("Payout has already been released for this booking.", 400);
+  }
+
+  if (booking.payoutStatus === "processing") {
+    throw new AppError("Payout is currently being processed. Please wait.", 400);
+  }
+
+  const provider = booking.provider;
+  console.log("=== Release Payment Debug ===");
+  console.log("Provider:", provider);
+  console.log("Provider Bank Account:", provider?.providerBankAccount);
+
+  if (!provider || !provider.providerBankAccount) {
+    throw new AppError("Provider bank details not found. Please ask provider to add bank details.", 400);
+  }
+
+  const bankDetails = provider.providerBankAccount;
+  const { bankName, accountNumber, ifscCode, accountHolderName } = bankDetails;
+
+  console.log("Bank Details:", { bankName, accountNumber, ifscCode, accountHolderName });
+
+  if (!bankName || !accountNumber || !ifscCode || !accountHolderName) {
+    throw new AppError("Incomplete provider bank details. Please ask provider to complete their bank details.", 400);
+  }
+
+  if (accountNumber.length < 9 || accountNumber.length > 18) {
+    throw new AppError("Invalid account number. Must be 9-18 digits.", 400);
+  }
+
+  console.log("Full Account Number for payout:", accountNumber);
+  console.log("Account Number Length:", accountNumber.length);
+
+  if (ifscCode.length !== 11) {
+    throw new AppError("Invalid IFSC code. Must be 11 characters.", 400);
+  }
+
+  const totalAmount = Number(booking.totalAmount);
+  const commissionRate = 0.11;
+  const commission = Math.floor(totalAmount * commissionRate);
+  const providerAmount = totalAmount - commission;
+  const payoutAmount = providerAmount * 100;
+
+  console.log("Amount Calculation:", { totalAmount, commission, providerAmount, payoutAmount });
+
+  if (providerAmount <= 0) {
+    throw new AppError("Invalid payout amount.", 400);
+  }
+
+  if (providerAmount < 1) {
+    throw new AppError("Minimum payout amount is Rs. 1.00", 400);
+  }
+
+  if (!isRazorpayXConfigured()) {
+    throw new AppError("RazorpayX is not configured. Please contact support.", 500);
+  }
+
+  booking.payoutStatus = "processing";
+  await booking.save();
+
+  try {
+    console.log("=== Starting RazorpayX Payout ===");
+
+    let contactId = provider.razorpayXContactId;
+    let fundAccountId = provider.razorpayXFundAccountId;
+
+    if (!contactId || !fundAccountId) {
+      console.log("No stored RazorpayX account, creating new...");
+      
+      console.log("Step 1: Creating Contact...");
+      const contact = await createRazorpayXContact({
+        name: provider.name || accountHolderName,
+        contact: provider.phone,
+        referenceId: provider._id?.toString(),
+      });
+      contactId = contact.id;
+      console.log("Contact created:", contactId);
+
+      console.log("Step 2: Creating Fund Account...");
+      const fundAccount = await createRazorpayXFundAccount({
+        contactId: contactId,
+        bankAccount: {
+          name: accountHolderName,
+          ifsc: ifscCode,
+          account_number: accountNumber,
+        },
+      });
+      fundAccountId = fundAccount.id;
+      console.log("Fund account created:", fundAccountId);
+
+      await User.findByIdAndUpdate(provider._id, {
+        razorpayXContactId: contactId,
+        razorpayXFundAccountId: fundAccountId,
+      });
+      console.log("Saved RazorpayX IDs to provider profile");
+    } else {
+      console.log("Using stored RazorpayX account:");
+      console.log("- Contact ID:", contactId);
+      console.log("- Fund Account ID:", fundAccountId);
+    }
+
+    console.log("Step 3: Creating Payout...");
+    const idempotencyKey = `payout_${bookingId}_${Date.now()}`;
+    const payout = await createRazorpayXPayout({
+      fundAccountId: fundAccountId,
+      amountInPaise: payoutAmount,
+      currency: "INR",
+      mode: "IMPS",
+      purpose: "payout",
+      narration: `Payment for booking ${bookingId}`,
+      referenceId: bookingId,
+      idempotencyKey,
+    });
+
+    booking.payoutStatus = "paid";
+    booking.payoutAmount = providerAmount;
+    booking.commission = commission;
+    booking.payoutDate = new Date();
+    booking.payoutId = payout.id;
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: `Payment of Rs. ${providerAmount.toFixed(2)} released to provider. Commission: Rs. ${commission.toFixed(2)}`,
+      data: {
+        payoutId: payout.id,
+        contactId: contactId,
+        fundAccountId: fundAccountId,
+        providerAmount: providerAmount,
+        commission: commission,
+        payoutDate: booking.payoutDate,
+        status: payout.status,
+      },
+    });
+  } catch (payoutError) {
+    console.error("Payout Error:", payoutError);
+    booking.payoutStatus = "failed";
+    await booking.save();
+    throw new AppError(payoutError.message || "Payout failed. Please try again.", 500);
+  }
 });

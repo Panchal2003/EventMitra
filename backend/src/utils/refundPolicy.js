@@ -37,32 +37,41 @@ export const calculateRefundDetails = ({
 }) => {
   const hoursUntilEvent = getHoursUntilEvent(eventDate, eventTime, cancelledAt);
 
-  let refundPercentOfTotal = 10;
+  console.log("[RefundPolicy] Hours until event:", hoursUntilEvent);
+  console.log("[RefundPolicy] Event Date:", eventDate, "Event Time:", eventTime);
+
+  let refundPercentOfAdvance = 50;
   let cancellationPolicy = "less_than_12_hours";
-  let policyLabel = "10% refund";
+  let policyLabel = "50% refund";
 
   if (hoursUntilEvent > 36) {
-    refundPercentOfTotal = 20;
+    refundPercentOfAdvance = 100;
     cancellationPolicy = "more_than_36_hours";
-    policyLabel = "100% of advance";
+    policyLabel = "100% advance refund";
   } else if (hoursUntilEvent >= 24) {
-    refundPercentOfTotal = 18;
+    refundPercentOfAdvance = 80;
     cancellationPolicy = "between_24_and_36_hours";
-    policyLabel = "18% of total";
+    policyLabel = "80% advance refund";
+  } else if (hoursUntilEvent >= 18) {
+    refundPercentOfAdvance = 75;
+    cancellationPolicy = "between_18_and_24_hours";
+    policyLabel = "75% advance refund";
   } else if (hoursUntilEvent >= 12) {
-    refundPercentOfTotal = 15;
-    cancellationPolicy = "between_12_and_24_hours";
-    policyLabel = "15% of total";
+    refundPercentOfAdvance = 65;
+    cancellationPolicy = "between_12_and_18_hours";
+    policyLabel = "65% advance refund";
   }
 
   const refundAmount = roundCurrency(
-    Math.min(Number(advancePaid || 0), (Number(totalAmount || 0) * refundPercentOfTotal) / 100)
+    Math.min(Number(advancePaid || 0), (Number(advancePaid || 0) * refundPercentOfAdvance) / 100)
   );
+
+  console.log("[RefundPolicy] Refund amount:", refundAmount, "Policy:", cancellationPolicy);
 
   return {
     hoursUntilEvent,
     refundAmount,
-    refundPercentOfTotal,
+    refundPercentOfAdvance,
     cancellationPolicy,
     policyLabel,
   };
