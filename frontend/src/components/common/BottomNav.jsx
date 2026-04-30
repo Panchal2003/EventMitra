@@ -1,0 +1,377 @@
+import { NavLink } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Home, 
+  Sparkles,
+  Info, 
+  Phone, 
+  Image,
+  CalendarCheck2, 
+  User,
+  LayoutDashboard,
+  Users,
+  UserCircle,
+  BriefcaseBusiness,
+  Wallet,
+  Package,
+  IndianRupee,
+  MoreHorizontal,
+  Menu,
+  X,
+  Mail
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { useUI } from "../../context/UIContext";
+import { useState, useEffect } from "react";
+
+// Helper function to get colorful icon class based on icon type
+const getIconColor = (icon, isActive) => {
+  const iconName = icon?.displayName || icon?.name || "";
+  const activeColors = {
+    Home: "text-orange-500 drop-shadow-sm",
+    Sparkles: "text-pink-500 drop-shadow-sm",
+    Info: "text-blue-500 drop-shadow-sm",
+    Phone: "text-emerald-500 drop-shadow-sm",
+    Image: "text-violet-500 drop-shadow-sm",
+    User: "text-cyan-500 drop-shadow-sm",
+    LayoutDashboard: "text-violet-500 drop-shadow-sm",
+    Users: "text-cyan-500 drop-shadow-sm",
+    UserCircle: "text-emerald-500 drop-shadow-sm",
+    Mail: "text-orange-500 drop-shadow-sm",
+    IndianRupee: "text-rose-500 drop-shadow-sm",
+    BriefcaseBusiness: "text-indigo-500 drop-shadow-sm",
+    Wallet: "text-cyan-500 drop-shadow-sm",
+    Package: "text-pink-500 drop-shadow-sm",
+    CalendarCheck2: "text-amber-500 drop-shadow-sm",
+  };
+  
+  const inactiveColors = {
+    Home: "text-orange-400",
+    Sparkles: "text-pink-400",
+    Info: "text-blue-400",
+    Phone: "text-emerald-400",
+    Image: "text-violet-400",
+    User: "text-cyan-400",
+    LayoutDashboard: "text-violet-400",
+    Users: "text-cyan-400",
+    UserCircle: "text-emerald-400",
+    Mail: "text-orange-400",
+    IndianRupee: "text-rose-400",
+    BriefcaseBusiness: "text-indigo-400",
+    Wallet: "text-cyan-400",
+    Package: "text-pink-400",
+    CalendarCheck2: "text-amber-400",
+  };
+  
+  const activeClass = activeColors[iconName] || "text-primary-600";
+  const inactiveClass = inactiveColors[iconName] || "text-slate-500";
+  
+  return isActive ? activeClass : inactiveClass;
+};
+
+// Helper for background gradient on active state
+const getActiveGradient = (icon) => {
+  const iconName = icon?.displayName || icon?.name || "";
+  const gradients = {
+    Home: "from-orange-100 to-orange-50",
+    Sparkles: "from-violet-100 to-violet-50",
+    Info: "from-blue-100 to-blue-50",
+    Phone: "from-emerald-100 to-emerald-50",
+    Image: "from-cyan-100 to-cyan-50",
+    User: "from-indigo-100 to-indigo-50",
+    LayoutDashboard: "from-blue-100 to-blue-50",
+    Users: "from-green-100 to-green-50",
+    UserCircle: "from-purple-100 to-purple-50",
+    IndianRupee: "from-amber-100 to-amber-50", // Changed to yellow/amber gradient
+    BriefcaseBusiness: "from-amber-100 to-amber-50",
+    Wallet: "from-cyan-100 to-cyan-50",
+    Package: "from-fuchsia-100 to-fuchsia-50",
+    CalendarCheck2: "from-rose-100 to-rose-50",
+  };
+  return gradients[iconName] || "from-primary-100 to-primary-50";
+};
+
+// Public navigation items
+const publicNavItems = [
+  { to: "/", icon: Home, label: "Home", end: true },
+  { to: "/services", icon: Sparkles, label: "Services" },
+  { to: "/about", icon: Info, label: "About" },
+  { to: "/contact", icon: Phone, label: "Contact" },
+  { to: "/gallery", icon: Image, label: "Gallery" },
+];
+
+// Customer navigation items
+const customerNavItems = [
+  { to: "/", icon: Home, label: "Home", end: true, color: "text-orange-500" },
+  { to: "/services", icon: Sparkles, label: "Services", color: "text-pink-500" },
+  { to: "/about", icon: Info, label: "About", color: "text-blue-500" },
+  { to: "/contact", icon: Phone, label: "Contact", color: "text-emerald-500" },
+  { to: "/gallery", icon: Image, label: "Gallery", color: "text-violet-500" },
+  { to: "/customer/profile", icon: User, label: "Profile", color: "text-cyan-500" },
+];
+
+// Admin navigation items - special order for mobile
+const adminNavItems = [
+  { to: "/admin/services", icon: Sparkles, label: "Services", order: 1, color: "text-fuchsia-500" },
+  { to: "/admin/providers", icon: Users, label: "Providers", order: 2, color: "text-cyan-500" },
+  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", order: 3, isCenter: true, color: "text-violet-500" },
+  { to: "/admin/bookings", icon: CalendarCheck2, label: "Bookings", order: 4, color: "text-amber-500" },
+];
+
+// More menu items for admin
+const adminMoreItems = [
+  { to: "/admin/customers", icon: UserCircle, label: "Customers", color: "text-emerald-500" },
+  { to: "/admin/contacts", icon: Mail, label: "Contacts", color: "text-orange-500" },
+  { to: "/admin/payments", icon: IndianRupee, label: "Payments", color: "text-rose-500" },
+  { to: "/admin/gallery", icon: Image, label: "Gallery", color: "text-blue-500" },
+];
+
+// Provider navigation items
+const providerNavItems = [
+  { to: "/provider", icon: BriefcaseBusiness, label: "Dashboard", end: true, color: "text-indigo-500" },
+  { to: "/provider/bookings", icon: CalendarCheck2, label: "Bookings", color: "text-amber-500" },
+  { to: "/provider/services", icon: Package, label: "Services", color: "text-pink-500" },
+  { to: "/provider/earnings", icon:IndianRupee, label: "Earnings", color: "text-emerald-500" },
+  { to: "/provider/profile", icon: User, label: "Profile", color: "text-cyan-500" },
+];
+
+export function BottomNav() {
+  const { isAuthenticated, user } = useAuth();
+  const { isBottomNavHidden } = useUI();
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  
+  // Sort admin items by order
+  const sortedAdminItems = [
+  { to: "/admin/services", icon: Sparkles, label: "Services", order: 1 },
+  { to: "/admin/providers", icon: Users, label: "Providers", order: 2 },
+  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", order: 3, isCenter: true, end: true },
+  { to: "/admin/bookings", icon: CalendarCheck2, label: "Bookings", order: 4 },
+];
+  
+  // Determine which navigation items to show based on user role
+  const getNavItems = () => {
+    if (!isAuthenticated) {
+      return publicNavItems;
+    }
+    
+    const userRole = user?.role;
+    
+    if (userRole === "admin") {
+      return sortedAdminItems;
+    }
+    
+    if (userRole === "serviceProvider" || userRole === "provider") {
+      return providerNavItems;
+    }
+    
+    return customerNavItems;
+  };
+
+  const navItems = getNavItems();
+  const isDenseNav = navItems.length >= 5;
+  const denseGridCols = navItems.length >= 6 ? "grid-cols-6" : "grid-cols-5";
+
+  if (isBottomNavHidden) {
+    return null;
+  }
+
+  // Special admin layout with center dashboard and more menu
+  if (isAuthenticated && user?.role === "admin") {
+    return (
+      <motion.nav
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-area-bottom"
+        style={{
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+        }}
+      >
+        <div className="mx-2 mb-2 rounded-[1.65rem] border border-white/70 bg-white/88 shadow-2xl shadow-slate-900/10 backdrop-blur-xl">
+<div className="flex items-center justify-between px-1 py-1.5">
+            {sortedAdminItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `relative flex flex-col items-center gap-0.5 rounded-2xl py-1.5 transition-all duration-300 ${
+                    item.isCenter ? "mx-1" : ""
+                  } ${
+                    isActive
+                      ? "text-primary-600"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <motion.div
+                      className={`relative flex items-center justify-center rounded-2xl transition-all ${
+                        item.isCenter 
+                          ? "h-12 w-12 bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/30" 
+                          : "h-10 w-10"
+                      }`}
+                      whileTap={{ scale: 0.86 }}
+                      animate={
+                        isActive || item.isCenter
+                          ? { backgroundColor: item.isCenter ? "transparent" : "rgba(86, 103, 245, 0.15)", scale: 1.05 }
+                          : { backgroundColor: "transparent", scale: 1 }
+                      }
+                    >
+                      {isActive && !item.isCenter && (
+                        <motion.div
+                          layoutId="bottomNavBg"
+                          className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${getActiveGradient(item.icon)}`}
+                          initial={false}
+                          transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                        />
+                      )}
+                      <item.icon className={`h-4 w-4 ${
+                        item.isCenter 
+                          ? "text-white" 
+                          : isActive 
+                            ? "text-primary-600" 
+                            : "text-slate-500"
+                      }`} />
+                    </motion.div>
+                    <span className={`text-[9px] font-medium ${
+                      item.isCenter 
+                        ? "text-purple-600 font-semibold" 
+                        : isActive 
+                          ? "text-primary-600 font-semibold" 
+                          : "text-slate-500"
+                    }`}>
+                      {item.label}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+            
+            {/* More Menu Button */}
+            <div className="relative flex flex-col items-center gap-0.5">
+              <button
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                className="flex flex-col items-center gap-0.5 rounded-2xl py-1.5 px-2 text-slate-500 hover:text-slate-700 transition-all"
+              >
+                <div className="h-10 w-10 flex items-center justify-center rounded-2xl">
+                  <MoreHorizontal className="h-5 w-5" />
+                </div>
+                <span className="text-[9px] font-medium text-slate-500">More</span>
+              </button>
+              
+              {/* More Menu Dropdown */}
+              <AnimatePresence>
+                {showMoreMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute bottom-full right-0 mb-2 w-40 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10 overflow-hidden"
+                  >
+                    {adminMoreItems.map((item) => (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setShowMoreMenu(false)}
+                        className={({ isActive }) =>
+                          `flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
+                            isActive
+                              ? "bg-purple-50 text-purple-600"
+                              : "text-slate-700 hover:bg-slate-50"
+                          }`
+                        }
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </NavLink>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      </motion.nav>
+    );
+  }
+
+  return (
+    <motion.nav
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-area-bottom"
+      style={{
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+      }}
+    >
+      <div className="mx-2 mb-2 rounded-[1.65rem] border border-white/70 bg-white/88 shadow-2xl shadow-slate-900/10 backdrop-blur-xl">
+      <div
+        className={`px-2 py-1.5 ${
+          isDenseNav
+            ? `grid ${denseGridCols} gap-1`
+            : "no-scrollbar flex items-center gap-1 overflow-x-auto"
+        }`}
+      >
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) =>
+              `relative flex ${isDenseNav ? "min-w-0 px-1" : "min-w-[4.6rem] shrink-0 px-2"} flex-col items-center gap-1 rounded-2xl py-1.5 transition-all duration-300 ${
+                isActive
+                  ? "text-primary-600"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <motion.div
+                  className="relative flex h-10 w-10 items-center justify-center rounded-2xl transition-all"
+                  whileTap={{ scale: 0.86 }}
+                  whileHover={{ scale: 1.04 }}
+                  animate={
+                    isActive
+                      ? { backgroundColor: "rgba(86, 103, 245, 0.15)", scale: 1.05 }
+                      : { backgroundColor: "transparent", scale: 1 }
+                  }
+                  transition={{ type: "spring", stiffness: 320, damping: 22 }}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="bottomNavBg"
+                      className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${getActiveGradient(item.icon)}`}
+                      initial={false}
+                      transition={{
+                        type: "spring",
+                        stiffness: 420,
+                        damping: 28,
+                      }}
+                    />
+                  )}
+                  {item.label === "Profile" && user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name || "Profile"}
+                      className={`relative h-6 w-6 rounded-full object-cover border-2 transition-all ${
+                        isActive ? `border-indigo-500 scale-110` : "border-slate-200 scale-100"
+                      }`}
+                    />
+                  ) : (
+                    <item.icon className={`relative h-4 w-4 transition-transform duration-200 ${isActive ? "scale-110" : "scale-100"} ${getIconColor(item.icon, isActive)}`} />
+                  )}
+                </motion.div>
+                <span className={`max-w-full truncate ${isDenseNav ? "text-[9px]" : "text-[10px]"} font-medium transition-colors ${isActive ? `font-semibold ${getIconColor(item.icon, isActive)}` : getIconColor(item.icon, false)}`}>
+                  {item.label}
+                </span>
+              </>
+            )}
+          </NavLink>
+        ))}
+      </div>
+      </div>
+    </motion.nav>
+  );
+}
