@@ -27,23 +27,25 @@ export function CustomerTopbar({ onMenuClick, isCartOpen, setIsCartOpen }) {
           transition={{ delay: 0.1, type: "spring", stiffness: 150, damping: 20 }}
           className="flex items-center gap-3"
         >
-           <Link to="/" className="flex items-center gap-3 group flex-1 min-w-0">
-  
-  <motion.div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white shadow-md">
-    <img src={logo} className="h-10 w-10 object-contain" />
-  </motion.div>
-
-  <div className="flex-1 min-w-0">
-    <p className="text-[15px] font-bold tracking-[0.24em] text-primary-600">
-      EventMitra 
-    </p>
-
-    <p className="truncate font-display text-lg font-bold text-slate-900">
-      Client Dashboard
-    </p>
-  </div>
-
-</Link>
+          <Link to="/" className="flex items-center gap-3 group">
+            <motion.div
+              className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg shadow-slate-200/50 border border-slate-800"
+              whileHover={{ scale: 1.05, rotate: 3 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            >
+              <img src={logo} alt="EventMitra" className="relative h-10 w-10 object-contain" />
+            </motion.div>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary-700">
+                EventMitra
+              </p>
+              <p className="hidden font-display text-lg font-bold text-slate-900 sm:block">
+                Client Dashboard
+              </p>
+              <p className="text-xs font-medium text-slate-600 sm:hidden">Manage bookings, profile & cart</p>
+            </div>
+          </Link>
         </motion.div>
 
         {/* Right Section - Cart & Profile */}
@@ -65,14 +67,14 @@ export function CustomerTopbar({ onMenuClick, isCartOpen, setIsCartOpen }) {
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-blue-600 shadow-md shadow-primary-500/20">
                 <ShoppingCart className="h-4 w-4 text-white" />
               </div>
-                <div className="text-left">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-primary-700">
-                    Cart
-                  </p>
-                  <p className="text-sm font-bold text-slate-900">
-                    {cart.length} items · {formatCurrency(getCartTotal())}
-                  </p>
-                </div>
+              <div className="text-left">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-primary-700">
+                  Cart
+                </p>
+                <p className="text-sm font-bold text-slate-900">
+                  {cart.length} items · {formatCurrency(getCartTotal())}
+                </p>
+              </div>
               <div className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-600 px-1 text-[9px] font-bold text-white shadow-md">
                 {cart.length}
               </div>

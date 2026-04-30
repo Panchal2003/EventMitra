@@ -25,6 +25,12 @@ try {
   console.warn("Static uploads not available:", e.message);
 }
 
+// Serve frontend static files in production (before API routes)
+if (process.env.NODE_ENV === "production") {
+  const frontendBuildPath = path.resolve(__dirname, "../../frontend/dist");
+  app.use(express.static(frontendBuildPath));
+}
+
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
@@ -35,20 +41,20 @@ app.get("/api/health", (req, res) => {
 app.get("/api/test-razorpay", async (req, res) => {
   try {
     const { createRazorpayOrder, isRazorpayConfigured } = await import("./utils/razorpay.js");
-    
+
     if (!isRazorpayConfigured()) {
       return res.status(503).json({
         success: false,
         message: "Razorpay is not configured",
       });
     }
-    
+
     const testOrder = await createRazorpayOrder({
       amountInPaise: 100,
       receipt: "test_" + Date.now(),
       notes: { test: "true" },
     });
-    
+
     res.json({
       success: true,
       message: "Razorpay is working!",
@@ -77,6 +83,17 @@ app.use("/api/provider", providerRoutes);
 app.use("/api/customer", customerRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/contact", contactRoutes);
+
+// SPA catch-all - serve frontend index.html for non-API routes (must be after all API routes)
+if (process.env.NODE_ENV === "production") {
+  const frontendBuildPath = path.resolve(__dirname, "../../frontend/dist");
+  app.get("*", (req, res) => {
+    if (req.path.startsWith("/api")) {
+      return res.status(404).json({ success: false, message: "API endpoint not found" });
+    }
+    res.sendFile(path.join(frontendBuildPath, "index.html"));
+  });
+}
 
 app.use(notFound);
 app.use(errorHandler);
