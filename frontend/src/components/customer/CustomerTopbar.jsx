@@ -35,7 +35,7 @@ export function CustomerTopbar({ onMenuClick, isCartOpen, setIsCartOpen }) {
 
   <div className="flex-1 min-w-0">
     <p className="text-[15px] font-bold tracking-[0.24em] text-primary-600">
-      EventMitra
+      EventMitra 
     </p>
 
     <p className="truncate font-display text-lg font-bold text-slate-900">
