@@ -12,7 +12,6 @@ import {
   XCircle,
   CreditCard,
   Star,
-  Ban,
   Zap,
 } from "lucide-react";
 import { GlassCard } from "../../components/admin/GlassCard";
@@ -20,7 +19,6 @@ import { CustomerOtpModal } from "../../components/customer/CustomerOtpModal";
 import { CustomerBookingCard } from "../../components/customer/CustomerBookingCard";
 import { customerApi } from "../../services/api";
 import { useUI } from "../../context/UIContext";
-import { formatCurrency } from "../../utils/currency";
 
 export function CustomerBookingsPage({ embedded = false }) {
   const navigate = useNavigate();
@@ -147,6 +145,10 @@ export function CustomerBookingsPage({ embedded = false }) {
     return filteredBookings.filter((booking) => booking.status === "cancelled");
   }, [filteredBookings]);
 
+  const completedCancelledBookings = useMemo(() => {
+    return filteredBookings.filter((booking) => ["completed", "cancelled"].includes(booking.status));
+  }, [filteredBookings]);
+
   const historyBookings = showCompletedInHistory ? completedBookings : cancelledBookings;
 
   if (loading) {
@@ -213,7 +215,7 @@ export function CustomerBookingsPage({ embedded = false }) {
                 </div>
                 <h1 className="font-display text-3xl font-black text-white">My Bookings</h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
-                  Track provider acceptance, monitor OTP milestones, and keep every event booking in one organized view.
+                  Track partner acceptance, monitor OTP milestones, and keep every event booking in one organized view.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -297,7 +299,7 @@ export function CustomerBookingsPage({ embedded = false }) {
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by service, provider, or location..."
+                  placeholder="Search by service, partner, or location..."
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   onFocus={handleSearchFocus}
@@ -337,7 +339,7 @@ export function CustomerBookingsPage({ embedded = false }) {
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by service, provider, or location..."
+                  placeholder="Search by service, partner, or location..."
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   onFocus={handleSearchFocus}
@@ -392,7 +394,7 @@ export function CustomerBookingsPage({ embedded = false }) {
                 No Bookings Yet
               </h2>
               <p className="mt-3 max-w-md text-slate-500 leading-relaxed">
-                Explore providers, add services to cart, or book directly from a provider page to get started.
+                Explore verified partners, add services to cart, or book directly from a partner page to get started.
               </p>
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -419,7 +421,7 @@ export function CustomerBookingsPage({ embedded = false }) {
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">Current Bookings</h3>
-                    <p className="text-sm text-slate-500">Your active bookings with advance payment</p>
+                    <p className="text-sm text-slate-500">Your active bookings with advance payment completed</p>
                   </div>
                   <span className="ml-auto rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
                     {advancePaymentBookings.length}
@@ -553,7 +555,7 @@ export function CustomerBookingsPage({ embedded = false }) {
               </div>
               <h2 className="mt-4 text-xl font-bold text-slate-900">Rate Your Experience</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Please rate your experience before making payment.
+                Please rate your experience before moving to the remaining payment step.
               </p>
             </div>
 

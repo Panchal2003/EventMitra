@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,17 +9,14 @@ import {
   Star,
   MessageSquare,
   KeyRound,
-  XCircle,
 } from "lucide-react";
 import { customerApi } from "../../services/api";
 import { Button } from "../../components/common/Button";
 import { formatCurrency } from "../../utils/currency";
-import { useAuth } from "../../context/AuthContext";
 
 export function CustomerRemainingPaymentPage() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
@@ -32,7 +29,7 @@ export function CustomerRemainingPaymentPage() {
   const [otpValue, setOtpValue] = useState("");
   const [requiresOtp, setRequiresOtp] = useState(false);
 
-  const loadPayment = async () => {
+  const loadPayment = useCallback(async () => {
     if (!bookingId) {
       setError("Invalid booking ID");
       setLoading(false);
@@ -58,7 +55,7 @@ export function CustomerRemainingPaymentPage() {
             if (parsed.bookingId === bookingId) {
               setFeedbackData(parsed.feedback || { rating: 5, comment: "" });
               localStorage.removeItem("pendingFeedback");
-              // Don't auto-open modal - user will see it when clicking Pay Now
+              // Do not auto-open the modal; the client will see it when confirming payment.
             }
           } catch (e) {
             localStorage.removeItem("pendingFeedback");
@@ -69,8 +66,8 @@ export function CustomerRemainingPaymentPage() {
         setBooking(data.booking);
         // Show helpful message based on booking status
         const statusMessages = {
-          "provider_assigned": "Your booking is waiting for provider confirmation.",
-          "confirmed": "The provider has accepted your booking. Wait for the service to be completed before making remaining payment.",
+          "provider_assigned": "Your booking is waiting for partner confirmation.",
+          "confirmed": "The partner has accepted your booking. Wait for the service to be completed before making the remaining payment.",
           "in_progress": "The service is in progress. Remaining payment will be available after completion.",
         };
         if (statusMessages[data.booking.status]) {
@@ -93,7 +90,7 @@ export function CustomerRemainingPaymentPage() {
       const errorMsg = requestError.response?.data?.message || requestError.message || "Unable to load remaining payment details.";
       // Provide more helpful error messages based on common issues
       if (errorMsg.includes("not available yet") || errorMsg.includes("status")) {
-        setError("Remaining payment is not available yet. The provider needs to complete the service first.");
+        setError("Remaining payment is not available yet. The partner needs to complete the service first.");
       } else if (errorMsg.includes("not found")) {
         setError("Booking not found or access denied.");
       } else {
@@ -102,11 +99,11 @@ export function CustomerRemainingPaymentPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookingId]);
 
   useEffect(() => {
     loadPayment();
-  }, [bookingId]);
+  }, [loadPayment]);
 
   const handleRatingChange = (rating) => {
     setFeedbackData({ ...feedbackData, rating });
@@ -148,7 +145,7 @@ export function CustomerRemainingPaymentPage() {
       return;
     }
 
-    // Submit feedback only - provider will collect payment
+    // Submit feedback only - partner will collect payment
     try {
       setPaying(true);
       setError("");
@@ -159,9 +156,9 @@ export function CustomerRemainingPaymentPage() {
         feedback: feedbackData,
       });
       
-      console.log("Feedback submitted. Provider will collect payment.");
+      console.log("Feedback submitted. Partner will collect payment.");
       setShowFeedbackModal(false);
-      setSuccess("Thank you for your feedback! The provider will now collect the remaining payment.");
+      setSuccess("Thank you for your feedback. The partner will now collect the remaining payment.");
       setFeedbackData({ rating: 5, comment: "" });
       setOtpValue("");
     } catch (feedbackError) {
@@ -205,7 +202,7 @@ export function CustomerRemainingPaymentPage() {
               Confirm Your Payment
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-cyan-100">
-              The provider will collect the remaining payment from you after you confirm.
+              The partner will collect the remaining payment from you after you confirm.
             </p>
           </div>
 
@@ -243,7 +240,7 @@ export function CustomerRemainingPaymentPage() {
                     </p>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                        <p className="text-[11px] font-semibold uppercase text-slate-500">Provider</p>
+                        <p className="text-[11px] font-semibold uppercase text-slate-500">Partner</p>
                         <p className="mt-1 text-sm font-semibold text-slate-900">{paymentData.providerName}</p>
                       </div>
                       <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
@@ -259,16 +256,16 @@ export function CustomerRemainingPaymentPage() {
                       How this works
                     </div>
                     <ol className="mt-4 space-y-2 text-sm text-slate-600">
-                      <li>1. Select payment method above.</li>
-                      <li>2. Complete payment through secure gateway.</li>
-                      <li>3. Your payment will be processed instantly.</li>
+                      <li>1. Review the remaining amount and partner details.</li>
+                      <li>2. Share your rating and completion confirmation.</li>
+                      <li>3. The partner collects the remaining amount after confirmation.</li>
                     </ol>
                   </div>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                   <div className="text-center mb-4">
-                    <p className="text-sm font-semibold text-slate-700">Select Payment Method</p>
+                    <p className="text-sm font-semibold text-slate-700">Payment Confirmation</p>
                   </div>
                   
                   <div className="space-y-3">
@@ -279,13 +276,13 @@ export function CustomerRemainingPaymentPage() {
                     >
                       <span className="flex items-center gap-2">
                         <CreditCard className="h-5 w-5" />
-                        Pay Now
+                        Confirm Payment
                       </span>
                       <span>{formatCurrency(paymentData.amountInRupees)}</span>
                     </button>
                     
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm text-slate-600">
-                      Click "Pay Now" to confirm payment. The provider will collect payment from you.
+                      Confirm the booking completion details. The partner will collect the remaining payment from you.
                     </div>
                   </div>
                 </div>
@@ -308,7 +305,7 @@ export function CustomerRemainingPaymentPage() {
               </div>
               <h2 className="mt-4 text-lg font-bold text-slate-900 sm:text-xl">Rate & Confirm</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Please rate your experience. The provider will collect payment from you.
+                Please rate your experience. The partner will collect payment from you.
               </p>
             </div>
 
@@ -357,7 +354,7 @@ export function CustomerRemainingPaymentPage() {
                 <label className="block text-sm font-semibold text-slate-700">
                   OTP <span className="text-rose-500">*</span>
                 </label>
-                <p className="text-xs text-slate-500 mb-2">Enter the 4-digit OTP from provider</p>
+                <p className="text-xs text-slate-500 mb-2">Enter the 4-digit OTP shared by the partner</p>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <input

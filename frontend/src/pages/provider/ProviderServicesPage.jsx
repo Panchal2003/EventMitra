@@ -14,6 +14,8 @@ import {
   Upload,
   Sparkles,
   Award,
+  MapPin,
+  Video,
 } from "lucide-react";
 import { Button } from "../../components/common/Button";
 import { Modal } from "../../components/common/Modal";
@@ -54,8 +56,14 @@ const createInitialServiceForm = () => ({
   price: "",
   status: "active",
   images: [],
+  videos: [],
   allowsMembers: false,
   pricePerMember: "",
+  location: {
+    address: "",
+    latitude: "",
+    longitude: "",
+  },
 });
 
 export function ProviderServicesPage() {
@@ -104,7 +112,9 @@ export function ProviderServicesPage() {
 
   const [formData, setFormData] = useState(createInitialServiceForm());
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [videoPreviews, setVideoPreviews] = useState([]);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -115,8 +125,8 @@ export function ProviderServicesPage() {
     const files = Array.from(e.target.files);
     const existingPreviewCount = (imagePreviews.length > 0 ? imagePreviews : formData.images).length;
 
-    if (existingPreviewCount + files.length > 5) {
-      setNotice({ type: "error", message: "Please keep exactly 5 images in the gallery." });
+    if (existingPreviewCount + files.length > 15) {
+      setNotice({ type: "error", message: "Please keep between 5 and 15 images in the gallery." });
       return;
     }
 
@@ -124,6 +134,24 @@ export function ProviderServicesPage() {
       const previewUrls = files.map(file => URL.createObjectURL(file));
       setImagePreviews((previous) => [...previous, ...previewUrls]);
       uploadImages(files);
+    }
+
+    e.target.value = "";
+  };
+
+  const handleVideoChange = (e) => {
+    const files = Array.from(e.target.files);
+    const existingPreviewCount = (videoPreviews.length > 0 ? videoPreviews : formData.videos || []).length;
+
+    if (existingPreviewCount + files.length > 5) {
+      setNotice({ type: "error", message: "Please keep maximum 5 videos." });
+      return;
+    }
+
+    if (files.length > 0) {
+      const previewUrls = files.map(file => URL.createObjectURL(file));
+      setVideoPreviews((previous) => [...previous, ...previewUrls]);
+      uploadVideos(files);
     }
 
     e.target.value = "";
@@ -141,7 +169,7 @@ export function ProviderServicesPage() {
       if (response.data?.success) {
         setFormData((prev) => ({
           ...prev,
-          images: [...prev.images, ...response.data.data.images].slice(0, 5),
+          images: [...prev.images, ...response.data.data.images].slice(0, 15),
         }));
         setNotice({ type: "success", message: "Images uploaded successfully!" });
       }
@@ -153,11 +181,35 @@ export function ProviderServicesPage() {
     }
   };
 
+  const uploadVideos = async (files) => {
+    setUploadingVideo(true);
+    try {
+      const formDataVid = new FormData();
+      files.forEach(file => {
+        formDataVid.append("videos", file);
+      });
+
+      const response = await providerApi.uploadVideos(formDataVid);
+      if (response.data?.success) {
+        setFormData((prev) => ({
+          ...prev,
+          videos: [...(prev.videos || []), ...response.data.data.videos].slice(0, 5),
+        }));
+        setNotice({ type: "success", message: "Videos uploaded successfully!" });
+      }
+    } catch (err) {
+      console.error("Failed to upload videos:", err);
+      setNotice({ type: "error", message: "Failed to upload videos" });
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!editingService && formData.images.length !== 5) {
-      setNotice({ type: "error", message: "Please upload exactly 5 service images before adding the service." });
+    if (!editingService && (formData.images.length < 5 || formData.images.length > 15)) {
+      setNotice({ type: "error", message: "Please upload between 5 and 15 service images before adding the service." });
       return;
     }
 
@@ -168,6 +220,14 @@ export function ProviderServicesPage() {
         ...formData,
         startingPrice: Number(formData.price),
         pricePerMember: formData.allowsMembers ? Number(formData.pricePerMember) : 0,
+        location: {
+          type: "Point",
+          coordinates: formData.location.latitude && formData.location.longitude && !isNaN(parseFloat(formData.location.latitude)) && !isNaN(parseFloat(formData.location.longitude)) ? [
+            parseFloat(formData.location.longitude),
+            parseFloat(formData.location.latitude)
+          ] : undefined,
+          address: formData.location.address || ""
+        }
       };
       
       if (editingService) {
@@ -202,6 +262,11 @@ export function ProviderServicesPage() {
       images: service.images || [],
       allowsMembers: service.allowsMembers || false,
       pricePerMember: service.pricePerMember ? String(service.pricePerMember) : "",
+      location: {
+        address: service.location?.address || "",
+        latitude: service.location?.coordinates?.[1] ? String(service.location.coordinates[1]) : "",
+        longitude: service.location?.coordinates?.[0] ? String(service.location.coordinates[0]) : "",
+      },
     });
     setImagePreviews(service.images || []);
     setShowAddForm(true);
@@ -273,6 +338,7 @@ export function ProviderServicesPage() {
   const totalServices = services.length;
   const activeServices = services.filter(s => s.status === "active").length;
   const totalBookings = services.reduce((sum, s) => sum + (s.bookings || 0), 0);
+  const completedBookings = services.reduce((sum, s) => sum + (s.completedBookings || 0), 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -366,7 +432,7 @@ export function ProviderServicesPage() {
             {[
               { label: "Total Services", value: totalServices, icon: Package },
               { label: "Active Services", value: activeServices, icon: CheckCircle2 },
-              { label: "Total Bookings", value: totalBookings, icon: Award },
+              { label: "Completed Bookings", value: completedBookings, icon: Award },
               { label: "Categories", value: categories.length, icon: Sparkles },
             ].map((stat, index) => (
               <div key={stat.label} className="group relative">
@@ -425,7 +491,7 @@ export function ProviderServicesPage() {
                       </button>
                     </div>
                   ))}
-                  {(imagePreviews.length > 0 ? imagePreviews : formData.images).length < 5 ? (
+                  {(imagePreviews.length > 0 ? imagePreviews : formData.images).length < 15 ? (
                     <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-blue-300 hover:bg-blue-50">
                       <Upload className="h-6 w-6 text-slate-400" />
                       <input
@@ -446,11 +512,61 @@ export function ProviderServicesPage() {
                   </div>
                 ) : null}
                 <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2.5 text-xs text-blue-800">
-                  Add 5 strong work photos here. Customers will see this gallery before booking, so better images can improve trust and conversions.
+                  Add 5-15 strong work photos here. Customers will see this gallery before booking, so better images can improve trust and conversions.
                 </div>
                 <p className="text-xs text-slate-500">
-                  PNG, JPG up to 5MB each. New services now require a complete 5-image gallery.
+                  PNG, JPG up to 5MB each.
                 </p>
+
+                {/* Video Upload Section */}
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-slate-700 mb-2">Service Videos (optional)</p>
+                  <div className="flex flex-wrap gap-3">
+                    {(videoPreviews.length > 0 ? videoPreviews : formData.videos || []).map((vid, index) => (
+                      <div key={`vid-${index}`} className="relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                        <video
+                          src={vid}
+                          className="h-full w-full object-cover"
+                          muted
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newVideos = (formData.videos || []).filter((_, i) => i !== index);
+                            const newPreviews = videoPreviews.filter((_, i) => i !== index);
+                            setFormData((prev) => ({ ...prev, videos: newVideos }));
+                            setVideoPreviews(newPreviews);
+                          }}
+                          className="absolute right-0 top-0 rounded-bl-lg bg-red-500 p-1 text-xs text-white"
+                        >
+                          x
+                        </button>
+                      </div>
+                    ))}
+                    {(videoPreviews.length > 0 ? videoPreviews : formData.videos || []).length < 5 ? (
+                      <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-blue-300 hover:bg-blue-50">
+                        <Video className="h-6 w-6 text-slate-400" />
+                        <input
+                          type="file"
+                          accept="video/mp4,video/webm,video/quicktime"
+                          multiple
+                          onChange={handleVideoChange}
+                          className="hidden"
+                          disabled={uploadingVideo}
+                        />
+                      </label>
+                    ) : null}
+                  </div>
+                  {uploadingVideo ? (
+                    <div className="flex items-center gap-2 text-sm text-slate-500 mt-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Uploading videos...
+                    </div>
+                  ) : null}
+                  <p className="text-xs text-slate-500 mt-1">
+                    MP4, WebM, MOV up to 50MB each. Maximum 5 videos.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -585,14 +701,109 @@ export function ProviderServicesPage() {
               ) : null}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="secondary" onClick={closeServiceForm}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={actionLoading}>
-                {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : editingService ? "Update Service" : "Add Service"}
-              </Button>
+            {/* Location Section */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-primary-600" />
+                <h3 className="text-sm font-semibold text-slate-900">Service Location</h3>
+              </div>
+              <p className="mb-4 text-xs text-slate-500">
+                Set the location where you provide this service. Customers will see providers within 10km of their location.
+              </p>
+
+              {/* Google Maps Button */}
+              <div className="mb-4">
+                <button
+                  type="button"
+                  onClick={() => window.open('https://www.google.com/maps', '_blank')}
+                  className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-100"
+                >
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                  </svg>
+                  Open Google Maps to find your location
+                </button>
+                <p className="mt-2 text-xs text-slate-500">
+                  After opening Google Maps, search your location, right-click on the pin → "Copy coordinates" → paste below.
+                </p>
+              </div>
+
+              {/* Manual Input Fields */}
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    Address / Area
+                  </label>
+                  <input
+                    type="text"
+                    name="locationAddress"
+                    value={formData.location?.address || ""}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      location: { ...prev.location, address: e.target.value }
+                    }))}
+                    placeholder="e.g., MG Road, Bangalore"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Latitude
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="-90"
+                      max="90"
+                      name="locationLatitude"
+                      value={formData.location?.latitude || ""}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        location: { ...prev.location, latitude: e.target.value }
+                      }))}
+                      placeholder="e.g., 12.9716"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Longitude
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="-180"
+                      max="180"
+                      name="locationLongitude"
+                      value={formData.location?.longitude || ""}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        location: { ...prev.location, longitude: e.target.value }
+                      }))}
+                      placeholder="e.g., 77.5946"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-amber-100 bg-amber-50 p-3">
+                  <p className="text-xs text-amber-800">
+                    <span className="font-semibold">How to get coordinates:</span> Click "Open Google Maps" button above, find your location, right-click on the map pin → "Copy coordinates" (format: 12.9716, 77.5946). Paste latitude and longitude in the fields above.
+                  </p>
+                </div>
+              </div>
             </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+               <Button type="button" variant="secondary" onClick={closeServiceForm}>
+                 Cancel
+               </Button>
+               <Button type="submit" disabled={actionLoading}>
+                 {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : editingService ? "Update Service" : "Add Service"}
+               </Button>
+             </div>
           </form>
         </Modal>
 
@@ -708,14 +919,19 @@ export function ProviderServicesPage() {
                           <span className="inline-flex items-center rounded-full border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
                             {formatCurrency(service.startingPrice)}
                           </span>
-                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                            {service.bookings || 0} booking{service.bookings === 1 ? "" : "s"}
-                          </span>
+                          <span className="inline-flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                             {service.completedBookings || 0} completed booking{service.completedBookings === 1 ? "" : "s"}
+                           </span>
                           {service.images?.length ? (
-                            <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
-                              {service.images.length}/5 gallery photos
-                            </span>
-                          ) : null}
+                             <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+                               {service.images.length} image{service.images.length !== 1 ? "s" : ""}
+                             </span>
+                           ) : null}
+                           {service.videos?.length ? (
+                             <span className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+                               {service.videos.length} video{service.videos.length !== 1 ? "s" : ""}
+                             </span>
+                           ) : null}
                         </div>
                       </div>
                     </div>

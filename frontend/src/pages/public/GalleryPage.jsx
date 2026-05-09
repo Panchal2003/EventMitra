@@ -1,8 +1,35 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, X, ZoomIn, Globe, Image, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, ZoomIn, Globe, Image, Loader2, Sparkles, Layers, Star } from "lucide-react";
 import { Footer } from "../../components/common/Footer";
 import { publicApi } from "../../services/api";
+
+const statCardThemes = [
+  {
+    glow: "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
+    border: "border-cyan-100/80",
+    background: "bg-gradient-to-br from-cyan-100 via-sky-50 to-blue-100/90",
+    icon: "bg-gradient-to-br from-cyan-500 to-blue-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
+    border: "border-violet-100/80",
+    background: "bg-gradient-to-br from-violet-100 via-fuchsia-50 to-purple-100/90",
+    icon: "bg-gradient-to-br from-violet-500 to-fuchsia-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
+    border: "border-emerald-100/80",
+    background: "bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100/90",
+    icon: "bg-gradient-to-br from-emerald-500 to-teal-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20",
+    border: "border-amber-100/80",
+    background: "bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100/90",
+    icon: "bg-gradient-to-br from-amber-500 to-orange-600",
+  },
+];
 
 export function GalleryPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -80,6 +107,13 @@ export function GalleryPage() {
     setSelectedImage(filteredImages[currentIndex + 1]);
   };
 
+  const galleryStats = [
+    { value: loading ? "..." : galleryImages.length, label: "Gallery Assets", icon: Image },
+    { value: loading ? "..." : Math.max(categories.length - 1, 0), label: "Visual Categories", icon: Layers },
+    { value: loading ? "..." : filteredImages.length, label: "Current Selection", icon: Sparkles },
+    { value: "Curated", label: "Partner Work Samples", icon: Star },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 relative overflow-hidden">
       {/* Premium Background Elements */}
@@ -115,9 +149,9 @@ export function GalleryPage() {
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 via-blue-500 to-indigo-500 shadow-lg shadow-primary-500/30">
                 <Image className="h-3.5 w-3.5 text-white" />
               </div>
-              <span className="text-xs font-bold text-slate-700 tracking-widest uppercase">✨ Event Inspiration Gallery</span>
+              <span className="text-xs font-bold text-slate-700 tracking-widest uppercase">Event Inspiration Gallery</span>
               <div className="h-3 w-px bg-slate-300" />
-              <span className="text-[10px] font-semibold text-primary-600">NEW</span>
+              <span className="text-[10px] font-semibold text-primary-600">Curated Visuals</span>
             </motion.div>
 
             {/* Main Heading */}
@@ -142,8 +176,35 @@ export function GalleryPage() {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="text-base sm:text-lg md:text-xl text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed font-medium"
             >
-              Explore styles, moods, and service outputs to get a clearer idea of what you want before speaking with providers.
+              Explore visual references, service styles, and partner work samples before you shortlist the right fit for your event.
             </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.7 }}
+            className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-4 md:grid-cols-4"
+          >
+            {galleryStats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
+                className="group relative"
+              >
+                <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${statCardThemes[index].glow}`} />
+                <div className={`relative flex min-h-[150px] flex-col items-center justify-center rounded-2xl border p-4 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${statCardThemes[index].border}`}>
+                  <div className={`absolute inset-0 rounded-2xl ${statCardThemes[index].background}`} />
+                  <div className={`relative mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${statCardThemes[index].icon}`}>
+                    <stat.icon className="h-5 w-5 text-white" />
+                  </div>
+                  <p className="relative mb-1 text-2xl font-display font-extrabold text-slate-900 sm:text-3xl">{stat.value}</p>
+                  <p className="relative flex min-h-[2.5rem] items-center text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">{stat.label}</p>
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>
@@ -163,7 +224,7 @@ export function GalleryPage() {
           >
             <div className="inline-flex items-center gap-2 mb-3 sm:mb-3 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100">
               <Globe className="h-3.5 w-3.5 text-emerald-600" />
-              <span className="text-xs font-bold text-emerald-700 tracking-wide">BROWSE GALLERY</span>
+              <span className="text-xs font-bold text-emerald-700 tracking-wide">VISUAL LIBRARY</span>
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-black text-slate-900 mb-4 leading-tight">
               Browse {" "}
@@ -172,7 +233,7 @@ export function GalleryPage() {
               </span>
             </h2>
             <p className="hidden sm:block text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-              Filter by category to find the perfect inspiration for your event
+              Filter by category to review relevant references and shortlist the right creative direction.
             </p>
           </motion.div>
 
@@ -216,8 +277,8 @@ export function GalleryPage() {
           ) : filteredImages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <Image className="h-16 w-16 text-slate-300 mb-4" />
-              <p className="text-lg font-semibold text-slate-700">No images in gallery yet</p>
-              <p className="text-sm text-slate-500 mt-1">Check back later for provider work samples</p>
+              <p className="text-lg font-semibold text-slate-700">No gallery assets available yet</p>
+              <p className="text-sm text-slate-500 mt-1">Partner work samples will appear here as the gallery grows.</p>
             </div>
           ) : (
           <motion.div layout className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Briefcase, Mail, Lock, Eye, EyeOff, Phone, UserPlus, LogIn, Sparkles, ArrowRight, CheckCircle2, Zap, Star, Calendar, Users, Award } from "lucide-react";
+import { User, Briefcase, Mail, Lock, Eye, EyeOff, Phone, UserPlus, LogIn, Sparkles, ArrowRight, CheckCircle2, Zap, Star, Calendar, Users, Award, Chrome } from "lucide-react";
 import logo from "/logo.png";
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -52,6 +52,60 @@ export function LoginPage({ adminBackdoor = false }) {
         .catch(err => console.error("Failed to load categories:", err));
     }
   }, [selectedRole]);
+
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const token = query.get("token");
+    const isNewUser = query.get("new") === "true";
+    const prefillData = query.get("prefill");
+    
+    if (token) {
+      // Store token
+      localStorage.setItem("eventmitra-auth", JSON.stringify({ token }));
+      
+      if (isNewUser && prefillData) {
+        // New user - prefill the register form
+        try {
+          const userData = JSON.parse(decodeURIComponent(prefillData));
+          const nameParts = userData.name ? userData.name.split(" ") : ["", ""];
+          setRegisterForm({
+            firstName: nameParts[0] || "",
+            lastName: nameParts.slice(1).join(" ") || "",
+            phone: "",
+            email: userData.email || "",
+            password: "",
+            confirmPassword: "",
+          });
+          setIsRegistering(true);
+          setError("");
+        } catch (e) {
+          console.error("Failed to parse prefill data:", e);
+          setError("Failed to load user data. Please try again.");
+        }
+      } else {
+        // Existing user - get profile and navigate
+        authApi.getProfile()
+          .then(res => {
+            const user = res.data.data;
+            login({ token, user });
+            
+            // Navigate based on role
+            if (user.role === "admin") {
+              navigate("/admin", { replace: true });
+            } else if (user.role === "serviceProvider") {
+              navigate("/provider", { replace: true });
+            } else {
+              navigate(location.state?.from || "/", { replace: true });
+            }
+          })
+          .catch(err => {
+            console.error("Failed to get profile after Google auth:", err);
+            setError("Authentication failed. Please try again.");
+          });
+      }
+    }
+  }, [location.search]);
 
   const emailIsValid = (email) => /^\S+@\S+\.\S+$/.test(email);
   const passwordIsValid = (password) =>
@@ -543,6 +597,23 @@ export function LoginPage({ adminBackdoor = false }) {
                         </span>
                       </Button>
 
+                      {/* Google Login Button for Login Form */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        fullWidth
+                        onClick={() => {
+                          const roleMap = { customer: "customer", provider: "serviceProvider" };
+                          const role = roleMap[selectedRole] || "customer";
+                          const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+                          window.location.href = `${backendUrl}/api/auth/google?role=${role}`;
+                        }}
+                        className="mt-3 border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl py-3"
+                      >
+                        <Chrome className="h-5 w-5 mr-2" />
+                        Continue with Google
+                      </Button>
+
                       <p className="text-center text-sm text-slate-500 mt-4">
                         Demo credentials available for testing
                       </p>
@@ -712,6 +783,23 @@ export function LoginPage({ adminBackdoor = false }) {
                           Create Account
                           <ArrowRight className="h-5 w-5" />
                         </span>
+                      </Button>
+
+                      {/* Google Login Button for Register Form */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        fullWidth
+                        onClick={() => {
+                          const roleMap = { customer: "customer", provider: "serviceProvider" };
+                          const role = roleMap[selectedRole] || "customer";
+                          const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+                          window.location.href = `${backendUrl}/api/auth/google?role=${role}`;
+                        }}
+                        className="mt-3 border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl py-3"
+                      >
+                        <Chrome className="h-5 w-5 mr-2" />
+                        Sign up with Google
                       </Button>
                     </motion.form>
                   )}

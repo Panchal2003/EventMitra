@@ -14,16 +14,8 @@ import {
   Zap,
   Star,
   CheckCircle,
-  Activity,
-  Award,
-  Rocket,
   Shield,
-  Settings,
-  User,
-  BarChart3,
-  Users,
-  Bell,
-  ChevronRight
+  Ban,
 } from "lucide-react";
 import { useProviderDashboardData } from "../../hooks/useProviderDashboardData";
 import { formatCurrency } from "../../utils/currency";
@@ -96,7 +88,7 @@ export function ProviderDashboardPage() {
       trendUp: null,
     },
     {
-      title: "Provider Rating",
+      title: "Partner Rating",
       value: providerRatingLabel,
       description: providerRatingMeta,
       icon: Star,
@@ -108,33 +100,40 @@ export function ProviderDashboardPage() {
   ];
 
   const stats = [
-    { 
-      icon: CheckCircle, 
-      value: summary?.completedJobs || 0, 
-      label: "Completed", 
+    {
+      icon: CheckCircle,
+      value: summary?.completedJobs || 0,
+      label: "Completed",
       gradient: "from-primary-500 to-blue-500",
       bgGradient: "from-primary-50 to-blue-50"
     },
-    { 
-      icon: Clock, 
-      value: summary?.pendingRequests || 0, 
-      label: "Pending", 
+    {
+      icon: Clock,
+      value: summary?.pendingRequests || 0,
+      label: "Pending",
       gradient: "from-amber-500 to-orange-500",
       bgGradient: "from-amber-50 to-orange-50"
     },
-    { 
-      icon: Sparkles, 
-      value: summary?.serviceCount || 0, 
-      label: "Services", 
+    {
+      icon: Sparkles,
+      value: summary?.serviceCount || 0,
+      label: "Services",
       gradient: "from-purple-500 to-pink-500",
       bgGradient: "from-purple-50 to-pink-50"
     },
-    { 
-      icon: Star, 
-      value: providerRatingCount > 0 ? providerRatingValue.toFixed(1) : "New", 
-      label: "Rating", 
+    {
+      icon: Star,
+      value: providerRatingCount > 0 ? providerRatingValue.toFixed(1) : "New",
+      label: "Rating",
       gradient: "from-amber-500 to-orange-500",
       bgGradient: "from-amber-50 to-yellow-50"
+    },
+    {
+      icon: Ban,
+      value: summary?.cancelledBookings || 0,
+      label: "Cancelled",
+      gradient: "from-rose-500 to-red-500",
+      bgGradient: "from-rose-50 to-red-50"
     },
   ];
 
@@ -177,12 +176,12 @@ export function ProviderDashboardPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 text-white shadow-xl sm:p-8"
+          className="relative overflow-hidden rounded-[28px] border border-sky-100/80 bg-[radial-gradient(circle_at_top_right,rgba(191,219,254,0.45),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(239,246,255,0.95)_50%,rgba(245,251,255,0.98))] p-6 shadow-[0_24px_80px_rgba(148,163,184,0.18)] sm:p-8"
         >
           {/* Animated background elements */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -left-20 -top-20 h-60 w-60 rounded-full bg-white/10 blur-3xl animate-pulse"></div>
-            <div className="absolute -right-20 -bottom-20 h-60 w-60 rounded-full bg-pink-500/20 blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-0 right-0 h-[240px] w-[240px] rounded-full bg-sky-200/70 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 h-[220px] w-[220px] rounded-full bg-cyan-100/80 blur-3xl"></div>
           </div>
           
           {/* Grid pattern overlay */}
@@ -195,21 +194,21 @@ export function ProviderDashboardPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 text-xs font-medium backdrop-blur-sm"
+                  className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/85 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 shadow-sm shadow-sky-100"
                 >
                   <Shield className="h-3.5 w-3.5" />
-                  Provider Dashboard
+                  Partner Dashboard
                 </motion.div>
                 
                 <motion.h1
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mt-3 font-display text-2xl font-bold leading-tight sm:text-3xl lg:text-4xl"
+                  className="mt-3 font-display text-2xl font-bold leading-tight text-slate-950 sm:text-3xl lg:text-4xl"
                 >
                   Welcome back, <br className="sm:hidden" />
-                  <span className="bg-gradient-to-r from-yellow-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent">
-                    {user?.name?.split(" ")[0] || "Provider"}! 👋
+                  <span className="bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    {user?.name?.split(" ")[0] || "Partner"}
                   </span>
                 </motion.h1>
                 
@@ -217,77 +216,13 @@ export function ProviderDashboardPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="mt-2 max-w-lg text-sm text-purple-100"
+                  className="mt-2 max-w-lg text-sm leading-6 text-slate-600"
                 >
-                  Monitor your bookings, track earnings, and manage your services.
+                  Monitor bookings, track earnings, and manage your partner services with clarity.
                 </motion.p>
               </div>
               
-              {/* Stats preview cards */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
-                className="hidden lg:grid lg:grid-cols-2 lg:gap-3"
-              >
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-400/20">
-                      <TrendingUp className="h-5 w-5 text-blue-300" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-purple-200">Earnings</p>
-                      <p className="text-lg font-bold">{formatCurrency(summary?.totalEarnings || 0)}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-400/20">
-                      <Award className="h-5 w-5 text-amber-300" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-purple-200">Completed</p>
-                      <p className="text-lg font-bold">{summary?.completedJobs || 0}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-400/20">
-                      <Activity className="h-5 w-5 text-cyan-300" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-purple-200">Active Jobs</p>
-                      <p className="text-lg font-bold">{summary?.activeJobs || 0}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-pink-400/20">
-                      <Rocket className="h-5 w-5 text-pink-300" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-purple-200">Services</p>
-                      <p className="text-lg font-bold">{summary?.serviceCount || 0}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-400/20">
-                      <Star className="h-5 w-5 text-amber-300" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-purple-200">Rating</p>
-                      <p className="text-lg font-bold">{providerRatingCount > 0 ? providerRatingValue.toFixed(1) : "New"}</p>
-                      <p className="text-[10px] text-purple-200">{providerRatingMeta}</p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
+              </div>
           </div>
         </motion.div>
 
@@ -374,7 +309,7 @@ export function ProviderDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Quick Stats</h2>
-              <p className="text-xs text-slate-500">Your business at a glance</p>
+              <p className="text-xs text-slate-500">Your partner activity at a glance</p>
             </div>
           </div>
           
@@ -478,9 +413,9 @@ export function ProviderDashboardPage() {
               </div>
               
               <div className="flex-1">
-                <h2 className="text-lg font-bold">Today's Focus</h2>
+                <h2 className="text-lg font-bold">Today&apos;s Focus</h2>
                 <p className="mt-1 text-sm text-purple-100">
-                  Keep responses quick and delivery clean. Accept booking requests fast, start jobs on time, and hand off the final OTP step to the customer so payouts can move smoothly.
+                  Keep responses quick and delivery clean. Accept booking requests fast, start jobs on time, and hand off the final OTP step to the client so payouts can move smoothly.
                 </p>
               </div>
               
@@ -496,6 +431,10 @@ export function ProviderDashboardPage() {
                 <div className="rounded-lg bg-white/10 px-4 py-2 backdrop-blur-sm">
                   <p className="text-xs text-purple-200">Active</p>
                   <p className="text-lg font-bold">{summary?.activeJobs || 0}</p>
+                </div>
+                <div className="rounded-lg bg-white/10 px-4 py-2 backdrop-blur-sm">
+                  <p className="text-xs text-purple-200">Cancelled</p>
+                  <p className="text-lg font-bold">{summary?.cancelledBookings || 0}</p>
                 </div>
               </div>
             </div>

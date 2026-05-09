@@ -12,23 +12,13 @@ import {
   Loader2,
   MessageSquare,
   Star,
-  TrendingUp,
-  Zap,
-  Target,
   Award,
   Activity,
-  ArrowRight,
-  MapPin,
   Users,
-  DollarSign,
-  Calendar,
-  Shield,
   CreditCard,
-  Smartphone,
   Ban,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { GlassCard } from "../../components/admin/GlassCard";
 import { useUI } from "../../context/UIContext";
 import { Button } from "../../components/common/Button";
 import { StatusBadge } from "../../components/common/StatusBadge";
@@ -40,11 +30,6 @@ import { formatCurrency } from "../../utils/currency";
 import { formatDate } from "../../utils/date";
 import { openRazorpayCheckout } from "../../utils/razorpay";
 
-const sectionAnimation = {
-  hidden: { opacity: 0, y: 22 },
-  visible: { opacity: 1, y: 0 },
-};
-
 const getErrorMessage = (error, fallback) => error.response?.data?.message || fallback;
 
 export function ProviderBookingsPage() {
@@ -53,7 +38,6 @@ export function ProviderBookingsPage() {
     bookings = [],
     completeJob,
     error,
-    loading,
     refresh,
     respondToBooking,
     verifyStartOtp,
@@ -181,7 +165,7 @@ const activeBookings = useMemo(
       await startJob(booking._id);
       setNotice({
         type: "success",
-        message: "Start OTP generated. Ask the customer to share it, then verify it here to begin the job.",
+        message: "Start OTP generated. Ask the client to share it, then verify it here to begin the job.",
       });
     } catch (requestError) {
       setNotice({
@@ -222,7 +206,7 @@ const activeBookings = useMemo(
       await completeJob(completionBooking._id);
       setNotice({
         type: "success",
-        message: "Final OTP generated. The customer can now complete the booking from their side and submit feedback.",
+        message: "Final OTP generated. The client can now complete the booking from their side and submit feedback.",
       });
       setCompletionBooking(null);
       showBottomNav();
@@ -292,7 +276,7 @@ const tabs = [
     { id: "requests", label: "Requests", count: requestBookings.length, icon: CalendarCheck2, gradient: "from-amber-500 to-orange-500" },
     { id: "active", label: "Active", count: activeBookings.length, icon: Clock, gradient: "from-blue-500 to-indigo-500" },
     { id: "completed", label: "Completed", count: completedBookings.length, icon: CheckCircle, gradient: "from-primary-500 to-blue-500" },
-    { id: "cancelled", label: "Cancel", count: cancelledBookings.length, icon: XCircle, gradient: "from-rose-500 to-red-500" },
+    { id: "cancelled", label: "Cancelled", count: cancelledBookings.length, icon: XCircle, gradient: "from-rose-500 to-red-500" },
     { id: "rejected", label: "Rejected", count: rejectedBookings.length, icon: Ban, gradient: "from-slate-500 to-slate-600" },
   ];
 
@@ -329,7 +313,7 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
           <div className="mt-2 rounded-lg bg-rose-50 border border-rose-200 px-3 py-2">
             <p className="text-xs font-semibold text-rose-700 flex items-center gap-1">
               <XCircle className="h-3 w-3" />
-              Cancelled by Customer
+              Cancelled by Client
             </p>
           </div>
         )}
@@ -421,12 +405,12 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
         </div>
         {booking.status === "confirmed" && booking.startOtpRequested ? (
           <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
-            The start OTP has been generated on the customer side. Ask the customer for that OTP and verify it to begin the job.
+            The start OTP has been generated on the client side. Ask the client for that OTP and verify it to begin the job.
           </div>
         ) : null}
         {booking.status === "otp_pending" ? (
           <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-            Final OTP has been generated. The customer must open their booking, enter that OTP, and submit feedback to finish this booking.
+            Final OTP has been generated. The client must open their booking, enter that OTP, and submit feedback to finish this booking.
           </div>
         ) : null}
         {booking.status === "completed" && booking.feedback ? (
@@ -439,7 +423,7 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
                 />
               ))}
               <span className="text-sm font-semibold">
-                {Number(booking.feedback.rating || 0).toFixed(1)} customer rating
+                {Number(booking.feedback.rating || 0).toFixed(1)} client rating
               </span>
             </div>
             {booking.feedback.comment ? (
@@ -479,7 +463,7 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
                   <Users className="h-4 w-4 text-rose-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">{booking.customer?.name || "Customer"}</p>
+                  <p className="text-sm font-semibold text-slate-800">{booking.customer?.name || "Client"}</p>
                   {booking.customer?.phone && (
                     <p className="text-xs text-slate-500">{booking.customer.phone}</p>
                   )}
@@ -499,7 +483,7 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
                 </p>
                 {booking.cancellation.refundStatus === "pending" && (
                   <p className="text-[10px] text-emerald-600 mt-1">
-                    Customer will receive refund within 2 business days
+                    Client will receive refund within 2 business days
                   </p>
                 )}
               </div>
@@ -525,7 +509,7 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
                 <Users className="h-4 w-4 text-slate-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-800">{booking.customer?.name || "Customer"}</p>
+                <p className="text-sm font-semibold text-slate-800">{booking.customer?.name || "Client"}</p>
                 {booking.customer?.phone && (
                   <p className="text-xs text-slate-500">{booking.customer.phone}</p>
                 )}
@@ -545,12 +529,11 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 text-white shadow-xl sm:p-8"
+          className="relative overflow-hidden rounded-[28px] border border-sky-100/80 bg-[radial-gradient(circle_at_top_right,rgba(191,219,254,0.45),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(239,246,255,0.95)_50%,rgba(245,251,255,0.98))] p-6 shadow-[0_24px_80px_rgba(148,163,184,0.18)] sm:p-8"
         >
-          {/* Animated background elements */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -left-20 -top-20 h-60 w-60 rounded-full bg-white/10 blur-3xl animate-pulse"></div>
-            <div className="absolute -right-20 -bottom-20 h-60 w-60 rounded-full bg-pink-500/20 blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-0 right-0 h-[240px] w-[240px] rounded-full bg-sky-200/70 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 h-[220px] w-[220px] rounded-full bg-cyan-100/80 blur-3xl"></div>
           </div>
           
           {/* Grid pattern overlay */}
@@ -563,7 +546,7 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 text-xs font-medium backdrop-blur-sm"
+                  className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/85 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 shadow-sm shadow-sky-100"
                 >
                   <CalendarCheck2 className="h-3.5 w-3.5" />
                   Booking Management
@@ -573,7 +556,7 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mt-3 font-display text-2xl font-bold leading-tight sm:text-3xl lg:text-4xl"
+                  className="mt-3 font-display text-2xl font-bold leading-tight text-slate-950 sm:text-3xl lg:text-4xl"
                 >
                   My Bookings
                 </motion.h1>
@@ -582,9 +565,9 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="mt-2 max-w-lg text-sm text-purple-100"
+                  className="mt-2 max-w-lg text-sm leading-6 text-slate-600"
                 >
-                  Manage your booking requests and active jobs efficiently.
+                  Review client requests, manage active work, and keep OTP handoffs clear from acceptance to completion.
                 </motion.p>
               </div>
               
@@ -595,58 +578,58 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
                 transition={{ delay: 0.5 }}
                 className="hidden lg:grid lg:grid-cols-5 lg:gap-3"
               >
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
+                <div className="rounded-xl border border-amber-100 bg-white/85 p-4 shadow-sm transition-all hover:shadow-md">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-400/20">
-                      <CalendarCheck2 className="h-5 w-5 text-amber-300" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+                      <CalendarCheck2 className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs text-purple-200">Requests</p>
-                      <p className="text-lg font-bold">{requestBookings.length}</p>
+                      <p className="text-xs text-slate-500">Requests</p>
+                      <p className="text-lg font-bold text-slate-950">{requestBookings.length}</p>
                     </div>
                   </div>
                 </div>
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
+                <div className="rounded-xl border border-cyan-100 bg-white/85 p-4 shadow-sm transition-all hover:shadow-md">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-400/20">
-                      <Activity className="h-5 w-5 text-blue-300" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600">
+                      <Activity className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs text-purple-200">Active</p>
-                      <p className="text-lg font-bold">{activeBookings.length}</p>
+                      <p className="text-xs text-slate-500">Active</p>
+                      <p className="text-lg font-bold text-slate-950">{activeBookings.length}</p>
                     </div>
                   </div>
                 </div>
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
+                <div className="rounded-xl border border-emerald-100 bg-white/85 p-4 shadow-sm transition-all hover:shadow-md">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-400/20">
-                      <Award className="h-5 w-5 text-blue-300" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
+                      <Award className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs text-purple-200">Completed</p>
-                      <p className="text-lg font-bold">{completedBookings.length}</p>
+                      <p className="text-xs text-slate-500">Completed</p>
+                      <p className="text-lg font-bold text-slate-950">{completedBookings.length}</p>
                     </div>
                   </div>
                 </div>
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
+                <div className="rounded-xl border border-rose-100 bg-white/85 p-4 shadow-sm transition-all hover:shadow-md">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-400/20">
-                      <XCircle className="h-5 w-5 text-rose-300" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-red-600">
+                      <XCircle className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs text-purple-200">Cancel</p>
-                      <p className="text-lg font-bold">{cancelledBookings.length}</p>
+                      <p className="text-xs text-slate-500">Cancelled</p>
+                      <p className="text-lg font-bold text-slate-950">{cancelledBookings.length}</p>
                     </div>
                   </div>
                 </div>
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
+                <div className="rounded-xl border border-slate-200 bg-white/85 p-4 shadow-sm transition-all hover:shadow-md">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-400/20">
-                      <Ban className="h-5 w-5 text-slate-300" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-slate-500 to-slate-700">
+                      <Ban className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs text-purple-200">Rejected</p>
-                      <p className="text-lg font-bold">{rejectedBookings.length}</p>
+                      <p className="text-xs text-slate-500">Rejected</p>
+                      <p className="text-lg font-bold text-slate-950">{rejectedBookings.length}</p>
                     </div>
                   </div>
                 </div>
@@ -772,7 +755,7 @@ const currentBookings = activeTab === "requests" ? requestBookings : activeTab =
                 <div>
                   <h3 className="text-lg font-semibold text-slate-950">Verify Start OTP</h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    Enter the OTP shared by the customer to start this job.
+                    Enter the OTP shared by the client to start this job.
                   </p>
                 </div>
                 <button onClick={() => { setStartOtpBooking(null); showBottomNav(); }} className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600">

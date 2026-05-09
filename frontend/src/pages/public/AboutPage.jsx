@@ -6,21 +6,48 @@ import { Link } from "react-router-dom";
 import { Footer } from "../../components/common/Footer";
 
 const stats = [
-  { icon: Users, value: "500+", label: "Happy Customers" },
-  { icon: Award, value: "100+", label: "Verified Providers" },
-  { icon: Heart, value: "1,000+", label: "Events Managed" },
-  { icon: Globe, value: "50+", label: "Cities Covered" },
+  { icon: Users, value: "500+", label: "Events Delivered" },
+  { icon: Award, value: "100+", label: "Verified Partners" },
+  { icon: Heart, value: "4.9/5", label: "Average Client Rating" },
+  { icon: Globe, value: "24/7", label: "Planning Support" },
+];
+
+const statCardThemes = [
+  {
+    glow: "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
+    border: "border-cyan-100/80",
+    background: "bg-gradient-to-br from-cyan-100 via-sky-50 to-blue-100/90",
+    icon: "bg-gradient-to-br from-cyan-500 to-blue-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
+    border: "border-violet-100/80",
+    background: "bg-gradient-to-br from-violet-100 via-fuchsia-50 to-purple-100/90",
+    icon: "bg-gradient-to-br from-violet-500 to-fuchsia-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
+    border: "border-emerald-100/80",
+    background: "bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100/90",
+    icon: "bg-gradient-to-br from-emerald-500 to-teal-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20",
+    border: "border-amber-100/80",
+    background: "bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100/90",
+    icon: "bg-gradient-to-br from-amber-500 to-orange-600",
+  },
 ];
 
 const values = [
   {
     title: "Trust by design",
-    description: "Customers should feel informed at every step, from service discovery to booking completion.",
+    description: "Clients should feel informed at every step, from service discovery to booking completion.",
     gradient: "from-blue-500 to-indigo-500",
   },
   {
     title: "Quality over noise",
-    description: "We focus on verified providers, clearer service presentation, and a cleaner event planning workflow.",
+    description: "We focus on verified partners, clearer service presentation, and a cleaner event planning workflow.",
     gradient: "from-emerald-500 to-teal-500",
   },
   {
@@ -81,9 +108,9 @@ export function AboutPage() {
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 via-blue-500 to-indigo-500 shadow-lg shadow-primary-500/30">
                 <Sparkles className="h-3.5 w-3.5 text-white" />
               </div>
-              <span className="text-xs font-bold text-slate-700 tracking-widest uppercase">✨ About EventMitra</span>
+              <span className="text-xs font-bold text-slate-700 tracking-widest uppercase">About EventMitra</span>
               <div className="h-3 w-px bg-slate-300" />
-              <span className="text-[10px] font-semibold text-primary-600">NEW</span>
+              <span className="text-[10px] font-semibold text-primary-600">Professional Planning</span>
             </motion.div>
 
             {/* Main Heading */}
@@ -143,8 +170,8 @@ export function AboutPage() {
               if (statsData) {
                 if (index === 0) displayValue = statsData.totalBookings > 0 ? `${statsData.totalBookings}+` : stat.value;
                 if (index === 1) displayValue = statsData.totalProviders > 0 ? `${statsData.totalProviders}+` : stat.value;
-                if (index === 2) displayValue = statsData.totalBookings > 0 ? `${statsData.totalBookings * 2}+` : stat.value;
-                if (index === 3) displayValue = statsData.avgRating ? `${statsData.avgRating}★` : stat.value;
+                if (index === 2) displayValue = statsData.avgRating ? `${statsData.avgRating}/5` : stat.value;
+                if (index === 3) displayValue = statsData.supportHours || stat.value;
               }
               return (
                 <motion.div
@@ -154,25 +181,14 @@ export function AboutPage() {
                   transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
                   className="group relative"
                 >
-                  <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${[
-                    "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
-                    "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
-                    "bg-gradient-to-br from-rose-500/20 via-pink-500/10 to-orange-500/20",
-                    "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
-                  ][index]}`} />
-                  <div className={`relative rounded-2xl border bg-white/85 p-4 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${
-                    ["border-cyan-100/80", "border-violet-100/80", "border-rose-100/80", "border-emerald-100/80"][index]
-                  }`}>
-                    <div className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${[
-                      "bg-gradient-to-br from-cyan-500 to-blue-600",
-                      "bg-gradient-to-br from-violet-500 to-fuchsia-600",
-                      "bg-gradient-to-br from-rose-500 to-pink-600",
-                      "bg-gradient-to-br from-emerald-500 to-teal-600",
-                    ][index]}`}>
+                  <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${statCardThemes[index].glow}`} />
+                  <div className={`relative flex min-h-[150px] flex-col items-center justify-center rounded-2xl border p-4 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${statCardThemes[index].border}`}>
+                    <div className={`absolute inset-0 rounded-2xl ${statCardThemes[index].background}`} />
+                    <div className={`relative mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${statCardThemes[index].icon}`}>
                       <Icon className="h-5 w-5 text-white" />
                     </div>
-                    <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{displayValue}</p>
-                    <p className="text-xs font-semibold text-slate-600">{stat.label}</p>
+                    <p className="relative mb-1 text-2xl font-display font-extrabold text-slate-900 sm:text-3xl">{displayValue}</p>
+                    <p className="relative flex min-h-[2.5rem] items-center text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">{stat.label}</p>
                   </div>
                 </motion.div>
               );
@@ -217,7 +233,7 @@ export function AboutPage() {
               transition={{ duration: 0.6 }}
             >
               <p className="text-base leading-7 text-slate-600 mb-4">
-                EventMitra brings that process into a more thoughtful experience by helping customers browse services confidently, compare providers cleanly, and track bookings from request to completion.
+                EventMitra brings that process into a more thoughtful experience by helping clients browse services confidently, compare partners clearly, and track bookings from request to completion.
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -226,7 +242,7 @@ export function AboutPage() {
                     Mission
                   </p>
                   <p className="mt-3 text-sm leading-6 text-slate-600">
-                    Make event booking feel more reliable, polished, and customer-first.
+                    Make event booking feel more reliable, polished, and client-first.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/60 bg-white/90 backdrop-blur-xl p-5 shadow-lg shadow-slate-200/20">
@@ -234,7 +250,7 @@ export function AboutPage() {
                     Promise
                   </p>
                   <p className="mt-3 text-sm leading-6 text-slate-600">
-                    Better discovery, better provider presentation, and stronger booking visibility.
+                    Better discovery, better partner presentation, and stronger booking visibility.
                   </p>
                 </div>
               </div>
@@ -267,17 +283,17 @@ export function AboutPage() {
             {[
               {
                 title: "Discover with confidence",
-                description: "Customers can browse categories, compare providers, and review real service details before booking.",
+                description: "Clients can browse categories, compare partners, and review real service details before booking.",
                 gradient: "from-cyan-500 to-blue-600",
               },
               {
                 title: "Book with more clarity",
-                description: "Pricing, OTP milestones, provider responses, and booking updates are designed to stay visible at every step.",
+                description: "Pricing, OTP milestones, partner responses, and booking updates are designed to stay visible at every step.",
                 gradient: "from-violet-500 to-fuchsia-600",
               },
               {
-                title: "Grow provider trust",
-                description: "EventMitra helps providers present their services professionally and manage bookings through a cleaner workflow.",
+                title: "Build partner trust",
+                description: "EventMitra helps partners present their services professionally and manage bookings through a cleaner workflow.",
                 gradient: "from-emerald-500 to-teal-600",
               },
             ].map((item) => (
@@ -319,7 +335,7 @@ export function AboutPage() {
               </span>
             </h2>
             <p className="text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-              Trust, quality, and human support guide every decision we make for our customers and providers.
+              Trust, quality, and human support guide every decision we make for clients and partners.
             </p>
           </motion.div>
 
@@ -399,7 +415,7 @@ export function AboutPage() {
                 </h2>
                 
                 <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto mb-8 leading-relaxed">
-                  Browse categories, compare providers, and experience the new customer-first design across the booking journey.
+                  Browse categories, compare verified partners, and experience a client-first booking journey.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">

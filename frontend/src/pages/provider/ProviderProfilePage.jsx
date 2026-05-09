@@ -3,11 +3,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useUI } from "../../context/UIContext";
 import { useProviderDashboardData } from "../../hooks/useProviderDashboardData";
-import { GlassCard } from "../../components/admin/GlassCard";
 import { AvatarCropModal } from "../../components/customer/AvatarCropModal";
 import { Button } from "../../components/common/Button";
 import { Modal } from "../../components/common/Modal";
-import { formatCurrency } from "../../utils/currency";
 import { 
   User, 
   BriefcaseBusiness, 
@@ -18,7 +16,6 @@ import {
   LogOut,
   ShieldCheck,
   Clock,
-  TrendingUp,
   Award,
   Settings,
   Bell,
@@ -29,18 +26,10 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  CalendarCheck2,
-  Wallet,
   ImagePlus,
-  Loader2,
-  Sparkles,
   Zap,
-  Target,
-  Activity,
   Edit3,
-  Camera,
   BadgeCheck,
-  Heart,
   Shield,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -49,23 +38,10 @@ function getInitial(name) {
   return name?.charAt(0)?.toUpperCase() || "P";
 }
 
-function formatCompactAmount(amount) {
-  if (!amount) {
-    return "Rs 0";
-  }
-
-  if (amount >= 1000) {
-    return `Rs ${(amount / 1000).toFixed(1)}k`;
-  }
-
-  return `Rs ${Math.round(amount)}`;
-}
-
 export function ProviderProfilePage() {
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const {
-    bookings = [],
     error: hookError,
     profile = {},
     updateProfile,
@@ -105,57 +81,12 @@ export function ProviderProfilePage() {
     success: "",
   });
 
-  // Calculate profile stats
-  const completedBookings = bookings.filter(b => b.status === "completed").length;
-  const totalGrossRevenue = bookings
-    .filter(b => b.status === "completed")
-    .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
-  const totalEarnings = bookings
-    .filter(b => b.status === "completed")
-    .reduce((sum, b) => sum + (b.providerAmount || Math.round((b.totalAmount || 0) * 0.89)), 0);
-  const totalAdminProfit = bookings
-    .filter(b => b.status === "completed")
-    .reduce((sum, b) => sum + (b.adminProfit || Math.round((b.totalAmount || 0) * 0.11)), 0);
-
   const providerRatingCount = Number(profile?.ratingCount || 0);
   const providerRatingValue = Number(profile?.rating || 0);
   const providerRatingLabel = providerRatingCount > 0 ? providerRatingValue.toFixed(1) : "New";
   const providerRatingMeta = providerRatingCount > 0
     ? `${providerRatingCount} review${providerRatingCount === 1 ? "" : "s"}`
     : "No reviews yet";
-
-  const summaryItems = [
-    { icon: CalendarCheck2, label: "Completed Jobs", value: completedBookings },
-    { icon: Wallet, label: "Your Earnings", value: formatCurrency(totalEarnings) },
-    { icon: TrendingUp, label: "Admin Fee (11%)", value: formatCurrency(totalAdminProfit) },
-  ];
-
-  const overviewItems = [
-    { icon: User, label: "Full Name", value: formData.name || "Not set" },
-    { icon: Mail, label: "Email Address", value: user?.email || "Not set" },
-    { icon: Phone, label: "Phone Number", value: formData.phone || "Not set" },
-    { icon: MapPin, label: "Saved Address", value: formData.address || "Not set" },
-  ];
-
-  const paymentDetailsItems = [
-    { label: "Bank Name", value: paymentFormData.providerBankAccount?.bankName || "Not set" },
-    { label: "Account Number", value: paymentFormData.providerBankAccount?.accountNumber ? "••••" + paymentFormData.providerBankAccount.accountNumber.slice(-4) : "Not set" },
-    { label: "IFSC Code", value: paymentFormData.providerBankAccount?.ifscCode || "Not set" },
-    { label: "Account Holder", value: paymentFormData.providerBankAccount?.accountHolderName || "Not set" },
-    { label: "UPI ID", value: paymentFormData.upiId || "Not set" },
-  ];
-
-  const heroSummaryItems = [
-    { icon: CalendarCheck2, label: "Completed Jobs", value: completedBookings },
-    { icon: Wallet, label: "Your Earnings", value: formatCurrency(totalEarnings) },
-    { icon: TrendingUp, label: "Admin Fee (11%)", value: formatCurrency(totalAdminProfit) },
-  ];
-
-  const heroHighlights = [
-    { icon: ShieldCheck, label: "Verified provider" },
-    { icon: Sparkles, label: profile?.serviceCategory?.name || "Service specialist" },
-    { icon: Activity, label: completedBookings ? `${completedBookings} jobs delivered` : "Ready for new bookings" },
-  ];
 
   useEffect(() => {
     setFormData({
@@ -396,7 +327,7 @@ export function ProviderProfilePage() {
                           {profileAvatar ? (
                             <img
                               src={profileAvatar}
-                              alt={user?.name || "Provider"}
+                              alt={user?.name || "Partner"}
                               className="h-28 w-28 rounded-2xl object-cover shadow-xl ring-4 ring-white"
                             />
                           ) : (
@@ -413,9 +344,9 @@ export function ProviderProfilePage() {
                       <div className="text-center sm:text-left">
                         <div className="inline-flex items-center gap-2 mb-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-100">
                           <Award className="h-3.5 w-3.5 text-primary-600" />
-                          <span className="text-xs font-bold text-primary-700 tracking-wide">PREMIUM PROVIDER</span>
+                          <span className="text-xs font-bold text-primary-700 tracking-wide">PREMIUM PARTNER</span>
                         </div>
-                        <h2 className="text-2xl font-black text-slate-900">{user?.name || "Provider"}</h2>
+                        <h2 className="text-2xl font-black text-slate-900">{user?.name || "Partner"}</h2>
                         <p className="mt-1 text-sm text-slate-500 flex items-center gap-2 justify-center sm:justify-start">
                           <Mail className="h-4 w-4" />
                           {user?.email || "No email added"}
@@ -429,7 +360,7 @@ export function ProviderProfilePage() {
                         <div className="mt-3 flex flex-wrap gap-2 justify-center sm:justify-start">
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-700">
                             <ShieldCheck className="h-3.5 w-3.5" />
-                            Verified Provider
+                            Verified Partner
                           </span>
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-bold text-amber-700">
                             <Star className="h-3.5 w-3.5" />
@@ -437,7 +368,7 @@ export function ProviderProfilePage() {
                           </span>
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 border border-violet-200 px-3 py-1 text-xs font-bold text-violet-700">
                             <BriefcaseBusiness className="h-3.5 w-3.5" />
-                            {profile?.serviceCategory?.name || "Service Provider"}
+                            {profile?.serviceCategory?.name || "Service Partner"}
                           </span>
                         </div>
                       </div>
@@ -581,9 +512,9 @@ export function ProviderProfilePage() {
                 </motion.div>
               </div>
 
-              {/* Provider Stats */}
+              {/* Partner Stats */}
               <div className="grid gap-6 lg:grid-cols-3">
-                {/* Provider Status Card */}
+                {/* Partner Status Card */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -599,7 +530,7 @@ export function ProviderProfilePage() {
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm text-white">
                         <Shield className="h-5 w-5" />
                       </div>
-                      <h3 className="font-display text-lg font-bold text-white">Provider Status</h3>
+                      <h3 className="font-display text-lg font-bold text-white">Partner Status</h3>
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 rounded-lg bg-white/10 backdrop-blur-sm">
@@ -611,7 +542,7 @@ export function ProviderProfilePage() {
                       </div>
                       <div className="flex items-center justify-between p-3 rounded-lg bg-white/10 backdrop-blur-sm">
                         <span className="text-sm text-slate-300">Account Type</span>
-                        <span className="text-xs font-bold text-white">Provider</span>
+                        <span className="text-xs font-bold text-white">Partner</span>
                       </div>
                       <div className="flex items-center justify-between p-3 rounded-lg bg-white/10 backdrop-blur-sm">
                         <span className="text-sm text-slate-300">Status</span>
@@ -648,7 +579,7 @@ export function ProviderProfilePage() {
                         { icon: Bell, label: "Notifications", description: "Manage notification preferences" },
                         { icon: Lock, label: "Privacy & Security", description: "Password and security settings" },
                         { icon: CreditCard, label: "Payment Settings", description: "Bank details and payouts", action: openPaymentModal },
-                        { icon: HelpCircle, label: "Help & Support", description: "FAQs and customer support" },
+                        { icon: HelpCircle, label: "Help & Support", description: "FAQs and client support" },
                       ].map((setting, index) => (
                         <motion.button
                           key={setting.label}
@@ -728,8 +659,8 @@ export function ProviderProfilePage() {
       <Modal
         open={editModalOpen}
         onClose={closeEditModal}
-        title="Edit provider profile"
-        description="Update your business-facing details and manage the provider profile image from one focused modal."
+        title="Edit partner profile"
+        description="Update your business-facing details and manage the partner profile image from one focused modal."
         footer={
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button variant="ghost" onClick={closeEditModal}>

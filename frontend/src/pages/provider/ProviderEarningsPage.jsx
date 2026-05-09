@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Wallet, TrendingUp, CreditCard, Sparkles, IndianRupee, Loader2, Zap, Target, Award, Activity, ArrowRight, CheckCircle, Clock, Shield, BarChart3 } from "lucide-react";
+import { Wallet, TrendingUp, CreditCard, Sparkles, IndianRupee, Loader2, Award } from "lucide-react";
 import { useMemo } from "react";
 import { GlassCard } from "../../components/admin/GlassCard";
 import { SectionHeader } from "../../components/admin/SectionHeader";
@@ -13,6 +13,33 @@ const sectionAnimation = {
   hidden: { opacity: 0, y: 22 },
   visible: { opacity: 1, y: 0 },
 };
+
+const statCardThemes = [
+  {
+    glow: "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
+    border: "border-cyan-100/80",
+    background: "bg-gradient-to-br from-cyan-100 via-sky-50 to-blue-100/90",
+    icon: "bg-gradient-to-br from-cyan-500 to-blue-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
+    border: "border-emerald-100/80",
+    background: "bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100/90",
+    icon: "bg-gradient-to-br from-emerald-500 to-teal-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
+    border: "border-violet-100/80",
+    background: "bg-gradient-to-br from-violet-100 via-fuchsia-50 to-purple-100/90",
+    icon: "bg-gradient-to-br from-violet-500 to-fuchsia-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20",
+    border: "border-amber-100/80",
+    background: "bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100/90",
+    icon: "bg-gradient-to-br from-amber-500 to-orange-600",
+  },
+];
 
 export function ProviderEarningsPage() {
   const { earnings = [], earningsSummary = {}, error, loading, bookings = [] } = useProviderDashboardData();
@@ -78,6 +105,13 @@ export function ProviderEarningsPage() {
     },
   ];
 
+  const earningStatCards = [
+    { label: "Total Earnings", value: formatCurrency(stats.totalEarnings), icon: Wallet },
+    { label: "Pending Payouts", value: formatCurrency(stats.pendingPayouts), icon: TrendingUp },
+    { label: "Paid Out", value: formatCurrency(stats.paidOut), icon: CreditCard },
+    { label: "Completed Jobs", value: stats.completedJobs, icon: IndianRupee },
+  ];
+
   // Mobile card for each earning
   const renderEarningCard = (payment) => (
     <motion.div
@@ -103,7 +137,7 @@ export function ProviderEarningsPage() {
             <p className="font-semibold text-primary-700">{formatCurrency(payment.providerAmount || Math.round(payment.amount * 0.89))}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-slate-500">Admin Fee</p>
+            <p className="text-xs text-slate-500">Platform Fee</p>
             <p className="text-sm font-medium text-slate-700">-{formatCurrency(payment.adminProfit || Math.round(payment.amount * 0.11))}</p>
           </div>
         </div>
@@ -138,12 +172,12 @@ export function ProviderEarningsPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 text-white shadow-xl sm:p-8"
+          className="relative overflow-hidden rounded-[28px] border border-sky-100/80 bg-[radial-gradient(circle_at_top_right,rgba(191,219,254,0.45),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(239,246,255,0.95)_50%,rgba(245,251,255,0.98))] p-6 shadow-[0_24px_80px_rgba(148,163,184,0.18)] sm:p-8"
         >
           {/* Animated background elements */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -left-20 -top-20 h-60 w-60 rounded-full bg-white/10 blur-3xl animate-pulse"></div>
-            <div className="absolute -right-20 -bottom-20 h-60 w-60 rounded-full bg-pink-500/20 blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-0 right-0 h-[240px] w-[240px] rounded-full bg-sky-200/70 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 h-[220px] w-[220px] rounded-full bg-cyan-100/80 blur-3xl"></div>
           </div>
           
           {/* Grid pattern overlay */}
@@ -156,7 +190,7 @@ export function ProviderEarningsPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 text-xs font-medium backdrop-blur-sm"
+                  className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/85 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 shadow-sm shadow-sky-100"
                 >
                   <Wallet className="h-3.5 w-3.5" />
                   Earnings Tracker
@@ -166,18 +200,18 @@ export function ProviderEarningsPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mt-3 font-display text-2xl font-bold leading-tight sm:text-3xl lg:text-4xl"
+                  className="mt-3 font-display text-2xl font-bold leading-tight text-slate-950 sm:text-3xl lg:text-4xl"
                 >
-                  My Earnings
+                  Partner Earnings
                 </motion.h1>
                 
                 <motion.p
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="mt-2 max-w-lg text-sm text-purple-100"
+                  className="mt-2 max-w-lg text-sm leading-6 text-slate-600"
                 >
-                  Track your payments and payouts.
+                  Track completed payouts, pending releases, and booking-linked earnings in one place.
                 </motion.p>
               </div>
               
@@ -188,25 +222,25 @@ export function ProviderEarningsPage() {
                 transition={{ delay: 0.5 }}
                 className="hidden lg:grid lg:grid-cols-2 lg:gap-3"
               >
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
+                <div className="rounded-xl border border-cyan-100 bg-white/85 p-4 shadow-sm transition-all hover:shadow-md">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-400/20">
-                      <TrendingUp className="h-5 w-5 text-blue-300" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600">
+                      <TrendingUp className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs text-purple-200">Total Earnings</p>
-                      <p className="text-lg font-bold">{formatCurrency(stats.totalEarnings)}</p>
+                      <p className="text-xs text-slate-500">Total Earnings</p>
+                      <p className="text-lg font-bold text-slate-950">{formatCurrency(stats.totalEarnings)}</p>
                     </div>
                   </div>
                 </div>
-                <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm transition-all hover:bg-white/20">
+                <div className="rounded-xl border border-amber-100 bg-white/85 p-4 shadow-sm transition-all hover:shadow-md">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-400/20">
-                      <Award className="h-5 w-5 text-amber-300" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+                      <Award className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs text-purple-200">Jobs Done</p>
-                      <p className="text-lg font-bold">{stats.completedJobs}</p>
+                      <p className="text-xs text-slate-500">Completed Jobs</p>
+                      <p className="text-lg font-bold text-slate-950">{stats.completedJobs}</p>
                     </div>
                   </div>
                 </div>
@@ -222,61 +256,30 @@ export function ProviderEarningsPage() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-2 gap-3 sm:grid-cols-4"
         >
-          <div className="rounded-xl bg-white p-4 shadow">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary-400 to-blue-500">
-                <Wallet className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase text-slate-500">Total Earnings</p>
-                <p className="font-display text-lg font-bold text-slate-900">
-                  {formatCurrency(stats.totalEarnings)}
-                </p>
-              </div>
-            </div>
-          </div>
+          {earningStatCards.map((card, index) => {
+            const Icon = card.icon;
+            const theme = statCardThemes[index % statCardThemes.length];
 
-          <div className="rounded-xl bg-white p-4 shadow">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-500">
-                <TrendingUp className="h-5 w-5 text-white" />
+            return (
+              <div
+                key={card.label}
+                className={`group relative overflow-hidden rounded-xl border ${theme.border} ${theme.background} p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg`}
+              >
+                <div className={`absolute -right-8 -top-8 h-20 w-20 rounded-full ${theme.glow} blur-xl transition-transform group-hover:scale-125`} />
+                <div className="relative flex items-center gap-3">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${theme.icon} shadow-md`}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-slate-500">{card.label}</p>
+                    <p className="font-display text-lg font-bold text-slate-900">
+                      {card.value}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-semibold uppercase text-slate-500">Pending</p>
-                <p className="font-display text-lg font-bold text-slate-900">
-                  {formatCurrency(stats.pendingPayouts)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl bg-white p-4 shadow">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-400 to-purple-500">
-                <CreditCard className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase text-slate-500">Paid Out</p>
-                <p className="font-display text-lg font-bold text-slate-900">
-                  {formatCurrency(stats.paidOut)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl bg-white p-4 shadow">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500">
-                <IndianRupee className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase text-slate-500">Jobs Done</p>
-                <p className="font-display text-lg font-bold text-slate-900">
-                  {stats.completedJobs}
-                </p>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </motion.div>
 
         {/* Error Message */}

@@ -32,6 +32,11 @@ const serviceSchema = new mongoose.Schema(
       required: false,
       default: [],
     },
+    videos: {
+      type: [String],
+      required: false,
+      default: [],
+    },
     basePricing: {
       type: String,
       trim: true,
@@ -50,10 +55,29 @@ const serviceSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        default: undefined
+      },
+      address: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// 2dsphere index for geospatial queries
+serviceSchema.index({ location: '2dsphere' });
 
 export const Service = mongoose.model("Service", serviceSchema);

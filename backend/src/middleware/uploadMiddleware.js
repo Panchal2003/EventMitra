@@ -87,9 +87,24 @@ const allowedServiceImageMimeTypes = [
   "image/heif",
 ];
 
+const allowedVideoMimeTypes = [
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "video/x-msvideo",
+];
+
 const serviceImageFileFilter = (req, file, callback) => {
   if (!allowedServiceImageMimeTypes.includes(file.mimetype)) {
     callback(new Error("Only JPG, PNG, and WEBP image files are allowed for service images."));
+    return;
+  }
+  callback(null, true);
+};
+
+const serviceVideoFileFilter = (req, file, callback) => {
+  if (!allowedVideoMimeTypes.includes(file.mimetype)) {
+    callback(new Error("Only MP4, WebM, and MOV video files are allowed for service videos."));
     return;
   }
   callback(null, true);
@@ -118,6 +133,32 @@ export const serviceMultipleImageUpload = multer({
   fileFilter: serviceImageFileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024,
+    files: 15,
+  },
+});
+
+const getServiceVideoStorage = () => {
+  ensureUploadDirectories();
+  return multer.diskStorage({
+    destination: (req, file, callback) => {
+      callback(null, path.join(uploadsRoot, "services"));
+    },
+    filename: (req, file, callback) => {
+      const extension = path.extname(file.originalname);
+      const sanitizedBase = path
+        .basename(file.originalname, extension)
+        .replace(/[^a-zA-Z0-9-_]/g, "-")
+        .slice(0, 48);
+      callback(null, `${Date.now()}-${sanitizedBase || "service_video"}${extension}`);
+    },
+  });
+};
+
+export const serviceVideoUpload = multer({
+  storage: getServiceVideoStorage(),
+  fileFilter: serviceVideoFileFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024,
     files: 5,
   },
 });

@@ -381,7 +381,7 @@ export function ServicesPage() {
                         onFocus={handleSearchFocus}
                         onBlur={handleSearchBlur}
                         placeholder="Search service name..."
-                        className="w-full rounded-xl border border-slate-200 bg-white/92 py-3 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-500/10 sm:rounded-2xl sm:py-4 sm:pl-14 sm:pr-4"
+                        className="w-full rounded-xl border bg-white border-slate-200 bg-white/92 py-3 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-primary-400 focus:bg-white focus:ring-4 focus:ring-primary-500/10 sm:rounded-2xl sm:py-4 sm:pl-14 sm:pr-4"
                       />
                     </label>
 

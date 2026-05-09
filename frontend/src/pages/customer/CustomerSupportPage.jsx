@@ -19,7 +19,7 @@ import {
 const faqData = [
   {
     question: "How do I book a service?",
-    answer: "Browse our services, select the one you need, choose a provider, and click 'Book Now'. Fill in your event details and confirm your booking. You'll receive a confirmation email with all the details.",
+    answer: "Browse services, select the option you need, choose a verified partner, and click 'Book Now'. Fill in your event details and confirm your booking. You will receive confirmation with the key details.",
   },
   {
     question: "How do I track my booking status?",
@@ -27,11 +27,11 @@ const faqData = [
   },
   {
     question: "What if I need to cancel my booking?",
-    answer: "You can cancel your booking from the 'My Bookings' page. Please note that cancellation policies vary by provider. Check the provider's cancellation policy before booking.",
+    answer: "You can cancel your booking from the 'My Bookings' page. Cancellation rules may vary by partner, so review the booking details before confirming.",
   },
   {
-    question: "How do I contact my service provider?",
-    answer: "Once your booking is confirmed, you can view the provider's contact details in your booking details. You can also message them through our platform.",
+    question: "How do I contact my service partner?",
+    answer: "Once your booking is confirmed, you can view the partner's contact details in your booking details. You can also message them through our platform.",
   },
   {
     question: "What payment methods are accepted?",
@@ -39,11 +39,11 @@ const faqData = [
   },
   {
     question: "How do I rate and review a service?",
-    answer: "After your service is completed, you'll receive a prompt to rate and review the provider. Your feedback helps other customers make informed decisions.",
+    answer: "After your service is completed, you will receive a prompt to rate and review the partner. Your feedback helps other clients make informed decisions.",
   },
   {
     question: "What if I'm not satisfied with the service?",
-    answer: "Contact our support team immediately. We'll work with you and the provider to resolve any issues. You can also raise a dispute through the booking details page.",
+    answer: "Contact our support team immediately. We will work with you and the partner to resolve any issues. You can also raise a dispute through the booking details page.",
   },
   {
     question: "How do I update my profile information?",
@@ -115,11 +115,11 @@ export function CustomerSupportPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold">Support Center</h1>
-              <p className="text-sm text-white/80">We're here to help you</p>
+              <p className="text-sm text-white/80">We are here to help you</p>
             </div>
           </div>
           <p className="text-sm text-white/90 max-w-2xl">
-            Get help with your bookings, account, payments, and more. Our support team is available 24/7 to assist you.
+            Get help with bookings, account updates, payments, partner coordination, and platform questions. Our support team is available 24/7.
           </p>
         </div>
       </motion.div>

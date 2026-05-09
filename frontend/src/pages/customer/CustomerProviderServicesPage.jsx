@@ -151,7 +151,7 @@ export function CustomerProviderServicesPage() {
         setError(null);
         
         if (!providerId || providerId === 'undefined' || providerId === 'null') {
-          setError("Provider ID is missing or invalid");
+          setError("Partner listing is missing or invalid.");
           setLoading(false);
           return;
         }
@@ -159,7 +159,7 @@ export function CustomerProviderServicesPage() {
         const response = await publicApi.getProviderServices(providerId);
         
         if (!response.data?.data) {
-          setError("No provider data received");
+          setError("No partner profile details were received.");
           setLoading(false);
           return;
         }
@@ -169,10 +169,10 @@ export function CustomerProviderServicesPage() {
         const errorData = requestError.response?.data;
         if (errorData?.providerStatus === "pending") {
           setIsPendingProvider(true);
-          setError("This provider is pending admin approval and not yet available for bookings.");
+          setError("This partner profile is pending approval and is not yet available for bookings.");
         } else {
           setError(
-            errorData?.message || "Failed to load provider services"
+            errorData?.message || "Unable to load this partner's services."
           );
         }
       } finally {
@@ -254,7 +254,7 @@ export function CustomerProviderServicesPage() {
     }
     return total + (item.startingPrice || 0);
   }, 0);
-  const providerName = provider?.businessName || provider?.name || "Provider";
+  const providerName = provider?.businessName || provider?.name || "Partner";
   const providerCategoryLabel =
     provider?.serviceCategory?.name || categoryOptions[0]?.name || "Event services";
   const providerRatingCount = Number(provider?.ratingCount || 0);
@@ -471,7 +471,7 @@ export function CustomerProviderServicesPage() {
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
         <div className="relative flex flex-col items-center gap-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary-600" />
-          <p className="text-sm text-slate-600 font-medium">Loading provider services...</p>
+          <p className="text-sm text-slate-600 font-medium">Loading partner services...</p>
         </div>
       </div>
     );
@@ -487,7 +487,7 @@ export function CustomerProviderServicesPage() {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
                   <Clock className="h-8 w-8 text-amber-600" />
                 </div>
-                <p className="mb-2 text-lg font-semibold text-amber-700">Provider Pending Approval</p>
+                <p className="mb-2 text-lg font-semibold text-amber-700">Partner Pending Approval</p>
               </>
             ) : (
               <>
@@ -549,7 +549,7 @@ export function CustomerProviderServicesPage() {
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 via-blue-500 to-indigo-500 shadow-lg shadow-primary-500/30">
                   <Sparkles className="h-3.5 w-3.5 text-white" />
                 </div>
-                <span className="text-xs font-bold text-slate-700 tracking-widest uppercase">✨ Premium Provider Services</span>
+                <span className="text-xs font-bold text-slate-700 tracking-widest uppercase">Premium Partner Services</span>
                 <div className="h-3 w-px bg-slate-300" />
                 <span className="text-[10px] font-semibold text-primary-600">NEW</span>
               </motion.div>
@@ -587,19 +587,19 @@ export function CustomerProviderServicesPage() {
                 <div className="text-center md:text-left">
                   <div className="inline-flex items-center gap-2 rounded-full border border-primary-100 bg-primary-50 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary-700">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Trusted provider profile
+                    Trusted partner profile
                   </div>
                   <h2 className="mt-4 text-2xl font-display font-black text-slate-900 sm:text-3xl">{providerName}</h2>
                   <p className="mt-1 text-sm text-slate-600 sm:text-base">{providerCategoryLabel}</p>
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
                     {canShowPrices
-                      ? `Compare ${activeFocusLabel.toLowerCase()} packages, review recent work, and book directly with this provider.`
-                      : "Login as a customer to unlock pricing, shortlist services, and start your booking instantly."}
+                      ? `Compare ${activeFocusLabel.toLowerCase()} packages, review recent work, and book directly with this partner.`
+                      : "Login as a client to unlock pricing, shortlist services, and start your booking instantly."}
                   </p>
                   <div className="mt-4 flex flex-wrap justify-center gap-2 md:justify-start">
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900">
                       <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                      {providerRatingCount > 0 ? `${providerRatingLabel} rating` : "New Provider"}
+                      {providerRatingCount > 0 ? `${providerRatingLabel} rating` : "New Partner"}
                     </span>
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
                       <TrendingUp className="h-3.5 w-3.5 text-slate-600" />
@@ -634,7 +634,7 @@ export function CustomerProviderServicesPage() {
                     </div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{stat.label}</p>
                     <p className="mt-2 text-2xl font-display font-black text-slate-900">{stat.value}</p>
-                    <p className="mt-1 text-xs text-slate-500">{stat.subLabel || "Live provider data"}</p>
+                    <p className="mt-1 text-xs text-slate-500">{stat.subLabel || "Live partner data"}</p>
                   </div>
                 ))}
               </motion.div>
@@ -658,7 +658,7 @@ export function CustomerProviderServicesPage() {
                   ) : (
                     <>
                       <Lock className="h-4 w-4 text-slate-500" />
-                      Login as customer to unlock service pricing and instant booking.
+                      Login as a client to unlock service pricing and instant booking.
                     </>
                   )}
                 </div>
@@ -671,7 +671,7 @@ export function CustomerProviderServicesPage() {
                     {hasForeignCart ? (
                       <div className="flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-amber-600" />
-                        <span>Your cart has services from another provider.</span>
+                        <span>Your cart has services from another partner.</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -709,7 +709,7 @@ export function CustomerProviderServicesPage() {
                 {displayService ? displayService.name : "Available Services"}
               </h2>
               <p className="text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-                Explore this provider&apos;s service like a product detail page, review recent work photos, and book with full context.
+                Explore this partner&apos;s service details, review recent work, and book with complete context.
               </p>
             </motion.div>
 
@@ -967,8 +967,8 @@ export function CustomerProviderServicesPage() {
                               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 shadow-md">
                                 <Shield className="h-4 w-4 text-white" />
                               </div>
-                              <p className="text-sm font-bold text-slate-900">Provider-ready</p>
-                              <p className="mt-1 text-xs text-slate-500">Live package from this provider</p>
+                              <p className="text-sm font-bold text-slate-900">Partner-ready</p>
+                              <p className="mt-1 text-xs text-slate-500">Live package from this partner</p>
                             </div>
                             <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 p-4">
                               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-md">
@@ -1304,7 +1304,7 @@ export function CustomerProviderServicesPage() {
                   </div>
                   {bookingHasMemberPricing ? (
                     <p className="mt-2 text-xs text-slate-500">
-                      Total updates only for services where the provider enabled extra-member pricing.
+                      Total updates only for services where the partner enabled extra-member pricing.
                     </p>
                   ) : null}
                 </div>

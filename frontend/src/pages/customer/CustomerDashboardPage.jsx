@@ -21,6 +21,33 @@ import {
   LogOut,
 } from "lucide-react";
 
+const statCardThemes = [
+  {
+    glow: "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
+    border: "border-cyan-100/80",
+    background: "bg-gradient-to-br from-cyan-100 via-sky-50 to-blue-100/90",
+    icon: "bg-gradient-to-br from-cyan-500 to-blue-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
+    border: "border-emerald-100/80",
+    background: "bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100/90",
+    icon: "bg-gradient-to-br from-emerald-500 to-teal-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20",
+    border: "border-amber-100/80",
+    background: "bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100/90",
+    icon: "bg-gradient-to-br from-amber-500 to-orange-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
+    border: "border-violet-100/80",
+    background: "bg-gradient-to-br from-violet-100 via-fuchsia-50 to-purple-100/90",
+    icon: "bg-gradient-to-br from-violet-500 to-fuchsia-600",
+  },
+];
+
 export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -89,7 +116,7 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
     {
       icon: Sparkles,
       label: "Book Service",
-      desc: "Find the best providers",
+      desc: "Find verified partners",
       link: "/services",
       gradient: "from-primary-500 to-blue-600",
       shadow: "shadow-primary-500/20",
@@ -105,7 +132,7 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
     },
     {
       icon: Users,
-      label: "Find Providers",
+      label: "Find Partners",
       desc: "Browse verified experts",
       link: "/services",
       gradient: "from-emerald-500 to-teal-600",
@@ -190,7 +217,7 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
                   )}
                   <div>
                     <h1 className="font-display text-2xl font-black">
-                      {user?.name?.split(" ")[0] || "Customer"}
+                      {user?.name?.split(" ")[0] || "Client"}
                     </h1>
                   </div>
                 </div>
@@ -201,7 +228,7 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-xs font-semibold text-blue-300">
                     <Sparkles className="h-3 w-3" />
-                    EventMitra Customer
+                    EventMitra Client
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/30 text-xs font-semibold text-amber-300">
                     <Zap className="h-3 w-3" />
@@ -214,10 +241,10 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
               <div className="hidden lg:block">
                 <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm">
                   <Zap className="h-4 w-4 text-primary-400" />
-                  <span className="text-xs font-bold text-white tracking-wide">Customer Dashboard</span>
+                  <span className="text-xs font-bold text-white tracking-wide">Client Dashboard</span>
                 </div>
                 <h1 className="font-display text-3xl font-black sm:text-4xl">
-                  Welcome back, {user?.name?.split(" ")[0] || "Customer"}
+                  Welcome back, {user?.name?.split(" ")[0] || "Client"}
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
                   Keep an eye on bookings, revisit service categories, and move quickly between discovery and account management.
@@ -269,7 +296,7 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
                     <span className="text-xs font-bold text-primary-700 tracking-wide">OVERVIEW</span>
                   </div>
                   <h2 className="font-display text-2xl font-black text-slate-900">
-                    Your Statistics
+                    Your Booking Overview
                   </h2>
                 </div>
               </div>
@@ -285,16 +312,16 @@ export function CustomerDashboardPage({ embedded = false, onOpenTab = null }) {
                       transition={{ delay: 0.1 + index * 0.05 }}
                       className="group relative"
                     >
-                      <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-all duration-500`} />
-                      <div className="relative bg-white rounded-2xl p-5 border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-primary-200/30 transition-all duration-500 overflow-hidden">
-                        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.color}`} />
-                        <div className="flex items-center gap-4">
-                          <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color} text-white shadow-lg ${stat.shadow} group-hover:scale-110 transition-transform duration-300`}>
+                      <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${statCardThemes[index].glow}`} />
+                      <div className={`relative flex min-h-[150px] flex-col items-center justify-center overflow-hidden rounded-2xl border p-5 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${statCardThemes[index].border}`}>
+                        <div className={`absolute inset-0 rounded-2xl ${statCardThemes[index].background}`} />
+                        <div className="relative flex flex-col items-center">
+                          <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-110 ${statCardThemes[index].icon}`}>
                             <Icon className="h-6 w-6" />
                           </div>
                           <div>
                             <p className="text-2xl font-display font-black text-slate-950">{stat.value}</p>
-                            <p className="text-sm text-slate-500 font-medium">{stat.label}</p>
+                            <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">{stat.label}</p>
                           </div>
                         </div>
                       </div>

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../middleware/authMiddleware.js";
-import { portfolioUpload, serviceImageUpload, serviceMultipleImageUpload } from "../middleware/uploadMiddleware.js";
+import { portfolioUpload, serviceImageUpload, serviceMultipleImageUpload, serviceVideoUpload } from "../middleware/uploadMiddleware.js";
 import {
   completeProviderJob,
   createProviderService,
@@ -21,6 +21,7 @@ import {
   uploadMultipleServiceImages,
   uploadPortfolio,
   uploadServiceImage,
+  uploadServiceVideos,
   verifyBookingOtp,
   verifyCompletionOtp,
   verifyProviderRemainingPayment,
@@ -38,7 +39,8 @@ providerRoutes.post("/service-categories", createProviderServiceCategory);
 providerRoutes.put("/services/:serviceId", updateProviderService);
 providerRoutes.delete("/services/:serviceId", deleteProviderService);
 providerRoutes.post("/services/upload", serviceImageUpload.single("image"), uploadServiceImage);
-providerRoutes.post("/services/upload-images", serviceMultipleImageUpload.array("images", 5), uploadMultipleServiceImages);
+providerRoutes.post("/services/upload-images", serviceMultipleImageUpload.array("images", 15), uploadMultipleServiceImages);
+providerRoutes.post("/services/upload-videos", serviceVideoUpload.array("videos", 5), uploadServiceVideos);
 providerRoutes.get("/profile", getProviderProfile);
 providerRoutes.put("/profile", updateProviderProfile);
 providerRoutes.post("/profile/portfolio", portfolioUpload.array("files", 6), uploadPortfolio);

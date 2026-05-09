@@ -11,11 +11,16 @@ import {
   Users,
   Globe,
   TrendingUp,
+  Navigation,
+  LocateFixed,
+  X,
+  Loader2,
 } from "lucide-react";
 import { publicApi } from "../../services/api";
 import { Button } from "../../components/common/Button";
 import { Footer } from "../../components/common/Footer";
 import { useAuth } from "../../context/AuthContext";
+import { filterProvidersByDistance, formatDistance } from "../../utils/distance";
 
 const statCardThemes = [
   {
@@ -70,6 +75,13 @@ export function ServiceDetailPage() {
   const [data, setData] = useState(null);
   const canShowPrices = isAuthenticated && user?.role === "customer";
 
+  // Location filter state
+  const [userLocation, setUserLocation] = useState({ lat: "", lon: "" });
+  const [userAddress, setUserAddress] = useState("");
+  const [showLocationFilter, setShowLocationFilter] = useState(false);
+  const [filteredProviders, setFilteredProviders] = useState([]);
+  const [isLocating, setIsLocating] = useState(false);
+
   const decodedServiceName = decodeURIComponent(serviceName || "");
 
   useEffect(() => {
@@ -102,6 +114,66 @@ export function ServiceDetailPage() {
 
     fetchProviders();
   }, [decodedServiceName]);
+
+  // Filter providers by location when user location is set
+  useEffect(() => {
+    if (!data?.providers) return;
+
+    const userLat = parseFloat(userLocation.lat);
+    const userLon = parseFloat(userLocation.lon);
+
+    if (userLocation.lat && userLocation.lon && !isNaN(userLat) && !isNaN(userLon)) {
+      const filtered = filterProvidersByDistance(data.providers, userLat, userLon, 10);
+      setFilteredProviders(filtered);
+    } else {
+      setFilteredProviders(data.providers);
+    }
+  }, [userLocation, data?.providers]);
+
+  // Handle "Use my location" button
+  const handleUseMyLocation = () => {
+    setIsLocating(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude.toString(),
+            lon: position.coords.longitude.toString(),
+          });
+          setIsLocating(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          alert("Unable to get your location. Please enter manually.");
+          setIsLocating(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+      setIsLocating(false);
+    }
+  };
+
+  // Handle manual location input
+  const handleApplyLocationFilter = () => {
+    const lat = parseFloat(userLocation.lat);
+    const lon = parseFloat(userLocation.lon);
+
+    if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+      // Filter will be applied by the useEffect
+      setShowLocationFilter(false);
+    } else {
+      alert("Please enter valid latitude and longitude coordinates, or use 'Find my location'");
+    }
+  };
+
+  // Clear location filter
+  const handleClearLocationFilter = () => {
+    setUserLocation({ lat: "", lon: "" });
+    setUserAddress("");
+    setShowLocationFilter(false);
+  };
 
   if (loading) {
     return (
@@ -224,7 +296,7 @@ export function ServiceDetailPage() {
               </span>
               <div className="h-3 w-px bg-slate-300" />
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-600">
-                Verified Access
+                Verified Partner Access
               </span>
             </motion.div>
 
@@ -237,7 +309,7 @@ export function ServiceDetailPage() {
               {displayServiceName}
               <br />
               <span className="relative inline-block bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Partner Options
+                Trusted Partner Options
                 <div className="absolute -bottom-2 left-0 right-0 h-1 rounded-full bg-gradient-to-r from-primary-500 via-blue-500 to-indigo-500 opacity-90" />
               </span>
             </motion.h1>
@@ -248,8 +320,8 @@ export function ServiceDetailPage() {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="mx-auto mb-8 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg md:text-[1.15rem] md:leading-8"
             >
-              Review verified partners offering this service, compare their available packages, and move forward
-              with more confidence.
+              Review verified partners for this service, compare available packages, and proceed with greater
+              clarity and confidence.
             </motion.p>
           </motion.div>
 
@@ -329,8 +401,126 @@ export function ServiceDetailPage() {
             </p>
           </motion.div>
 
+          {/* Location Filter Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+            className="mb-8"
+          >
+            <div className="rounded-2xl border border-sky-100/60 bg-gradient-to-r from-sky-50/80 via-blue-50/60 to-cyan-50/70 p-4 shadow-lg backdrop-blur-xl sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg">
+                    <MapPin className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Location-Based Partner Search</h3>
+                    <p className="text-xs text-slate-600">
+                      {userLocation.lat && userLocation.lon
+                        ? `Showing partners within 10km of your location`
+                        : "Find verified partners near you within 10km"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {!showLocationFilter ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setShowLocationFilter(true)}
+                      className="gap-2"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      <span className="hidden sm:inline">Set Location</span>
+                    </Button>
+                  ) : (
+                    <>
+                      <div className="flex flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex-initial">
+                        <MapPin className="h-4 w-4 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Address (optional)"
+                          value={userAddress}
+                          onChange={(e) => setUserAddress(e.target.value)}
+                          className="border-none bg-transparent px-2 py-1 text-sm outline-none focus:ring-0"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          step="any"
+                          min="-90"
+                          max="90"
+                          placeholder="Latitude"
+                          value={userLocation.lat}
+                          onChange={(e) => setUserLocation(prev => ({ ...prev, lat: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:w-24"
+                        />
+                        <input
+                          type="number"
+                          step="any"
+                          min="-180"
+                          max="180"
+                          placeholder="Longitude"
+                          value={userLocation.lon}
+                          onChange={(e) => setUserLocation(prev => ({ ...prev, lon: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:w-24"
+                        />
+                      </div>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleUseMyLocation}
+                        disabled={isLocating}
+                        className="gap-1"
+                      >
+                        {isLocating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <LocateFixed className="h-4 w-4" />
+                        )}
+                        <span className="hidden sm:inline">{isLocating ? "Locating..." : "Find my location"}</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleApplyLocationFilter}
+                      >
+                        Apply
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearLocationFilter}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {userLocation.lat && userLocation.lon && (
+                <div className="mt-3 flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Navigation className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xs font-medium text-emerald-800">
+                      Location set: {userLocation.lat}, {userLocation.lon}
+                      {userAddress && ` (${userAddress})`}
+                    </span>
+                  </div>
+                  <span className="text-xs font-semibold text-emerald-700">
+                    Filtering within 10km radius
+                  </span>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {providers.map((item, index) => {
+            {filteredProviders.map((item, index) => {
               const provider = item.provider;
               const services = item.services || [];
               const validPrices = services
@@ -341,6 +531,8 @@ export function ServiceDetailPage() {
               const providerRatingCount = Number(provider.ratingCount || 0);
               const providerRatingLabel =
                 providerRatingCount > 0 ? Number(provider.rating || 0).toFixed(1) : "New";
+              // Get distance from the filtered provider (added by filterProvidersByDistance)
+              const distance = item.distance;
 
               return (
                 <motion.div
@@ -385,10 +577,21 @@ export function ServiceDetailPage() {
                               {provider.experience || 0} yrs exp
                             </span>
                           </div>
-                          {provider.address ? (
+                          {(services[0]?.location?.address || provider.address) ? (
                             <p className="mt-3 flex items-center gap-2 text-sm text-white/70">
                               <MapPin className="h-4 w-4" />
-                              {provider.address}
+                              {services[0]?.location?.address || provider.address}
+                            </p>
+                          ) : null}
+                          {distance !== null && distance !== undefined ? (
+                            <p className="mt-1 flex items-center gap-2 text-xs text-sky-200">
+                              <Navigation className="h-3.5 w-3.5" />
+                              {formatDistance(distance)}
+                            </p>
+                          ) : userLocation.lat && userLocation.lon ? (
+                            <p className="mt-1 flex items-center gap-2 text-xs text-amber-200">
+                              <MapPin className="h-3.5 w-3.5" />
+                              Distance unavailable
                             </p>
                           ) : null}
                         </div>
@@ -465,6 +668,26 @@ export function ServiceDetailPage() {
               );
             })}
           </div>
+
+          {/* Empty state when no partners are available within 10km */}
+          {filteredProviders.length === 0 && userLocation.lat && userLocation.lon && providers.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl border border-amber-100 bg-amber-50 p-8 text-center"
+            >
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+                <MapPin className="h-8 w-8 text-amber-600" />
+              </div>
+              <h3 className="mb-2 text-lg font-bold text-amber-900">No partners available within 10km</h3>
+              <p className="mb-4 text-sm text-amber-700">
+                There are no verified partners within 10km of your location. Try expanding your search area or clearing the location filter to view all available partners.
+              </p>
+              <Button variant="secondary" onClick={handleClearLocationFilter}>
+                Clear Location Filter
+              </Button>
+            </motion.div>
+          )}
         </div>
       </section>
 

@@ -95,6 +95,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    googleId: {
+      type: String,
+      sparse: true, // Allows multiple null values but unique when not null
+    },
     paymentDetailsVerified: {
       type: Boolean,
       default: false,

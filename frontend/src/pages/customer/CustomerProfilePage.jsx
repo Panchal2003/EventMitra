@@ -32,27 +32,20 @@ import {
   PhoneCall,
   Video,
   FileText,
-  AlertCircle,
   CheckCircle,
   Clock4,
   Users,
   Globe,
   Lock,
-  Search,
-  Calendar,
-  Clock3,
-  ArrowRight,
-  CreditCard,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useUI } from "../../context/UIContext";
 import { Button } from "../../components/common/Button";
 import { Modal } from "../../components/common/Modal";
-import { authApi, customerApi } from "../../services/api";
+import { authApi } from "../../services/api";
 import { AvatarCropModal } from "../../components/customer/AvatarCropModal";
 import { CustomerDashboardPage } from "./CustomerDashboardPage";
 import { CustomerBookingsPage } from "./CustomerBookingsPage";
-import { formatCurrency } from "../../utils/currency";
 
 const tabs = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -86,7 +79,6 @@ export function CustomerProfilePage() {
     success: "",
   });
   const handleSearchFocus = () => hideBottomNav();
-  const handleSearchBlur = () => showBottomNav();
   const handleInputBlur = () => showBottomNav();
   const [cropSource, setCropSource] = useState("");
   const [cropOpen, setCropOpen] = useState(false);
@@ -146,11 +138,6 @@ export function CustomerProfilePage() {
     }
 
     setSearchParams({ tab: tabId }, { replace: true });
-  };
-
-  const handlePayRemainingFromProfile = (booking) => {
-    // Navigate directly to payment page - feedback will be collected there
-    navigate(`/customer/payment/${booking._id}`);
   };
 
   const syncFormWithUser = () => {
@@ -352,7 +339,7 @@ export function CustomerProfilePage() {
                         </div>
                         <h2 className="text-3xl font-black text-white">Your Bookings</h2>
                         <p className="mt-2 text-primary-100">
-                          Clean booking cards, OTP updates, and provider status in one shared view.
+                          Clean booking cards, OTP updates, and partner status in one organized view.
                         </p>
                       </div>
                     </div>
@@ -360,503 +347,6 @@ export function CustomerProfilePage() {
                 </motion.div>
 
                 <CustomerBookingsPage embedded />
-              </div>
-            ) : null}
-
-            {activeTab === "__legacy-bookings" ? (
-              <div className="space-y-6">
-                {/* Bookings Header */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-primary-900 to-blue-900 border border-white/10 shadow-2xl"
-                >
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary-400 to-transparent rounded-full blur-3xl" />
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-400 to-transparent rounded-full blur-2xl" />
-                  </div>
-                  <div className="relative p-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-blue-600 text-white shadow-xl">
-                          <CalendarCheck2 className="h-8 w-8" />
-                        </div>
-                        <div>
-                          <div className="inline-flex items-center gap-2 mb-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20">
-                            <Sparkles className="h-3.5 w-3.5 text-primary-400" />
-                            <span className="text-xs font-bold text-white tracking-wide">MY BOOKINGS</span>
-                          </div>
-                          <h2 className="text-3xl font-black text-white">Your Bookings</h2>
-                          <p className="mt-2 text-primary-100">Track and manage all your service bookings</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-sm">
-                          <Calendar className="h-4 w-4 text-primary-400" />
-                          <span className="text-sm font-bold text-white">{bookings.length} Total</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-sm">
-                          <Zap className="h-4 w-4 text-emerald-400" />
-                          <span className="text-sm font-bold text-white">
-                            {bookings.filter((b) => ["confirmed", "in_progress", "otp_pending"].includes(b.status)).length} Active
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-sm">
-                          <CheckCircle className="h-4 w-4 text-blue-400" />
-                          <span className="text-sm font-bold text-white">
-                            {bookings.filter((b) => b.status === "completed").length} Completed
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Search Bar */}
-                {bookings.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                  >
-                    <div className="relative">
-                      <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="Search by service, provider, or location..."
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        onFocus={handleSearchFocus}
-                        onBlur={handleSearchBlur}
-                        className="w-full rounded-xl border border-slate-200 bg-white/90 backdrop-blur-2xl py-3 pl-12 pr-4 text-sm text-slate-900 shadow-lg shadow-slate-200/20 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
-                      />
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Error Message */}
-                {bookingsError && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-amber-200 bg-amber-50 p-4"
-                  >
-                    <div className="flex items-center gap-3 text-amber-700">
-                      <AlertCircle className="h-5 w-5" />
-                      <p className="text-sm font-medium">{bookingsError}</p>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Loading State */}
-                {bookingsLoading ? (
-                  <div className="flex min-h-[240px] items-center justify-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <Loader2 className="h-10 w-10 animate-spin text-primary-600" />
-                      <p className="text-sm text-slate-600 font-medium">Loading bookings...</p>
-                    </div>
-                  </div>
-                ) : bookings.length === 0 ? (
-                  /* Empty State */
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                  >
-                    <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-slate-100 shadow-xl shadow-slate-900/5">
-                      <motion.div
-                        animate={{ y: [0, -10, 0] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="flex h-28 w-28 items-center justify-center rounded-3xl bg-gradient-to-br from-primary-500 via-blue-500 to-indigo-600 shadow-2xl shadow-primary-500/30 mx-auto"
-                      >
-                        <CalendarCheck2 className="h-14 w-14 text-white" />
-                      </motion.div>
-                      <h2 className="mt-8 font-display text-2xl font-bold text-slate-900">
-                        No Bookings Yet
-                      </h2>
-                      <p className="mt-3 max-w-md text-slate-500 leading-relaxed">
-                        Explore providers, add services to cart, or book directly from a provider page to get started.
-                      </p>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => navigate("/services")}
-                        className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 px-8 py-4 font-bold text-white shadow-xl shadow-primary-500/30 hover:shadow-2xl hover:shadow-primary-500/40 transition-all duration-300"
-                      >
-                        <Sparkles className="h-5 w-5" />
-                        Explore Services
-                      </motion.button>
-                    </div>
-                  </motion.div>
-                ) : (
-                  /* Bookings List */
-	                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-	                    {filteredBookings.map((booking, index) => {
-	                      const services = getBookingServices(booking);
-	                      const primaryService = services[0];
-                          const providerDisplayName = getProviderDisplayName(booking);
-                          const memberBookingSummary = getMemberBookingSummary(booking, services);
-
-	                      return (
-                        <motion.div
-                          key={booking._id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="group relative"
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                          <div className="relative bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-xl shadow-slate-900/5 hover:shadow-2xl hover:shadow-primary-500/10 transition-all duration-500">
-                            {/* Booking Header */}
-                            <div className="relative overflow-hidden">
-                              <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-blue-600 to-indigo-700" />
-                              <div className="absolute inset-0 opacity-10">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white to-transparent rounded-full blur-3xl" />
-                                <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-white to-transparent rounded-full blur-3xl" />
-                              </div>
-                              <div className="relative px-5 py-5 sm:px-6">
-                                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                  <div className="flex gap-3 sm:gap-4">
-                                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-xl text-white shadow-lg shadow-primary-500/20 sm:h-16 sm:w-16">
-                                      <Sparkles className="h-7 w-7 sm:h-8 sm:w-8" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        <h3 className="font-display text-lg font-black text-white sm:text-xl">
-                                          {primaryService?.name || "Service Booking"}
-                                        </h3>
-                                        {services.length > 1 && (
-                                          <span className="rounded-full bg-white/20 backdrop-blur-xl px-2.5 py-1 text-xs font-bold text-white">
-                                            +{services.length - 1} more service{services.length - 1 !== 1 ? "s" : ""}
-                                          </span>
-                                        )}
-                                      </div>
-                                      
-                                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                                        <span
-                                          className={`rounded-full px-3 py-1 text-xs font-bold backdrop-blur-xl ${statusColors[booking.status] || "bg-white/20 text-white"}`}
-                                        >
-                                          {statusLabels[booking.status] || booking.status}
-                                        </span>
-	                                        {booking.provider && (
-	                                          <span className="flex items-center gap-1 text-xs text-white/80 font-medium">
-	                                            <User className="h-3 w-3" />
-	                                            {providerDisplayName}
-	                                          </span>
-	                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex flex-wrap gap-2">
-                                    {booking.provider?._id && (
-                                      <Link
-                                        to={`/provider/${booking.provider._id}`}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-white/20 backdrop-blur-xl border border-white/30 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/30 hover:border-white/50"
-                                      >
-                                        View Provider
-                                        <ArrowRight className="h-4 w-4" />
-                                      </Link>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-xl px-3 py-1.5 font-medium text-white">
-                                    <Clock3 className="h-3 w-3" />
-                                    {formatDate(booking.eventDate)}
-                                  </span>
-                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-xl px-3 py-1.5 font-medium text-white">
-                                    <MapPin className="h-3 w-3" />
-                                    {booking.location}
-                                  </span>
-                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/30 backdrop-blur-xl px-3 py-1.5 font-bold text-white">
-                                    <ShieldCheck className="h-3 w-3" />
-                                    {formatCurrency(booking.totalAmount)}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Booking Details */}
-                            <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
-	                              <div className="flex flex-wrap gap-2">
-	                                <span className="rounded-full bg-gradient-to-r from-primary-50 to-blue-50 px-3 py-1.5 text-xs font-bold text-primary-700 ring-1 ring-primary-200/50">
-	                                  {services.length} booked service{services.length !== 1 ? "s" : ""}
-	                                </span>
-	                                {primaryService?.category?.name && (
-	                                  <span className="rounded-full bg-gradient-to-r from-violet-50 to-purple-50 px-3 py-1.5 text-xs font-bold text-violet-700 ring-1 ring-violet-200/50">
-	                                    {primaryService.category.name}
-	                                  </span>
-	                                )}
-	                              </div>
-
-                              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4">
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                    Provider Name
-                                  </p>
-                                  <p className="mt-2 text-sm font-bold text-slate-900">
-                                    {providerDisplayName}
-                                  </p>
-                                </div>
-
-                                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4">
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                    Event Date
-                                  </p>
-                                  <p className="mt-2 text-sm font-bold text-slate-900">
-                                    {formatDate(booking.eventDate)}
-                                  </p>
-                                  {booking.eventTime ? (
-                                    <p className="mt-1 text-xs font-medium text-slate-500">
-                                      {booking.eventTime}
-                                    </p>
-                                  ) : null}
-                                </div>
-
-                                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4">
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                    Address
-                                  </p>
-                                  <p className="mt-2 text-sm font-bold leading-6 text-slate-900">
-                                    {booking.location || "Address not provided"}
-                                  </p>
-                                </div>
-
-                                <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/80 p-4">
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                                    {booking.payment?.paymentStatus === "full_paid" ? "Complete Payment" : "Total Amount"}
-                                  </p>
-                                  <p className="mt-2 text-sm font-bold text-emerald-800">
-                                    {formatCurrency(booking.totalAmount)}
-                                  </p>
-                                  {booking.payment?.paymentStatus === "full_paid" && (
-                                    <p className="mt-2 text-xs font-medium text-emerald-600">
-                                      ✓ Fully paid
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="rounded-2xl border border-primary-100/80 bg-gradient-to-br from-primary-50/90 to-blue-50/80 p-4">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-700">
-                                  Service Details
-                                </p>
-                                <div className="mt-3 space-y-2">
-                                  {services.map((service) => (
-                                    <div
-                                      key={service?._id || service?.name}
-                                      className="flex flex-col gap-2 rounded-xl border border-white/80 bg-white/90 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                                    >
-                                      <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-slate-900">
-                                          {service?.name || "Service"}
-                                        </p>
-                                        {service?.category?.name ? (
-                                          <p className="mt-1 text-xs font-medium text-primary-700">
-                                            {service.category.name}
-                                          </p>
-                                        ) : null}
-                                      </div>
-                                      <p className="shrink-0 text-sm font-bold text-slate-900">
-                                        {formatCurrency(service?.startingPrice || 0)}
-                                      </p>
-                                    </div>
-                                  ))}
-                                </div>
-
-                                {memberBookingSummary ? (
-                                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                                    <Users className="mt-0.5 h-4 w-4 shrink-0" />
-                                    <p>{memberBookingSummary}</p>
-                                  </div>
-                                ) : null}
-                              </div>
-
-	                              {/* Status-specific content */}
-                              {booking.status === "provider_assigned" && (
-                                <div className="rounded-2xl border border-violet-200/50 bg-gradient-to-br from-violet-50 to-purple-50 p-5 shadow-sm">
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/20">
-                                      <Clock3 className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-bold text-violet-800">
-                                        Booking request sent to provider
-                                      </p>
-                                      <p className="mt-1 text-sm text-violet-700">
-                                        Your provider has received the booking request. Once the provider accepts and starts the work, the next status will appear here.
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {booking.status === "confirmed" && (
-                                <div className="rounded-2xl border border-primary-200/50 bg-gradient-to-br from-primary-50 to-blue-50 p-5 shadow-sm">
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-blue-600 text-white shadow-lg shadow-primary-500/20">
-                                      <ShieldCheck className="h-5 w-5" />
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="text-sm font-bold text-primary-800">
-                                        Your booking has been accepted
-                                      </p>
-                                      {booking.bookingOtp ? (
-                                        <>
-                                          <p className="mt-1 text-sm text-primary-700">
-                                            The provider has requested the start OTP. Please share this OTP with the provider so the work can begin.
-                                          </p>
-                                          <div className="mt-4 rounded-xl bg-white border border-primary-200/50 px-5 py-4 shadow-sm">
-                                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary-600">
-                                              Start OTP
-                                            </p>
-                                            <p className="mt-2 font-mono text-3xl font-black text-primary-700 tracking-widest">
-                                              {booking.bookingOtp}
-                                            </p>
-                                            <p className="mt-2 text-xs text-primary-600">
-                                              Share this OTP with the provider. It will disappear after the provider verifies it.
-                                            </p>
-                                          </div>
-                                        </>
-                                      ) : (
-                                        <p className="mt-1 text-sm text-primary-700">
-                                          The provider has accepted your booking. The start OTP will appear here once the provider is ready to begin the work.
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {booking.status === "in_progress" && (
-                                <div className="rounded-2xl border border-sky-200/50 bg-gradient-to-br from-sky-50 to-cyan-50 p-5 shadow-sm">
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shadow-lg shadow-sky-500/20">
-                                      <Zap className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-bold text-sky-800">
-                                        Work has started
-                                      </p>
-                                      <p className="mt-1 text-sm text-sky-700">
-                                        Your arrival OTP has been verified by the provider. A final OTP and your feedback will be required at the time of completion.
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {booking.status === "otp_pending" && (
-                                <div className="rounded-2xl border border-amber-200/50 bg-gradient-to-br from-amber-50 to-orange-50 p-5 shadow-sm">
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20">
-                                      <ShieldCheck className="h-5 w-5" />
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="text-sm font-bold text-amber-800">
-                                        Final step pending
-                                      </p>
-                                      <p className="mt-1 text-sm text-amber-700">
-                                        Enter your OTP and share feedback to complete the booking.
-                                      </p>
-                                      {booking.completionOtpCode && (
-                                        <div className="mt-4 rounded-xl bg-white border border-amber-200/50 px-5 py-4 shadow-sm">
-                                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-600">
-                                            Completion OTP
-                                          </p>
-                                          <p className="mt-2 font-mono text-3xl font-black text-amber-700 tracking-widest">
-                                            {booking.completionOtpCode}
-                                          </p>
-                                        </div>
-                                      )}
-                                      
-                                      {/* Show Pay Remaining if there's remaining amount or payment is not full_paid */}
-                                      {(booking.payment?.remainingAmount > 0 || (booking.payment?.paymentStatus !== "full_paid" && booking.payment?.paymentStatus !== "advance_pending")) && (
-                                        <button
-                                          onClick={() => handlePayRemainingFromProfile(booking)}
-                                        className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold rounded-xl transition-all duration-300"
-                                      >
-                                        <CreditCard className="h-4 w-4" />
-                                        Pay Remaining
-                                        </button>
-                                      )}
-                                      
-                                      <Button
-                                        onClick={() => setVerifyOtpBooking(booking)}
-                                        variant="success"
-                                        className="mt-4 w-full bg-gradient-to-r from-success-600 to-success-700 hover:from-success-700 hover:to-success-800 text-white shadow-lg shadow-success-500/20 hover:shadow-xl hover:shadow-success-500/30 transition-all duration-300 rounded-xl"
-                                      >
-                                        Verify OTP
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {booking.status === "completed" && (
-                                <div className="rounded-2xl border border-primary-200/50 bg-gradient-to-br from-primary-50 to-emerald-50 p-5 shadow-sm">
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-emerald-600 text-white shadow-lg shadow-primary-500/20">
-                                      <Star className="h-5 w-5" />
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="text-sm font-bold text-primary-800">
-                                        Booking completed with your feedback
-                                      </p>
-                                      <div className="mt-2 flex items-center gap-1 text-amber-500">
-                                        {Array.from({ length: 5 }).map((_, index) => (
-                                          <Star
-                                            key={`rating-${booking._id}-${index}`}
-                                            className={`h-5 w-5 ${
-                                              index < Number(booking.feedback.rating || 0)
-                                                ? "fill-current"
-                                                : ""
-                                            }`}
-                                          />
-                                        ))}
-                                      </div>
-                                      {booking.feedback.comment && (
-                                        <p className="mt-2 text-sm text-primary-700">
-                                          "{booking.feedback.comment}"
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                  
-                                  {booking.payment?.paymentStatus === "full_paid" ? (
-                                    <div className="mt-4 pt-4 border-t border-emerald-200">
-                                      <p className="text-sm font-bold text-emerald-700 mb-2">
-                                        ✓ Complete Payment
-                                      </p>
-                                      <p className="text-xs text-emerald-600">
-                                        Thank you! Your booking is fully paid.
-                                      </p>
-                                    </div>
-                                  ) : booking.payment?.remainingAmount > 0 && (
-                                    <div className="mt-4 pt-4 border-t border-amber-200">
-                                      <p className="text-sm font-bold text-amber-800 mb-2">
-                                        Remaining payment pending
-                                      </p>
-                                      <button
-                                        onClick={() => handlePayRemainingFromProfile(booking)}
-                                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold rounded-xl transition-all duration-300"
-                                      >
-                                        <CreditCard className="h-4 w-4" />
-                                        Pay Remaining
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </motion.div>
-                )}
               </div>
             ) : null}
 
@@ -882,7 +372,7 @@ export function CustomerProfilePage() {
                             {profileAvatar ? (
                               <img
                                 src={profileAvatar}
-                                alt={user?.name || "Customer"}
+                                alt={user?.name || "Client"}
                                 className="h-28 w-28 rounded-2xl object-cover shadow-xl ring-4 ring-white"
                               />
                             ) : (
@@ -899,9 +389,9 @@ export function CustomerProfilePage() {
                         <div className="text-center sm:text-left">
                           <div className="inline-flex items-center gap-2 mb-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-100">
                             <Award className="h-3.5 w-3.5 text-primary-600" />
-                            <span className="text-xs font-bold text-primary-700 tracking-wide">PREMIUM CUSTOMER</span>
+                            <span className="text-xs font-bold text-primary-700 tracking-wide">PREMIUM CLIENT</span>
                           </div>
-                          <h2 className="text-2xl font-black text-slate-900">{user?.name || "Customer"}</h2>
+                          <h2 className="text-2xl font-black text-slate-900">{user?.name || "Client"}</h2>
                           <p className="mt-1 text-sm text-slate-500 flex items-center gap-2 justify-center sm:justify-start">
                             <Mail className="h-4 w-4" />
                             {user?.email || "No email added"}
@@ -1087,7 +577,7 @@ export function CustomerProfilePage() {
                         </div>
                         <div className="flex items-center justify-between p-3 rounded-lg bg-white/10 backdrop-blur-sm">
                           <span className="text-sm text-slate-300">Account Type</span>
-                          <span className="text-xs font-bold text-white">Customer</span>
+                          <span className="text-xs font-bold text-white">Client</span>
                         </div>
                         <div className="flex items-center justify-between p-3 rounded-lg bg-white/10 backdrop-blur-sm">
                           <span className="text-sm text-slate-300">Status</span>
@@ -1357,7 +847,7 @@ export function CustomerProfilePage() {
                           { q: "How do I book a service?", icon: CalendarCheck2 },
                           { q: "What payment methods are accepted?", icon: Lock },
                           { q: "How can I cancel my booking?", icon: XCircle },
-                          { q: "How do I contact my service provider?", icon: MessageCircle },
+                          { q: "How do I contact my service partner?", icon: MessageCircle },
                           { q: "What is the refund policy?", icon: FileText },
                         ].map((item, index) => {
                           const Icon = item.icon;

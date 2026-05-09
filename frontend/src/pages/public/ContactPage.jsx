@@ -21,8 +21,8 @@ const contactItems = [
   },
   {
     icon: MessageCircle,
-    title: "Customer Support",
-    description: "Reach our team for bookings, providers, OTP, and account issues.",
+    title: "Client Support",
+    description: "Reach our team for bookings, partners, OTP, and account assistance.",
     gradient: "from-amber-500 to-orange-500",
   },
   {
@@ -30,6 +30,33 @@ const contactItems = [
     title: "Call Us",
     description: "+91 98765 43210",
     gradient: "from-violet-500 to-purple-500",
+  },
+];
+
+const statCardThemes = [
+  {
+    glow: "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
+    border: "border-cyan-100/80",
+    background: "bg-gradient-to-br from-cyan-100 via-sky-50 to-blue-100/90",
+    icon: "bg-gradient-to-br from-cyan-500 to-blue-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
+    border: "border-emerald-100/80",
+    background: "bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100/90",
+    icon: "bg-gradient-to-br from-emerald-500 to-teal-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
+    border: "border-violet-100/80",
+    background: "bg-gradient-to-br from-violet-100 via-fuchsia-50 to-purple-100/90",
+    icon: "bg-gradient-to-br from-violet-500 to-fuchsia-600",
+  },
+  {
+    glow: "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20",
+    border: "border-amber-100/80",
+    background: "bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100/90",
+    icon: "bg-gradient-to-br from-amber-500 to-orange-600",
   },
 ];
 
@@ -114,9 +141,9 @@ export function ContactPage() {
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 via-blue-500 to-indigo-500 shadow-lg shadow-primary-500/30">
                 <Mail className="h-3.5 w-3.5 text-white" />
               </div>
-              <span className="text-xs font-bold text-slate-700 tracking-widest uppercase">✨ Contact EventMitra</span>
+              <span className="text-xs font-bold text-slate-700 tracking-widest uppercase">Contact EventMitra</span>
               <div className="h-3 w-px bg-slate-300" />
-              <span className="text-[10px] font-semibold text-primary-600">NEW</span>
+              <span className="text-[10px] font-semibold text-primary-600">Planning Support</span>
             </motion.div>
 
             {/* Main Heading */}
@@ -141,7 +168,7 @@ export function ContactPage() {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="text-base sm:text-lg md:text-xl text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed font-medium"
             >
-              Reach out for platform support, booking guidance, provider-related questions, or general help with planning your next event.
+              Reach out for platform support, booking guidance, partner-related questions, or general help with planning your next event.
             </motion.p>
 
             {/* CTA Buttons */}
@@ -172,16 +199,16 @@ export function ContactPage() {
             className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:mt-8"
           >
             {[
-              { value: "24h", label: "Response Time", icon: Clock },
-              { value: "500+", label: "Happy Customers", icon: CheckCircle2, dataKey: "totalBookings", suffix: "+" },
-              { value: "100+", label: "Verified Providers", icon: Globe, dataKey: "totalProviders", suffix: "+" },
-              { value: "4.9★", label: "Average Rating", icon: Sparkles, dataKey: "avgRating", suffix: "★" },
+              { value: "24/7", label: "Planning Support", icon: Clock },
+              { value: "500+", label: "Events Delivered", icon: CheckCircle2, dataKey: "totalBookings", suffix: "+" },
+              { value: "100+", label: "Verified Partners", icon: Globe, dataKey: "totalProviders", suffix: "+" },
+              { value: "4.9/5", label: "Average Client Rating", icon: Sparkles, dataKey: "avgRating", suffix: "/5" },
             ].map((stat, index) => {
               let displayValue = stat.value;
               if (statsData && stat.dataKey) {
                 const dataValue = statsData[stat.dataKey];
                 if (dataValue > 0) {
-                  displayValue = stat.suffix === "★" ? `${dataValue}★` : `${dataValue}${stat.suffix}`;
+                  displayValue = stat.suffix === "/5" ? `${dataValue}/5` : `${dataValue}${stat.suffix}`;
                 }
               }
               return (
@@ -192,25 +219,14 @@ export function ContactPage() {
                   transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
                   className="group relative"
                 >
-                  <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${[
-                    "bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-blue-500/20",
-                    "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20",
-                    "bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-purple-500/20",
-                    "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20",
-                  ][index]}`} />
-                  <div className={`relative rounded-2xl border bg-white/85 p-4 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${
-                    ["border-cyan-100/80", "border-emerald-100/80", "border-violet-100/80", "border-amber-100/80"][index]
-                  }`}>
-                    <div className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${[
-                      "bg-gradient-to-br from-cyan-500 to-blue-600",
-                      "bg-gradient-to-br from-emerald-500 to-teal-600",
-                      "bg-gradient-to-br from-violet-500 to-fuchsia-600",
-                      "bg-gradient-to-br from-amber-500 to-orange-600",
-                    ][index]}`}>
+                  <div className={`absolute inset-0 rounded-xl opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-hover:blur-2xl ${statCardThemes[index].glow}`} />
+                  <div className={`relative flex min-h-[150px] flex-col items-center justify-center rounded-2xl border p-4 text-center shadow-lg shadow-slate-200/20 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${statCardThemes[index].border}`}>
+                    <div className={`absolute inset-0 rounded-2xl ${statCardThemes[index].background}`} />
+                    <div className={`relative mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${statCardThemes[index].icon}`}>
                       <stat.icon className="h-5 w-5 text-white" />
                     </div>
-                    <p className="text-2xl sm:text-3xl font-display font-black text-slate-900 mb-1">{displayValue}</p>
-                    <p className="text-xs font-semibold text-slate-600">{stat.label}</p>
+                    <p className="relative mb-1 text-2xl font-display font-extrabold text-slate-900 sm:text-3xl">{displayValue}</p>
+                    <p className="relative flex min-h-[2.5rem] items-center text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">{stat.label}</p>
                   </div>
                 </motion.div>
               );
@@ -243,7 +259,7 @@ export function ContactPage() {
               </span>
             </h2>
             <p className="hidden sm:block text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-              Fill out the form or use the contact methods below if you need booking help, provider guidance, or general platform support.
+              Fill out the form or use the contact methods below if you need booking help, partner guidance, or general platform support.
             </p>
           </motion.div>
 
@@ -300,7 +316,7 @@ export function ContactPage() {
                   <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-200">
                     Support Coverage
                   </p>
-                  <p className="mt-1 text-sm text-slate-300">We support customers and providers across India.</p>
+                  <p className="mt-1 text-sm text-slate-300">We support clients and partners across India.</p>
                 </div>
                 <div className="space-y-4 p-6">
                   <div className="rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50 to-blue-50 p-5">
@@ -308,7 +324,7 @@ export function ContactPage() {
                       Based in India
                     </p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Reach EventMitra for booking help, provider support, or account issues by phone or email. We are available for event planning questions across major Indian cities.
+                      Reach EventMitra for booking help, partner support, or account assistance by phone or email. We are available for event planning questions across major Indian cities.
                     </p>
                   </div>
                   
@@ -365,7 +381,7 @@ export function ContactPage() {
                 </div>
                 <div>
                   <p className="font-display text-xl font-semibold text-slate-950">EventMitra</p>
-                  <p className="text-sm text-slate-500">Customer support and event planning assistance</p>
+                  <p className="text-sm text-slate-500">Client support and event planning assistance</p>
                 </div>
               </div>
 

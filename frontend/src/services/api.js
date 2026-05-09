@@ -121,6 +121,12 @@ export const providerApi = {
         "Content-Type": "multipart/form-data",
       },
     }),
+  uploadVideos: (formData) =>
+    api.post("/provider/services/upload-videos", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
   getBookings: () => api.get("/provider/bookings"),
   respondToBooking: (id, action) => api.patch(`/provider/bookings/${id}/respond`, { action }),
   startJob: (id) => api.patch(`/provider/bookings/${id}/start`),

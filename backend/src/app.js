@@ -3,6 +3,8 @@ import express from "express";
 import morgan from "morgan";
 import path from "path";
 import { fileURLToPath } from "url";
+import session from "express-session";
+import passport from "./middleware/passport.js";
 import { env } from "./config/env.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 
@@ -18,6 +20,23 @@ app.use(
 );
 app.use(express.json());
 app.use(morgan("dev"));
+
+// Session configuration for Passport
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "eventmitra-session-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  })
+);
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 try {
   app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));

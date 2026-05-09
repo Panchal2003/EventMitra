@@ -148,7 +148,7 @@ export const getProviderDashboard = asyncHandler(async (req, res) => {
       },
       {
         $group: {
-          _id: "$status",
+          _id: { status: "$status", paymentStatus: "$paymentStatus" },
           count: { $sum: 1 },
         },
       },
@@ -159,9 +159,18 @@ export const getProviderDashboard = asyncHandler(async (req, res) => {
   ]);
 
   const countMap = bookingCounts.reduce((accumulator, item) => {
-    accumulator[item._id] = item.count;
+    const key = `${item._id.status}_${item._id.paymentStatus}`;
+    accumulator[key] = item.count;
     return accumulator;
   }, {});
+
+  // Only count bookings with advance_paid payment status (not cancelled or refunded)
+  const pendingRequests =
+    (countMap["provider_assigned_advance_paid"] || 0);
+  const cancelledBookings =
+    (countMap["cancelled_advance_paid"] || 0) +
+    (countMap["cancelled_partially_refunded"] || 0) +
+    (countMap["cancelled_refunded"] || 0);
 
   const totalEarnings = payments
     .filter((payment) => payment.status === "released")
@@ -175,9 +184,12 @@ export const getProviderDashboard = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data: {
-      pendingRequests: countMap.provider_assigned || 0,
-      activeJobs: (countMap.confirmed || 0) + (countMap.in_progress || 0) + (countMap.otp_pending || 0),
-      completedJobs: countMap.completed || 0,
+      pendingRequests,
+      activeJobs: (countMap["confirmed_advance_paid"] || 0) + (countMap["confirmed_full_paid"] || 0) +
+                 (countMap["in_progress_advance_paid"] || 0) + (countMap["in_progress_full_paid"] || 0) +
+                 (countMap["otp_pending_advance_paid"] || 0) + (countMap["otp_pending_full_paid"] || 0),
+      completedJobs: (countMap["completed_advance_paid"] || 0) + (countMap["completed_full_paid"] || 0),
+      cancelledBookings,
       totalEarnings,
       totalAmount,
       completedPayments: completedPayments.length,
@@ -277,7 +289,7 @@ export const getProviderServices = asyncHandler(async (req, res) => {
 
 // Add a new service
 export const createProviderService = asyncHandler(async (req, res) => {
-  const { name, category, description, price, duration, images, allowsMembers, pricePerMember } = req.body;
+  const { name, category, description, price, duration, images, videos, allowsMembers, pricePerMember, location } = req.body;
 
   const categoryDoc = await ServiceCategory.findById(category);
   if (!categoryDoc) {
@@ -294,8 +306,34 @@ export const createProviderService = asyncHandler(async (req, res) => {
     }
   }
 
-  if (imagesArray.length !== 5) {
-    throw new AppError("Please upload exactly 5 service images before adding this service.", 400);
+  // Parse videos if it's a string
+  let videosArray = [];
+  if (videos) {
+    try {
+      videosArray = typeof videos === 'string' ? JSON.parse(videos) : videos;
+    } catch (e) {
+      videosArray = [];
+    }
+  }
+
+  if (imagesArray.length < 5 || imagesArray.length > 15) {
+    throw new AppError("Please upload between 5 and 15 service images.", 400);
+  }
+
+  if (videosArray.length > 5) {
+    throw new AppError("You can upload maximum 5 service videos.", 400);
+  }
+
+  // Build location object in GeoJSON format
+  let locationData = undefined;
+  if (location && (location.address || (location.latitude && location.longitude))) {
+    const lat = Number(location.latitude);
+    const lon = Number(location.longitude);
+    locationData = {
+      type: 'Point',
+      coordinates: [lon, lat], // GeoJSON: [longitude, latitude]
+      address: location.address || "",
+    };
   }
 
   const service = await Service.create({
@@ -305,9 +343,11 @@ export const createProviderService = asyncHandler(async (req, res) => {
     startingPrice: Number(price) || 0,
     status: "active",
     images: imagesArray,
+    videos: videosArray,
     createdBy: req.user._id,
     allowsMembers: allowsMembers || false,
     pricePerMember: Number(pricePerMember) || 0,
+    location: locationData,
   });
 
   const populatedService = await service.populate("category", "name slug");
@@ -321,7 +361,7 @@ export const createProviderService = asyncHandler(async (req, res) => {
 
 // Update provider's service
 export const updateProviderService = asyncHandler(async (req, res) => {
-  const { name, category, description, price, duration, status, images, allowsMembers, pricePerMember } = req.body;
+  const { name, category, description, price, duration, status, images, videos, allowsMembers, pricePerMember, location } = req.body;
 
   const service = await Service.findOne({ _id: req.params.serviceId, createdBy: req.user._id });
   
@@ -344,13 +384,51 @@ export const updateProviderService = asyncHandler(async (req, res) => {
   if (allowsMembers !== undefined) service.allowsMembers = allowsMembers;
   if (pricePerMember !== undefined) service.pricePerMember = Number(pricePerMember);
 
+  // Handle location data in GeoJSON format
+  if (location) {
+    const lat = location.latitude ? Number(location.latitude) : null;
+    const lon = location.longitude ? Number(location.longitude) : null;
+    
+    if (lat && lon) {
+      service.location = {
+        type: 'Point',
+        coordinates: [lon, lat], // GeoJSON: [longitude, latitude]
+        address: location.address || service.location?.address || "",
+      };
+    } else if (location.address) {
+      // Only address provided, keep existing coordinates or set to null
+      service.location = {
+        ...service.location,
+        address: location.address,
+      };
+    }
+  }
+
   // Handle images array
   if (images) {
     try {
       const imagesArray = typeof images === 'string' ? JSON.parse(images) : images;
+      if (imagesArray.length < 5 || imagesArray.length > 15) {
+        throw new AppError("Please provide between 5 and 15 service images.", 400);
+      }
       service.images = imagesArray;
     } catch (e) {
+      if (e instanceof AppError) throw e;
       // Keep existing images if parsing fails
+    }
+  }
+
+  // Handle videos array
+  if (videos) {
+    try {
+      const videosArray = typeof videos === 'string' ? JSON.parse(videos) : videos;
+      if (videosArray.length > 5) {
+        throw new AppError("You can upload maximum 5 service videos.", 400);
+      }
+      service.videos = videosArray;
+    } catch (e) {
+      if (e instanceof AppError) throw e;
+      // Keep existing videos if parsing fails
     }
   }
 
@@ -628,6 +706,57 @@ export const uploadServiceImage = asyncHandler(async (req, res) => {
     data: {
       url: imageUrl,
       fileName: req.file.filename,
+    },
+  });
+});
+
+// Upload multiple service videos
+export const uploadServiceVideos = asyncHandler(async (req, res) => {
+  if (!req.files?.length) {
+    throw new AppError("Please choose at least one video to upload.", 400);
+  }
+
+  if (req.files.length > 5) {
+    throw new AppError("You can upload maximum 5 videos.", 400);
+  }
+
+  const baseUrl = process.env.NODE_ENV === 'production'
+    ? 'https://event-mitra-backend.vercel.app'
+    : 'http://localhost:5000';
+
+  const videoUrls = await Promise.all(req.files.map(async (file) => {
+    const localPath = file.path;
+
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    if (cloudName && cloudName.length > 5) {
+      try {
+        const { v2: cloudinary } = await import('cloudinary');
+        cloudinary.config({
+          cloud_name: cloudName,
+          api_key: process.env.CLOUDINARY_API_KEY,
+          api_secret: process.env.CLOUDINARY_API_SECRET,
+        });
+
+        const result = await cloudinary.uploader.upload(localPath, {
+          folder: "eventmitra/service_videos",
+          resource_type: "video",
+        });
+
+        fs.unlinkSync(localPath);
+        return result.secure_url;
+      } catch (err) {
+        console.error("Cloudinary video upload error:", err.message);
+      }
+    }
+
+    return `${baseUrl}/uploads/services/${file.filename}`;
+  }));
+
+  res.status(201).json({
+    success: true,
+    message: "Service videos uploaded successfully.",
+    data: {
+      videos: videoUrls,
     },
   });
 });
