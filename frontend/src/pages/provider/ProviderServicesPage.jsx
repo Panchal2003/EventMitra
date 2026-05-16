@@ -64,6 +64,12 @@ const createInitialServiceForm = () => ({
     latitude: "",
     longitude: "",
   },
+  // Offer Pricing System
+  actualPrice: "",
+  offerPrice: "",
+  offerActive: false,
+  offerStartDate: "",
+  offerEndDate: "",
 });
 
 export function ProviderServicesPage() {
@@ -227,7 +233,13 @@ export function ProviderServicesPage() {
             parseFloat(formData.location.latitude)
           ] : undefined,
           address: formData.location.address || ""
-        }
+        },
+        // Offer Pricing System
+        actualPrice: formData.actualPrice ? Number(formData.actualPrice) : null,
+        offerPrice: formData.offerPrice ? Number(formData.offerPrice) : null,
+        offerActive: formData.offerActive || false,
+        offerStartDate: formData.offerStartDate ? new Date(formData.offerStartDate) : null,
+        offerEndDate: formData.offerEndDate ? new Date(formData.offerEndDate) : null,
       };
       
       if (editingService) {
@@ -267,6 +279,12 @@ export function ProviderServicesPage() {
         latitude: service.location?.coordinates?.[1] ? String(service.location.coordinates[1]) : "",
         longitude: service.location?.coordinates?.[0] ? String(service.location.coordinates[0]) : "",
       },
+      // Offer Pricing System
+      actualPrice: service.actualPrice ? String(service.actualPrice) : "",
+      offerPrice: service.offerPrice ? String(service.offerPrice) : "",
+      offerActive: service.offerActive || false,
+      offerStartDate: service.offerStartDate ? new Date(service.offerStartDate).toISOString().split('T')[0] : "",
+      offerEndDate: service.offerEndDate ? new Date(service.offerEndDate).toISOString().split('T')[0] : "",
     });
     setImagePreviews(service.images || []);
     setShowAddForm(true);
@@ -697,6 +715,92 @@ export function ProviderServicesPage() {
                   <p className="mt-1 text-xs text-slate-500">
                     Base price: Rs {formData.price || 0} + (Rs {formData.pricePerMember || 0} x number of members)
                   </p>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Offer Pricing Section */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-3">
+                <h3 className="text-sm font-semibold text-slate-900">Offer Pricing</h3>
+                <p className="text-xs text-slate-500">Set an offer price to show customers a discounted rate</p>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-slate-900">Enable Offer</p>
+                  <p className="text-sm text-slate-500">Show discounted price to customers</p>
+                </div>
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    name="offerActive"
+                    checked={formData.offerActive}
+                    onChange={(e) => setFormData({ ...formData, offerActive: e.target.checked })}
+                    className="peer sr-only"
+                  />
+                  <div className="h-6 w-11 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:translate-x-1 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-6"></div>
+                </label>
+              </div>
+
+              {formData.offerActive ? (
+                <div className="mt-4 space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        Actual Price (Rs)
+                      </label>
+                      <input
+                        type="number"
+                        name="actualPrice"
+                        value={formData.actualPrice}
+                        onChange={handleInputChange}
+                        min="0"
+                        placeholder="Original price"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        Offer Price (Rs)
+                      </label>
+                      <input
+                        type="number"
+                        name="offerPrice"
+                        value={formData.offerPrice}
+                        onChange={handleInputChange}
+                        min="0"
+                        placeholder="Discounted price"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        Offer Start Date
+                      </label>
+                      <input
+                        type="date"
+                        name="offerStartDate"
+                        value={formData.offerStartDate}
+                        onChange={handleInputChange}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        Offer End Date
+                      </label>
+                      <input
+                        type="date"
+                        name="offerEndDate"
+                        value={formData.offerEndDate}
+                        onChange={handleInputChange}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                  </div>
                 </div>
               ) : null}
             </div>

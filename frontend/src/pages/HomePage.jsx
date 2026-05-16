@@ -195,11 +195,39 @@ export function HomePage() {
     fetchServices();
   }, []);
 
-  const rotatingTexts = [
+  const rotatingTextsLine1 = [
     { text: "Wedding Celebrations", color: "from-pink-500 to-rose-500" },
+    { text: "Destination Weddings", color: "from-rose-500 to-red-500" },
+    { text: "Engagement Ceremonies", color: "from-purple-500 to-pink-500" },
+    { text: "Haldi & Mehendi Events", color: "from-yellow-400 to-orange-500" },
+    { text: "Sangeet Nights", color: "from-fuchsia-500 to-violet-500" },
+    { text: "Birthday Parties", color: "from-orange-500 to-red-500" },
+    { text: "Anniversary Celebrations", color: "from-red-400 to-pink-600" },
+    { text: "Baby Shower Events", color: "from-cyan-400 to-blue-500" },
     { text: "Private Gatherings", color: "from-violet-500 to-purple-500" },
+    { text: "Family Functions", color: "from-indigo-500 to-purple-500" },
+    { text: "House Parties", color: "from-lime-500 to-green-500" },
     { text: "Corporate Events", color: "from-blue-500 to-cyan-500" },
+    { text: "Annual Conferences", color: "from-sky-500 to-indigo-500" },
+    { text: "Award Ceremonies", color: "from-amber-500 to-yellow-500" },
+    { text: "Networking Meetups", color: "from-teal-500 to-cyan-500" },
+  ];
+  const rotatingTextsLine2 = [
+    { text: "Team Building Activities", color: "from-green-500 to-emerald-500" },
+    { text: "Product Launches", color: "from-cyan-500 to-blue-600" },
     { text: "Brand Activations", color: "from-emerald-500 to-teal-500" },
+    { text: "Fashion Shows", color: "from-pink-600 to-fuchsia-500" },
+    { text: "Music Festivals", color: "from-purple-600 to-indigo-500" },
+    { text: "Live Concerts", color: "from-rose-500 to-red-600" },
+    { text: "DJ Nights", color: "from-violet-600 to-purple-700" },
+    { text: "Cultural Programs", color: "from-orange-500 to-amber-500" },
+    { text: "College Festivals", color: "from-indigo-500 to-blue-500" },
+    { text: "Sports Events", color: "from-green-500 to-lime-500" },
+    { text: "Exhibitions & Expos", color: "from-cyan-500 to-sky-500" },
+    { text: "Luxury Receptions", color: "from-yellow-500 to-amber-600" },
+    { text: "Celebrity Events", color: "from-red-500 to-pink-500" },
+    { text: "Charity & NGO Events", color: "from-emerald-400 to-green-600" },
+    { text: "Religious Functions", color: "from-orange-400 to-red-500" },
   ];
   const mobileTickerServices =
     featuredServices.length > 0 ? [...featuredServices, ...featuredServices] : [];
@@ -363,17 +391,39 @@ export function HomePage() {
               <br />
               <span className="relative inline-block min-w-[240px] overflow-hidden sm:min-w-[420px]">
                 <motion.div
-                  className="flex whitespace-nowrap"
-                  animate={{ x: ["0%", "-50%"] }}
-                  transition={{
-                    duration: 20,
-                    repeat: Infinity,
-                    ease: "linear",
-                  }}
-                >
-                  {[...rotatingTexts, ...rotatingTexts].map((item, index) => (
+                   className="flex whitespace-nowrap"
+                   animate={{ x: ["0%", "-50%"] }}
+                   transition={{
+                     duration: 120,
+                     repeat: Infinity,
+                     ease: "linear",
+                   }}
+                 >
+                  {[...rotatingTextsLine1, ...rotatingTextsLine1].map((item, index) => (
                     <span
                       key={`${item.text}-${index}`}
+                      className={`mx-6 inline-flex items-center bg-gradient-to-r bg-clip-text text-transparent ${item.color}`}
+                    >
+                      {item.text}
+                    </span>
+                  ))}
+                </motion.div>
+                <div className="absolute -bottom-2 left-0 right-0 h-1 rounded-full bg-gradient-to-r from-primary-500 via-blue-500 to-indigo-500 opacity-90" />
+              </span>
+              <br />
+              <span className="relative inline-block min-w-[240px] overflow-hidden sm:min-w-[420px]">
+                <motion.div
+                   className="flex whitespace-nowrap"
+                   animate={{ x: ["0%", "-50%"] }}
+                   transition={{
+                     duration: 120,
+                     repeat: Infinity,
+                     ease: "linear",
+                   }}
+                 >
+                  {[...rotatingTextsLine2, ...rotatingTextsLine2].map((item, index) => (
+                    <span
+                      key={`${item.text}-${index}-line2`}
                       className={`mx-6 inline-flex items-center bg-gradient-to-r bg-clip-text text-transparent ${item.color}`}
                     >
                       {item.text}

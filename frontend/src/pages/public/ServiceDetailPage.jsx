@@ -15,10 +15,13 @@ import {
   LocateFixed,
   X,
   Loader2,
+  Heart,
+  Share2,
 } from "lucide-react";
 import { publicApi } from "../../services/api";
 import { Button } from "../../components/common/Button";
 import { Footer } from "../../components/common/Footer";
+import { ShareModal } from "../../components/common/ShareModal";
 import { useAuth } from "../../context/AuthContext";
 import { filterProvidersByDistance, formatDistance } from "../../utils/distance";
 
@@ -82,7 +85,25 @@ export function ServiceDetailPage() {
   const [filteredProviders, setFilteredProviders] = useState([]);
   const [isLocating, setIsLocating] = useState(false);
 
+  // Share and Like state
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareData, setShareData] = useState({ title: "", url: "" });
+  const [likedProviders, setLikedProviders] = useState(new Set());
+
   const decodedServiceName = decodeURIComponent(serviceName || "");
+
+  // Load liked providers from localStorage
+  useEffect(() => {
+    const savedLikes = localStorage.getItem("likedProviders");
+    if (savedLikes) {
+      setLikedProviders(new Set(JSON.parse(savedLikes)));
+    }
+  }, []);
+
+  // Save liked providers to localStorage
+  useEffect(() => {
+    localStorage.setItem("likedProviders", JSON.stringify(Array.from(likedProviders)));
+  }, [likedProviders]);
 
   useEffect(() => {
     const fetchProviders = async () => {
@@ -173,6 +194,28 @@ export function ServiceDetailPage() {
     setUserLocation({ lat: "", lon: "" });
     setUserAddress("");
     setShowLocationFilter(false);
+  };
+
+  const handleLike = (providerId) => {
+    setLikedProviders((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(providerId)) {
+        newSet.delete(providerId);
+      } else {
+        newSet.add(providerId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleShare = (provider) => {
+    const shareUrl = `${window.location.origin}/provider/${provider._id}?category=${category?._id || ""}`;
+    setShareData({
+      title: `${provider.businessName || provider.name} - ${displayServiceName} Service`,
+      url: shareUrl,
+      text: `Check out ${provider.businessName || provider.name} for ${displayServiceName} services on EventMitra!`,
+    });
+    setShareModalOpen(true);
   };
 
   if (loading) {
@@ -564,9 +607,31 @@ export function ServiceDetailPage() {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <h3 className="truncate font-display text-xl font-bold text-white">
-                            {provider.businessName || provider.name}
-                          </h3>
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="truncate font-display text-xl font-bold text-white">
+                              {provider.businessName || provider.name}
+                            </h3>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleLike(provider._id)}
+                                className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 ${
+                                  likedProviders.has(provider._id)
+                                    ? "bg-red-500 text-white"
+                                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                                }`}
+                                aria-label={likedProviders.has(provider._id) ? "Unlike" : "Like"}
+                              >
+                                <Heart className={`h-4 w-4 ${likedProviders.has(provider._id) ? "fill-current" : ""}`} />
+                              </button>
+                              <button
+                                onClick={() => handleShare(provider)}
+                                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/70 transition-all duration-200 hover:bg-white/20"
+                                aria-label="Share"
+                              >
+                                <Share2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
                           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/20 px-3 py-1 text-amber-200">
                               <Star className="h-3.5 w-3.5 fill-current" />
@@ -692,6 +757,13 @@ export function ServiceDetailPage() {
       </section>
 
       <Footer />
+
+    {/* Share Modal */}
+    <ShareModal
+      open={shareModalOpen}
+      onClose={() => setShareModalOpen(false)}
+      shareData={shareData}
+    />
     </div>
   );
 }

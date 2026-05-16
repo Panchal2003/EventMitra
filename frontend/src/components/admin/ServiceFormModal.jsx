@@ -10,6 +10,12 @@ const defaultValues = {
   image: "",
   basePricing: "",
   status: "active",
+  // Offer Pricing System
+  actualPrice: "",
+  offerPrice: "",
+  offerActive: false,
+  offerStartDate: "",
+  offerEndDate: "",
 };
 
 export function ServiceFormModal({
@@ -34,6 +40,12 @@ export function ServiceFormModal({
               image: initialValues.image || "",
               basePricing: initialValues.basePricing || "",
               status: initialValues.status || "active",
+              // Offer Pricing System
+              actualPrice: initialValues.actualPrice ? String(initialValues.actualPrice) : "",
+              offerPrice: initialValues.offerPrice ? String(initialValues.offerPrice) : "",
+              offerActive: initialValues.offerActive || false,
+              offerStartDate: initialValues.offerStartDate ? new Date(initialValues.offerStartDate).toISOString().split('T')[0] : "",
+              offerEndDate: initialValues.offerEndDate ? new Date(initialValues.offerEndDate).toISOString().split('T')[0] : "",
             }
           : defaultValues
       );
@@ -41,8 +53,11 @@ export function ServiceFormModal({
   }, [initialValues, open]);
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormState((previous) => ({ ...previous, [name]: value }));
+    const { name, value, type, checked } = event.target;
+    setFormState((previous) => ({ 
+      ...previous, 
+      [name]: type === "checkbox" ? checked : value 
+    }));
   };
 
   const handleSubmit = async (event) => {
@@ -50,6 +65,10 @@ export function ServiceFormModal({
     await onSubmit({
       ...formState,
       startingPrice: Number(formState.startingPrice),
+      actualPrice: formState.actualPrice ? Number(formState.actualPrice) : null,
+      offerPrice: formState.offerPrice ? Number(formState.offerPrice) : null,
+      offerStartDate: formState.offerStartDate ? new Date(formState.offerStartDate) : null,
+      offerEndDate: formState.offerEndDate ? new Date(formState.offerEndDate) : null,
     });
   };
 
@@ -156,6 +175,79 @@ export function ServiceFormModal({
             onChange={handleChange}
             placeholder="e.g., Starts at ₹12,000 for bridal mehndi coverage"
           />
+        </div>
+
+        {/* Offer Pricing Section */}
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-slate-900">Enable Offer Pricing</p>
+              <p className="text-sm text-slate-500">Show discounted price to customers</p>
+            </div>
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                name="offerActive"
+                checked={formState.offerActive}
+                onChange={handleChange}
+                className="peer sr-only"
+              />
+              <div className="h-6 w-11 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:translate-x-1 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-6"></div>
+            </label>
+          </div>
+
+          {formState.offerActive && (
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Actual Price (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-all focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100"
+                    name="actualPrice"
+                    value={formState.actualPrice}
+                    onChange={handleChange}
+                    placeholder="Original price"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Offer Price (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-all focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100"
+                    name="offerPrice"
+                    value={formState.offerPrice}
+                    onChange={handleChange}
+                    placeholder="Discounted price"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Offer Start Date</label>
+                  <input
+                    type="date"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-all focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100"
+                    name="offerStartDate"
+                    value={formState.offerStartDate}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Offer End Date</label>
+                  <input
+                    type="date"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-all focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100"
+                    name="offerEndDate"
+                    value={formState.offerEndDate}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Status */}

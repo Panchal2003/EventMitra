@@ -51,6 +51,29 @@ const serviceSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
+    // Offer Pricing System
+    actualPrice: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    offerPrice: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    offerActive: {
+      type: Boolean,
+      default: false,
+    },
+    offerStartDate: {
+      type: Date,
+      default: null,
+    },
+    offerEndDate: {
+      type: Date,
+      default: null,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
