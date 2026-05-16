@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { HelmetProvider } from "react-helmet-async";
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
 import { AdminLayout } from "./layouts/AdminLayout";
@@ -84,10 +85,11 @@ function HomeRedirect() {
 
 export default function App() {
   return (
-    <UIProvider>
-      <CartProvider>
-        <ScrollToTop />
-          <Routes>
+    <HelmetProvider>
+      <UIProvider>
+        <CartProvider>
+          <ScrollToTop />
+            <Routes>
         {/* Login Page - No Layout */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin-login" element={<LoginPage adminBackdoor />} />
@@ -197,8 +199,9 @@ export default function App() {
         </Route>
 
         <Route path="*" element={<HomeRedirect />} />
-      </Routes>
-      </CartProvider>
-    </UIProvider>
+        </Routes>
+        </CartProvider>
+      </UIProvider>
+    </HelmetProvider>
   );
 }

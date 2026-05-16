@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Helmet } from "react-helmet-async";
 import {
   ArrowLeft,
   ChevronRight,
@@ -233,6 +234,11 @@ export function ServiceDetailPage() {
 
   const { category, providers = [] } = data || {};
 
+  // Get first provider's images for meta tags
+  const firstProviderImages = providers.length > 0 
+    ? getProviderGalleryImages(providers[0].services || []) 
+    : [];
+
   if (error || providers.length === 0) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
@@ -289,7 +295,22 @@ export function ServiceDetailPage() {
   const startingFrom = minPrices.length > 0 ? Math.min(...minPrices) : null;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
+    <>
+      <Helmet>
+        <title>{displayServiceName} Services - EventMitra</title>
+        <meta name="description" content={`Book verified ${displayServiceName} service partners on EventMitra. Compare prices, reviews, and packages from trusted providers.`} />
+        {firstProviderImages.length > 0 && (
+          <>
+            <meta property="og:image" content={firstProviderImages[0]} />
+            <meta name="twitter:image" content={firstProviderImages[0]} />
+          </>
+        )}
+        <meta property="og:title" content={`${displayServiceName} Services - EventMitra`} />
+        <meta property="og:description" content={`Book verified ${displayServiceName} service partners on EventMitra.`} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
+      <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-primary-200/40 via-blue-200/30 to-indigo-200/20 blur-3xl animate-pulse" />
         <div
@@ -767,5 +788,6 @@ export function ServiceDetailPage() {
       shareData={shareData}
     />
     </div>
+    </>
   );
 }
