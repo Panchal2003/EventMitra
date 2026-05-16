@@ -208,12 +208,14 @@ export function ServiceDetailPage() {
     });
   };
 
-  const handleShare = (provider) => {
+  const handleShare = (provider, services = []) => {
     const shareUrl = `${window.location.origin}/provider/${provider._id}?category=${category?._id || ""}`;
+    const serviceImage = getProviderGalleryImages(services).length > 0 ? getProviderGalleryImages(services)[0] : null;
     setShareData({
       title: `${provider.businessName || provider.name} - ${displayServiceName} Service`,
       url: shareUrl,
       text: `Check out ${provider.businessName || provider.name} for ${displayServiceName} services on EventMitra!`,
+      image: serviceImage,
     });
     setShareModalOpen(true);
   };
@@ -624,10 +626,10 @@ export function ServiceDetailPage() {
                                 <Heart className={`h-4 w-4 ${likedProviders.has(provider._id) ? "fill-current" : ""}`} />
                               </button>
                               <button
-                                onClick={() => handleShare(provider)}
-                                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/70 transition-all duration-200 hover:bg-white/20"
-                                aria-label="Share"
-                              >
+                                 onClick={() => handleShare(provider, services)}
+                                 className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/70 transition-all duration-200 hover:bg-white/20"
+                                 aria-label="Share"
+                               >
                                 <Share2 className="h-4 w-4" />
                               </button>
                             </div>

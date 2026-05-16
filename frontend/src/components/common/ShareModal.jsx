@@ -21,7 +21,7 @@ const sharePlatforms = [
     icon: MessageCircle,
     color: "bg-green-500",
     hoverColor: "bg-green-600",
-    shareUrl: (url, text) => `https://wa.me/?text=${encodeURIComponent(text + " " + url)}`,
+    shareUrl: (url, text, image) => `https://wa.me/?text=${encodeURIComponent(text + " " + url + (image ? "\n\nImage: " + image : ""))}`,
   },
   {
     name: "Facebook",
@@ -35,7 +35,7 @@ const sharePlatforms = [
     icon: Twitter,
     color: "bg-sky-500",
     hoverColor: "bg-sky-600",
-    shareUrl: (url, text) => `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+    shareUrl: (url, text, image) => `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text + (image ? " " + image : ""))}`,
   },
   {
     name: "LinkedIn",
@@ -63,7 +63,7 @@ const sharePlatforms = [
     icon: Send,
     color: "bg-blue-500",
     hoverColor: "bg-blue-600",
-    shareUrl: (url, text) => `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+    shareUrl: (url, text, image) => `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text + (image ? " " + image : ""))}`,
   },
   {
     name: "Copy Link",
@@ -78,7 +78,7 @@ export function ShareModal({ open, onClose, shareData }) {
   const [copied, setCopied] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
 
-  const { title = "Check out this service", url = window.location.href, text = "" } = shareData || {};
+  const { title = "Check out this service", url = window.location.href, text = "", image = null } = shareData || {};
 
   const handleShare = async (platform) => {
     if (platform.isCopy) {
@@ -99,9 +99,12 @@ export function ShareModal({ open, onClose, shareData }) {
 
     if (platform.isNativeShare && navigator.share) {
       try {
+        const shareText = image 
+          ? `${text}\n\nImage: ${image}`
+          : text;
         await navigator.share({
           title: title,
-          text: text,
+          text: shareText,
           url: url,
         });
         onClose();
@@ -112,7 +115,7 @@ export function ShareModal({ open, onClose, shareData }) {
     }
 
     if (platform.shareUrl) {
-      const shareLink = platform.shareUrl(url, text || title);
+      const shareLink = platform.shareUrl(url, text || title, image);
       window.open(shareLink, "_blank", "noopener,noreferrer");
     }
   };
@@ -127,6 +130,13 @@ export function ShareModal({ open, onClose, shareData }) {
     >
       <div className="py-2">
         <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          {image && (
+            <img
+              src={image}
+              alt="Service preview"
+              className="mb-2 h-32 w-full rounded-lg object-cover"
+            />
+          )}
           <p className="text-sm font-medium text-slate-700 line-clamp-2">{title}</p>
           <p className="mt-1 text-xs text-slate-500 truncate">{url}</p>
         </div>
